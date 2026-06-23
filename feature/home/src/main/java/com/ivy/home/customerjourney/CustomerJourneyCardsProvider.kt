@@ -66,6 +66,7 @@ class CustomerJourneyCardsProvider @Inject constructor(
     return "${cardData.id}${SharedPrefs._CARD_DISMISSED}"
   }
 
+  @Suppress("MagicNumber")
   companion object {
     val ACTIVE_CARDS = listOf(
       adjustBalanceCard(),

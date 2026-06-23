@@ -1,9 +1,9 @@
 [versions]
-# Held at 2.0.20: Kotlin 2.1.x breaks the bundled Compose compiler plugin registration in this
+# Held at 2.0.x: Kotlin 2.1.x breaks the bundled Compose compiler plugin registration in this
 # build (ComposePluginRegistrar only provides the K2 CompilerPluginRegistrar, loaded here via the
-# K1 ComponentRegistrar -> ClassCastException). Bumping Kotlin needs that resolved first; it also
-# interacts with the Hilt/buildSrc toolchain floor.
-kotlin = "2.0.20"
+# K1 ComponentRegistrar -> ClassCastException). Bumping to 2.1.x needs that resolved first; it also
+# interacts with the Hilt/buildSrc toolchain floor. 2.0.21 is a safe patch aligned with KSP.
+kotlin = "2.0.21"
 # 1.9.x is the coroutines line built for Kotlin 2.0.x (1.10.x targets Kotlin 2.1).
 kotlin-coroutines = "1.9.0"
 # Held at 2.x: Ktor 3.x is a breaking API change (would need source migration, not a bump).

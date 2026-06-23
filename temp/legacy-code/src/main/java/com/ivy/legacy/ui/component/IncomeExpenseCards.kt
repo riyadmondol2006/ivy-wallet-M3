@@ -94,7 +94,7 @@ fun IncomeExpensesCards(
 }
 
 @Composable
-@Suppress("ParameterNaming")
+@Suppress("ParameterNaming", "UnusedParameter")
 private fun RowScope.HeaderCard(
     title: String,
     currencyCode: String,

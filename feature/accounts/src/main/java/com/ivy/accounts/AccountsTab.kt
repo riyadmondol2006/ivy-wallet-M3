@@ -450,6 +450,7 @@ private fun AccountHeader(
 }
 
 @Preview
+@Suppress("MagicNumber")
 @Composable
 private fun PreviewAccountsTabCompactModeDisabled(theme: Theme = Theme.LIGHT) {
     IvyWalletPreview(theme = theme) {
@@ -537,6 +538,7 @@ private fun PreviewAccountsTabCompactModeDisabled(theme: Theme = Theme.LIGHT) {
 }
 
 @Preview
+@Suppress("MagicNumber")
 @Composable
 private fun PreviewAccountsTabCompactModeEnabled(theme: Theme = Theme.LIGHT) {
     IvyWalletPreview(theme = theme) {

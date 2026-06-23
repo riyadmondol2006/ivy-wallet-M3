@@ -348,6 +348,7 @@ fun CashFlowInfo(
  * header is expanded, smoothly thinning and shrinking as it collapses on scroll. [percentExpanded]
  * is already a spring-animated float, so the morph inherits physics-based motion for free.
  */
+@Suppress("MagicNumber")
 @Composable
 private fun ExpressiveBalanceRow(
     currency: String,

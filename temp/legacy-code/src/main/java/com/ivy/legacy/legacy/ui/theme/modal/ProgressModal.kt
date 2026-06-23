@@ -22,6 +22,7 @@ import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
+@Suppress("UnusedParameter")
 @Composable
 fun BoxWithConstraintsScope.ProgressModal(
     id: UUID = UUID.randomUUID(),

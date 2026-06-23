@@ -39,6 +39,7 @@ import java.util.UUID
 
 @SuppressLint("ComposeModifierMissing")
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
+@Suppress("UnusedParameter")
 @Composable
 fun BoxWithConstraintsScope.DeleteModal(
     title: String,

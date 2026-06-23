@@ -100,6 +100,17 @@ private fun ColorScheme.withTonalDark(isTrueBlack: Boolean): ColorScheme {
 // Seeded from IvyColors but expressed as full M3 tonal schemes. No pure-black backgrounds unless
 // the AMOLED opt-in is active.
 
+private val LightSurfaceContainerLow = Color(0xFFF6F4FB)
+private val LightSurfaceContainer = Color(0xFFF1EEF8)
+private val LightSurfaceContainerHigh = Color(0xFFEBE7F3)
+private val LightSurfaceContainerHighest = Color(0xFFE5E0EF)
+private val DarkSurfaceVariant = Color(0xFF2A2630)
+private val DarkSurfaceContainerLowest = Color(0xFF0E0C13)
+private val DarkSurfaceContainerLow = Color(0xFF1A1722)
+private val DarkSurfaceContainer = Color(0xFF1E1B27)
+private val DarkSurfaceContainerHigh = Color(0xFF292532)
+private val DarkSurfaceContainerHighest = Color(0xFF34303D)
+
 private fun ivyLightColorScheme(accent: ColorShades): ColorScheme = lightColorScheme(
     primary = accent.primary,
     onPrimary = Color.White,
@@ -135,10 +146,10 @@ private fun ivyLightColorScheme(accent: ColorShades): ColorScheme = lightColorSc
     inverseOnSurface = IvyColors.White,
 
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF6F4FB),
-    surfaceContainer = Color(0xFFF1EEF8),
-    surfaceContainerHigh = Color(0xFFEBE7F3),
-    surfaceContainerHighest = Color(0xFFE5E0EF),
+    surfaceContainerLow = LightSurfaceContainerLow,
+    surfaceContainer = LightSurfaceContainer,
+    surfaceContainerHigh = LightSurfaceContainerHigh,
+    surfaceContainerHighest = LightSurfaceContainerHighest,
 
     outline = IvyColors.Gray,
     outlineVariant = IvyColors.LightGray,
@@ -174,17 +185,17 @@ private fun ivyDarkColorScheme(accent: ColorShades, isTrueBlack: Boolean): Color
     onBackground = IvyColors.White,
     surface = if (isTrueBlack) IvyColors.TrueBlack else MidnightPlum,
     onSurface = IvyColors.White,
-    surfaceVariant = Color(0xFF2A2630),
+    surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = IvyColors.LightGray,
     surfaceTint = accent.light,
     inverseSurface = IvyColors.ExtraLightGray,
     inverseOnSurface = MidnightPlum,
 
-    surfaceContainerLowest = if (isTrueBlack) IvyColors.TrueBlack else Color(0xFF0E0C13),
-    surfaceContainerLow = Color(0xFF1A1722),
-    surfaceContainer = Color(0xFF1E1B27),
-    surfaceContainerHigh = Color(0xFF292532),
-    surfaceContainerHighest = Color(0xFF34303D),
+    surfaceContainerLowest = if (isTrueBlack) IvyColors.TrueBlack else DarkSurfaceContainerLowest,
+    surfaceContainerLow = DarkSurfaceContainerLow,
+    surfaceContainer = DarkSurfaceContainer,
+    surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHighest,
 
     outline = IvyColors.Gray,
     outlineVariant = IvyColors.DarkGray,

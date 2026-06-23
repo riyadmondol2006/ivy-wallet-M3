@@ -19,7 +19,7 @@ import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.utils.isNotNullOrBlank
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-@Suppress("ParameterNaming")
+@Suppress("ParameterNaming", "UnusedParameter")
 @Composable
 fun IvyOutlinedTextField(
     modifier: Modifier = Modifier,

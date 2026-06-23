@@ -35,6 +35,10 @@ val DisplayFamily: FontFamily = FontFamily.Default
 /** Body/label face — system Roboto. */
 val BodyFamily: FontFamily = FontFamily.Default
 
+private const val MinFontWeight = 1
+private const val MaxFontWeight = 1000
+private val fontWeightSteps = listOf(100, 200, 300, 400, 500, 600, 700, 800, 900, MaxFontWeight)
+
 /**
  * Builds a true variable-font family from a single ttf that exposes a `wght` axis. Each entry
  * pins the axis so Compose can interpolate; use with a font that actually carries the axis.
@@ -42,7 +46,7 @@ val BodyFamily: FontFamily = FontFamily.Default
 @Suppress("unused")
 @OptIn(ExperimentalTextApi::class)
 fun variableFontFamily(resId: Int): FontFamily = FontFamily(
-    listOf(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000).map { w ->
+    fontWeightSteps.map { w ->
         Font(
             resId = resId,
             weight = FontWeight(w),
@@ -60,11 +64,11 @@ fun variableFontFamily(resId: Int): FontFamily = FontFamily(
 @Composable
 fun financialNumberStyle(
     fontSize: TextUnit,
-    weight: Int = 1000,
+    weight: Int = MaxFontWeight,
 ): TextStyle = remember(fontSize, weight) {
     TextStyle(
         fontFamily = DisplayFamily,
-        fontWeight = FontWeight(weight.coerceIn(1, 1000)),
+        fontWeight = FontWeight(weight.coerceIn(MinFontWeight, MaxFontWeight)),
         fontSize = fontSize,
         letterSpacing = (-0.02).em,
         lineHeight = fontSize * 1.05f,
