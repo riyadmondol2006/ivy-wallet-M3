@@ -97,17 +97,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setupApp()
-        // Predictive-back-aware back handling via the dispatcher (replaces the deprecated
-        // onBackPressed() override). In-app screens/modals pop first; when nothing is left to
-        // pop we hand back to the system so it can run its exit / cross-task predictive preview.
-        onBackPressedDispatcher.addCallback(this) {
-            if (!viewModel.isAppLocked() && navigation.onBackPressed()) {
-                return@addCallback
-            }
-            isEnabled = false
-            onBackPressedDispatcher.onBackPressed()
-            isEnabled = true
-        }
+        setupPredictiveBack()
         setContent {
             val viewModel: RootViewModel = viewModel()
             val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -164,6 +154,17 @@ class RootActivity : AppCompatActivity(), RootScreen {
             ) {
                 dateTimePicker.Content()
             }
+        }
+    }
+
+    private fun setupPredictiveBack() {
+        onBackPressedDispatcher.addCallback(this) {
+            if (!viewModel.isAppLocked() && navigation.onBackPressed()) {
+                return@addCallback
+            }
+            isEnabled = false
+            onBackPressedDispatcher.onBackPressed()
+            isEnabled = true
         }
     }
 
