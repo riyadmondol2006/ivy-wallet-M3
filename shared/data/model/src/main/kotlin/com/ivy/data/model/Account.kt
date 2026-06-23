@@ -11,6 +11,7 @@ import java.util.UUID
 @JvmInline
 value class AccountId(override val value: UUID) : UniqueId
 
+@Suppress("DataClassDefaultValues")
 data class Account(
     override val id: AccountId,
     val name: NotBlankTrimmedString,
@@ -19,4 +20,5 @@ data class Account(
     val icon: IconAsset?,
     val includeInBalance: Boolean,
     override val orderNum: Double,
+    val creditLimit: Double? = null,
 ) : Identifiable<AccountId>, Reorderable

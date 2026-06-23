@@ -1,54 +1,46 @@
 package com.ivy.wallet.ui.theme.modal.edit
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.BoxWithConstraintsScope
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.NotBlankTrimmedString
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
-import com.ivy.design.utils.thenIf
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.hideKeyboard
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.Ivy
 import com.ivy.wallet.ui.theme.Orange
 import com.ivy.wallet.ui.theme.Red
-import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
-import com.ivy.wallet.ui.theme.components.IvyBorderButton
-import com.ivy.wallet.ui.theme.components.IvyCircleButton
-import com.ivy.wallet.ui.theme.components.WrapContentRow
-import com.ivy.wallet.ui.theme.findContrastTextColor
+import com.ivy.wallet.ui.theme.components.ItemIconS
 import com.ivy.wallet.ui.theme.modal.IvyModal
 import com.ivy.wallet.ui.theme.modal.ModalSkip
 import com.ivy.wallet.ui.theme.modal.ModalTitle
@@ -134,6 +126,7 @@ private fun save(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @ExperimentalFoundationApi
 @Suppress("ParameterNaming")
 @Composable
@@ -144,39 +137,31 @@ private fun CategoryPicker(
     onEditCategory: (Category) -> Unit,
     onSelected: (Category?) -> Unit,
 ) {
-    val data = mutableListOf<Any>()
-    data.addAll(categories)
-    data.add(AddNewCategory())
-
-    WrapContentRow(
+    FlowRow(
         modifier = Modifier
+            .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        horizontalMarginBetweenItems = 12.dp,
-        verticalMarginBetweenRows = 12.dp,
-        items = data
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        when (it) {
-            is Category -> {
-                CategoryButton(
-                    category = it,
-                    selected = it == selectedCategory,
-                    onClick = {
-                        onSelected(it)
-                    },
-                    onLongClick = {
-                        onEditCategory(it)
-                    },
-                    onDeselect = {
-                        onSelected(null)
-                    }
-                )
-            }
-
-            is AddNewCategory -> {
-                AddNewButton {
-                    showCategoryModal(null)
+        categories.forEach { category ->
+            CategoryButton(
+                category = category,
+                selected = category == selectedCategory,
+                onClick = {
+                    onSelected(category)
+                },
+                onLongClick = {
+                    onEditCategory(category)
+                },
+                onDeselect = {
+                    onSelected(null)
                 }
-            }
+            )
+        }
+
+        AddNewButton {
+            showCategoryModal(null)
         }
     }
 }
@@ -192,72 +177,46 @@ private fun CategoryButton(
 ) {
     val categoryColor = category.color.value.toComposeColor()
 
-    val rFull = UI.shapes.rFull
-
-    Row(
+    FilterChip(
         modifier = Modifier
-            .thenIf(selected) {
-                drawColoredShadow(categoryColor)
-            }
-            .clip(UI.shapes.rFull)
             .combinedClickable(
-                onClick = onClick,
+                onClick = {
+                    if (selected) {
+                        onDeselect()
+                    } else {
+                        onClick()
+                    }
+                },
                 onLongClick = onLongClick
             )
-            .border(
-                width = 2.dp,
-                color = if (selected) UI.colors.pureInverse else UI.colors.medium,
-                shape = UI.shapes.rFull
-            )
-            .thenIf(selected) {
-                background(categoryColor, rFull)
-            }
             .testTag("choose_category_button"),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(if (selected) 12.dp else 8.dp))
-
-        ItemIconSDefaultIcon(
-            modifier = Modifier
-                .background(categoryColor, CircleShape),
-            iconName = category.icon?.id,
-            defaultIcon = R.drawable.ic_custom_category_s,
-            tint = findContrastTextColor(categoryColor)
-        )
-
-        Text(
-            modifier = Modifier
-                .padding(vertical = 12.dp)
-                .padding(
-                    start = if (selected) 12.dp else 12.dp,
-                    end = if (selected) 20.dp else 24.dp
-                ),
-            text = category.name.value,
-            style = UI.typo.b2.style(
-                color = if (selected) {
-                    findContrastTextColor(categoryColor)
-                } else {
-                    UI.colors.pureInverse
-                },
-                fontWeight = FontWeight.SemiBold
+        selected = selected,
+        onClick = {
+            // Tap handling is driven by the outer combinedClickable so that
+            // long-press (edit) is supported. This is intentionally a no-op.
+        },
+        label = {
+            Text(text = category.name.value)
+        },
+        leadingIcon = {
+            ItemIconS(
+                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                iconName = category.icon?.id,
+                tint = categoryColor,
+                Default = {
+                    Icon(
+                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                        painter = painterResource(id = R.drawable.ic_custom_category_s),
+                        contentDescription = category.name.value,
+                        tint = categoryColor
+                    )
+                }
             )
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = categoryColor.copy(alpha = 0.2f)
         )
-
-        if (selected) {
-            val deselectBtnBackground = findContrastTextColor(categoryColor)
-            IvyCircleButton(
-                modifier = Modifier
-                    .size(32.dp),
-                icon = R.drawable.ic_remove,
-                backgroundGradient = Gradient.solid(deselectBtnBackground),
-                tint = findContrastTextColor(deselectBtnBackground)
-            ) {
-                onDeselect()
-            }
-
-            Spacer(Modifier.width(8.dp))
-        }
-    }
+    )
 }
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -266,23 +225,20 @@ fun AddNewButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    IvyBorderButton(
+    AssistChip(
         modifier = modifier,
-        text = stringResource(R.string.add_new),
-        backgroundGradient = Gradient.solid(UI.colors.mediumInverse),
-        iconStart = R.drawable.ic_plus,
-        textStyle = UI.typo.b2.style(
-            color = UI.colors.pureInverse,
-            fontWeight = FontWeight.Bold
-        ),
-        iconTint = UI.colors.pureInverse,
-        padding = 10.dp,
-        onClick = onClick
+        onClick = onClick,
+        label = {
+            Text(text = stringResource(R.string.add_new))
+        },
+        leadingIcon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_plus),
+                contentDescription = stringResource(R.string.add_new)
+            )
+        }
     )
 }
-
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
-private class AddNewCategory
 
 @ExperimentalFoundationApi
 @Preview

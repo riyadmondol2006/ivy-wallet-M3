@@ -13,6 +13,7 @@ import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.model.primitive.AssetCode
+import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.domain.features.Features
@@ -41,6 +42,7 @@ import com.ivy.navigation.MainScreen
 import com.ivy.navigation.Navigation
 import com.ivy.ui.ComposeViewModel
 import com.ivy.wallet.domain.action.account.AccountsAct
+import com.ivy.wallet.domain.action.viewmodel.account.AccountDataAct
 import com.ivy.wallet.domain.action.global.StartDayOfMonthAct
 import com.ivy.wallet.domain.action.settings.CalcBufferDiffAct
 import com.ivy.wallet.domain.action.settings.SettingsAct
@@ -90,6 +92,8 @@ class HomeViewModel @Inject constructor(
     private val updateCategoriesCacheAct: UpdateCategoriesCacheAct,
     private val syncExchangeRatesUseCase: SyncExchangeRatesUseCase,
     private val transactionMapper: TransactionMapper,
+    private val accountRepository: AccountRepository,
+    private val accountDataAct: AccountDataAct,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
     private val features: Features
@@ -132,6 +136,7 @@ class HomeViewModel @Inject constructor(
     private var hideBalance by mutableStateOf(false)
     private var hideIncome by mutableStateOf(false)
     private var expanded by mutableStateOf(true)
+    private var creditSummary by mutableStateOf(CreditCardsSummary.None)
 
     @Composable
     override fun uiState(): HomeState {
@@ -154,13 +159,25 @@ class HomeViewModel @Inject constructor(
             hideBalance = getHideBalance(),
             expanded = getExpanded(),
             hideIncome = getHideIncome(),
-            shouldShowAccountSpecificColorInTransactions = getShouldShowAccountSpecificColorInTransactions()
+            shouldShowAccountSpecificColorInTransactions = getShouldShowAccountSpecificColorInTransactions(),
+            creditCardsEnabled = getCreditCardsEnabled(),
+            creditSummary = getCreditSummary()
         )
     }
 
     @Composable
     fun getShouldShowAccountSpecificColorInTransactions(): Boolean {
         return features.showAccountColorsInTransactions.asEnabledState()
+    }
+
+    @Composable
+    private fun getCreditCardsEnabled(): Boolean {
+        return features.creditCardsEnabled.asEnabledState()
+    }
+
+    @Composable
+    private fun getCreditSummary(): CreditCardsSummary {
+        return creditSummary
     }
 
     @Composable
@@ -312,8 +329,34 @@ class HomeViewModel @Inject constructor(
                 accounts = accounts.toImmutableList()
             )
 
+            loadCreditSummary(settings.baseCurrency)
+
             Triple(settings, timeRange, accounts)
         }
+
+    private suspend fun loadCreditSummary(baseCurrency: String) {
+        val creditCards = accountRepository.findAll().filter { it.creditLimit != null }
+        if (creditCards.isEmpty()) {
+            creditSummary = CreditCardsSummary.None
+            return
+        }
+        val data = accountDataAct(
+            AccountDataAct.Input(
+                accounts = creditCards.toImmutableList(),
+                baseCurrency = baseCurrency,
+                range = ClosedTimeRange.allTimeIvy(timeProvider),
+                includeTransfersInCalc = false
+            )
+        )
+        val totalOwed = data.sumOf { -minOf(0.0, it.balance) }
+        val totalLimit = data.sumOf { it.account.creditLimit ?: 0.0 }
+        creditSummary = CreditCardsSummary(
+            cardCount = data.size,
+            totalOwed = totalOwed,
+            totalLimit = totalLimit,
+            totalLimitLeft = (totalLimit - totalOwed).coerceAtLeast(0.0),
+        )
+    }
 
     private suspend fun loadIncomeExpenseBalance(
         input: Triple<Settings, ClosedTimeRange, List<Account>>

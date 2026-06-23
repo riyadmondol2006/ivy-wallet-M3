@@ -5,6 +5,7 @@ import com.ivy.legacy.data.model.AccountData
 import kotlinx.collections.immutable.ImmutableList
 
 @Immutable
+@Suppress("DataClassDefaultValues")
 data class AccountsState(
     val baseCurrency: String,
     val accountsData: ImmutableList<AccountData>,
@@ -15,4 +16,5 @@ data class AccountsState(
     val reorderVisible: Boolean,
     val compactAccountsModeEnabled: Boolean,
     val hideTotalBalance: Boolean,
+    val creditCardsEnabled: Boolean = false,
 )

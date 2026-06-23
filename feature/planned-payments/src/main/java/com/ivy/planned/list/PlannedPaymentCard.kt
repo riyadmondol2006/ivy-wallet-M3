@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -83,7 +84,7 @@ fun LazyItemScope.PlannedPaymentCard(
                     onClick(plannedPayment)
                 }
             }
-            .background(UI.colors.medium, UI.shapes.r4)
+            .background(MaterialTheme.colorScheme.surfaceContainer, UI.shapes.r4)
             .testTag("planned_payment_card")
     ) {
         val currency = accounts.find { it.id == plannedPayment.accountId }?.currency ?: baseCurrency
@@ -115,7 +116,7 @@ fun LazyItemScope.PlannedPaymentCard(
                 text = plannedPayment.title!!,
                 style = UI.typo.b1.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -149,9 +150,9 @@ private fun PlannedPaymentHeaderRow(
 
             IvyIcon(
                 modifier = Modifier
-                    .background(UI.colors.pure, CircleShape),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
                 icon = R.drawable.ic_planned_payments,
-                tint = UI.colors.pureInverse
+                tint = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(Modifier.width(12.dp))
@@ -187,12 +188,12 @@ private fun PlannedPaymentHeaderRow(
 
             val account = accounts.find { it.id == plannedPayment.accountId }
             IvyButton(
-                backgroundGradient = Gradient.solid(UI.colors.pure),
+                backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
                 text = account?.name ?: stringResource(R.string.deleted),
-                iconTint = UI.colors.pureInverse,
+                iconTint = MaterialTheme.colorScheme.onSurface,
                 iconStart = getCustomIconIdS(account?.icon, R.drawable.ic_custom_account_s),
                 textStyle = UI.typo.c.style(
-                    color = UI.colors.pureInverse,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.ExtraBold
                 ),
                 padding = 8.dp,
@@ -228,7 +229,7 @@ private fun RuleTextRow(
             Text(
                 text = stringResource(R.string.planned_for_uppercase),
                 style = UI.typo.nC.style(
-                    color = Orange,
+                    color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.SemiBold
                 )
             )
@@ -237,7 +238,7 @@ private fun RuleTextRow(
                 text = startDate?.toLocalDate()?.formatDateOnlyWithYear()?.uppercaseLocal()
                     ?: stringResource(R.string.null_text),
                 style = UI.typo.nC.style(
-                    color = Orange,
+                    color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.ExtraBold
                 )
             )
@@ -246,7 +247,7 @@ private fun RuleTextRow(
             Text(
                 text = stringResource(R.string.starts_date, startDateFormatted ?: ""),
                 style = UI.typo.nC.style(
-                    color = Orange,
+                    color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.SemiBold
                 )
             )
@@ -259,7 +260,7 @@ private fun RuleTextRow(
                     intervalTypeFormatted ?: ""
                 ),
                 style = UI.typo.nC.style(
-                    color = Orange,
+                    color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.ExtraBold
                 )
             )

@@ -1,7 +1,10 @@
 package com.ivy.main
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import com.ivy.design.system.IvyMotion
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,9 +63,22 @@ private fun BoxWithConstraintsScope.UI(
     selectTab: (MainTab) -> Unit,
     onCreateAccount: (CreateAccountData) -> Unit,
 ) {
-    when (tab) {
-        MainTab.HOME -> HomeTab()
-        MainTab.ACCOUNTS -> AccountsTab()
+    val boxScope = this
+    AnimatedContent(
+        targetState = tab,
+        transitionSpec = {
+            // Cross-slide: moving toward Accounts (higher ordinal) goes forward, back to Home reverses.
+            val forward = targetState.ordinal > initialState.ordinal
+            IvyMotion.sharedAxisXEnter(forward) togetherWith IvyMotion.sharedAxisXExit(forward)
+        },
+        label = "main-tab-transition"
+    ) { currentTab ->
+        with(boxScope) {
+            when (currentTab) {
+                MainTab.HOME -> HomeTab()
+                MainTab.ACCOUNTS -> AccountsTab()
+            }
+        }
     }
 
     var accountModalData: AccountModalData? by remember { mutableStateOf(null) }

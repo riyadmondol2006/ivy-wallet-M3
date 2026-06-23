@@ -16,6 +16,7 @@ import com.ivy.data.model.Account as DomainAccount
 
 @Deprecated("Legacy data model. Will be deleted")
 @Immutable
+@Suppress("DataClassDefaultValues")
 data class Account(
     val name: String,
     val color: Int,
@@ -23,6 +24,7 @@ data class Account(
     val icon: String? = null,
     val orderNum: Double = 0.0,
     val includeInBalance: Boolean = true,
+    val creditLimit: Double? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -36,6 +38,7 @@ data class Account(
         icon = icon,
         orderNum = orderNum,
         includeInBalance = includeInBalance,
+        creditLimit = creditLimit,
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id
@@ -55,6 +58,7 @@ data class Account(
                 icon = icon?.let(IconAsset::from)?.getOrNull(),
                 includeInBalance = includeInBalance,
                 orderNum = orderNum,
+                creditLimit = creditLimit,
             )
         }
     }

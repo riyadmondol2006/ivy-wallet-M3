@@ -78,6 +78,14 @@ class IvyFeatures @Inject constructor() : Features {
         defaultValue = false
     )
 
+    override val creditCardsEnabled = BoolFeature(
+        key = "credit_cards_enabled",
+        group = FeatureGroup.Account,
+        name = "Credit cards",
+        description = "Track credit cards, spending limits & payments",
+        defaultValue = true
+    )
+
     override val allFeatures: List<BoolFeature>
         get() = listOf(
             sortCategoriesAscending,
@@ -87,7 +95,8 @@ class IvyFeatures @Inject constructor() : Features {
             showCategorySearchBar,
             hideTotalBalance,
             standardKeypadLayout,
-            showAccountColorsInTransactions
+            showAccountColorsInTransactions,
+            creditCardsEnabled
             /* will be uncommented when this functionality
              * will be available across the application in up-coming PRs
             showDecimalNumber

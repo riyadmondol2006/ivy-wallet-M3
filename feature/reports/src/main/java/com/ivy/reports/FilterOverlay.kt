@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -60,13 +61,12 @@ import com.ivy.legacy.ui.component.tags.ShowTagModal
 import com.ivy.legacy.utils.capitalizeLocal
 import com.ivy.legacy.utils.springBounce
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.GradientGreen
+import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GreenDark
 import com.ivy.wallet.ui.theme.GreenLight
 import com.ivy.wallet.ui.theme.IvyDark
 import com.ivy.wallet.ui.theme.Purple1Dark
-import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.Red3Light
 import com.ivy.wallet.ui.theme.components.CloseButton
 import com.ivy.wallet.ui.theme.components.GradientCutBottom
@@ -162,7 +162,7 @@ fun BoxWithConstraintsScope.FilterOverlay(
                         )
                     }
                 }
-                .background(UI.colors.pure)
+                .background(MaterialTheme.colorScheme.surface)
                 .systemBarsPadding()
                 .verticalScroll(rememberScrollState()),
         ) {
@@ -204,7 +204,7 @@ fun BoxWithConstraintsScope.FilterOverlay(
                     text = stringResource(R.string.clean_filter),
                     style = UI.typo.b2.style(
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
 
@@ -311,7 +311,12 @@ fun BoxWithConstraintsScope.FilterOverlay(
         IvyButton(
             text = stringResource(R.string.apply_filter),
             iconStart = R.drawable.ic_filter_xs,
-            backgroundGradient = GradientGreen,
+            backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary),
+            textStyle = UI.typo.b2.style(
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold
+            ),
+            iconTint = MaterialTheme.colorScheme.onPrimary,
             padding = 10.dp,
         ) {
             if (localFilter != null) {
@@ -548,7 +553,7 @@ private fun TypeFilter(
     FilterTitleText(
         text = stringResource(R.string.by_type),
         active = filter != null && filter.trnTypes.isNotEmpty(),
-        inactiveColor = Red
+        inactiveColor = MaterialTheme.colorScheme.error
     )
 
     Spacer(Modifier.height(12.dp))
@@ -631,7 +636,7 @@ private fun PeriodFilter(
     FilterTitleText(
         text = stringResource(R.string.time_period),
         active = filter?.period != null,
-        inactiveColor = Red
+        inactiveColor = MaterialTheme.colorScheme.error
     )
 
     Spacer(Modifier.height(16.dp))
@@ -810,7 +815,7 @@ private fun ListFilterTitle(
         FilterTitleText(
             text = text,
             active = active,
-            inactiveColor = Red
+            inactiveColor = MaterialTheme.colorScheme.error
         )
 
         Spacer(Modifier.weight(1f))
@@ -828,7 +833,7 @@ private fun ListFilterTitle(
             text = if (itemsSelected > 0) stringResource(R.string.clear_all) else stringResource(R.string.select_all),
             style = UI.typo.b2.style(
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
 
@@ -937,7 +942,7 @@ private fun KeywordsFilter(
             is String -> {
                 Keyword(
                     keyword = item,
-                    borderColor = UI.colors.pureInverse
+                    borderColor = MaterialTheme.colorScheme.outline
                 ) {
                     // Remove keyword
                     onSetFilter(
@@ -978,7 +983,7 @@ private fun KeywordsFilter(
             is String -> {
                 Keyword(
                     keyword = item,
-                    borderColor = UI.colors.pureInverse
+                    borderColor = MaterialTheme.colorScheme.outline
                 ) {
                     // Remove keyword
                     onSetFilter(
@@ -1008,7 +1013,7 @@ private fun Keyword(
     IvyOutlinedButton(
         text = keyword,
         iconStart = R.drawable.ic_remove,
-        iconTint = Red,
+        iconTint = MaterialTheme.colorScheme.error,
         borderColor = borderColor,
         padding = 10.dp,
     ) {
@@ -1046,7 +1051,7 @@ private fun FilterDivider() {
 private fun FilterTitleText(
     text: String,
     active: Boolean,
-    inactiveColor: Color = Color.Gray
+    inactiveColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Text(
         modifier = Modifier.padding(start = 32.dp),

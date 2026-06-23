@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -67,16 +68,11 @@ import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientGreen
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.GradientOrangeRevert
-import com.ivy.wallet.ui.theme.GradientRed
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GreenDark
-import com.ivy.wallet.ui.theme.Ivy
 import com.ivy.wallet.ui.theme.IvyDark
 import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyButton
@@ -114,7 +110,7 @@ fun TransactionCard(
                     onClick(transaction)
                 }
             }
-            .background(UI.colors.medium, UI.shapes.r4)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, UI.shapes.r4)
             .testTag("transaction_card")
     ) {
         // TODO: Optimize this
@@ -347,9 +343,9 @@ private fun TransactionHeaderRow(
             )
 
             val accountBackgroundColor = if (shouldShowAccountSpecificColorInTransactions) {
-                account?.color?.toComposeColor() ?: UI.colors.pure
+                account?.color?.toComposeColor() ?: MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
-                UI.colors.pure
+                MaterialTheme.colorScheme.surfaceContainerHighest
             }
 
             TransactionBadge(
@@ -570,13 +566,14 @@ fun TypeAmountCurrency(
     ) {
         Spacer(Modifier.width(24.dp))
 
+        val scheme = MaterialTheme.colorScheme
         val style = when (transactionType) {
             TransactionType.INCOME -> {
                 AmountTypeStyle(
                     icon = R.drawable.ic_income,
-                    gradient = GradientGreen,
-                    iconTint = White,
-                    textColor = Green
+                    containerColor = scheme.tertiaryContainer,
+                    iconTint = scheme.onTertiaryContainer,
+                    textColor = scheme.tertiary
                 )
             }
 
@@ -586,9 +583,9 @@ fun TypeAmountCurrency(
                         // Upcoming Expense
                         AmountTypeStyle(
                             icon = R.drawable.ic_expense,
-                            gradient = GradientOrangeRevert,
-                            iconTint = White,
-                            textColor = Orange
+                            containerColor = scheme.secondaryContainer,
+                            iconTint = scheme.onSecondaryContainer,
+                            textColor = scheme.secondary
                         )
                     }
 
@@ -596,9 +593,9 @@ fun TypeAmountCurrency(
                         // Overdue Expense
                         AmountTypeStyle(
                             icon = R.drawable.ic_overdue,
-                            gradient = GradientRed,
-                            iconTint = White,
-                            textColor = Red
+                            containerColor = scheme.errorContainer,
+                            iconTint = scheme.onErrorContainer,
+                            textColor = scheme.error
                         )
                     }
 
@@ -606,9 +603,9 @@ fun TypeAmountCurrency(
                         // Normal Expense
                         AmountTypeStyle(
                             icon = R.drawable.ic_expense,
-                            gradient = Gradient.black(),
-                            iconTint = White,
-                            textColor = UI.colors.pureInverse
+                            containerColor = scheme.surfaceContainerHighest,
+                            iconTint = scheme.onSurfaceVariant,
+                            textColor = scheme.onSurface
                         )
                     }
                 }
@@ -618,16 +615,16 @@ fun TypeAmountCurrency(
                 // Transfer
                 AmountTypeStyle(
                     icon = R.drawable.ic_transfer,
-                    gradient = GradientIvy,
-                    iconTint = White,
-                    textColor = Ivy
+                    containerColor = scheme.primaryContainer,
+                    iconTint = scheme.onPrimaryContainer,
+                    textColor = scheme.primary
                 )
             }
         }
 
         IvyIcon(
             modifier = Modifier
-                .background(style.gradient.asHorizontalBrush(), CircleShape),
+                .background(style.containerColor, CircleShape),
             icon = style.icon,
             tint = style.iconTint
         )
@@ -646,7 +643,7 @@ fun TypeAmountCurrency(
 
 private data class AmountTypeStyle(
     @DrawableRes val icon: Int,
-    val gradient: Gradient,
+    val containerColor: Color,
     val iconTint: Color,
     val textColor: Color
 )

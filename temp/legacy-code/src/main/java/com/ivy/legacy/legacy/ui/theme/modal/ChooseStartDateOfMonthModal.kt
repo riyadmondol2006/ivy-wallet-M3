@@ -1,34 +1,23 @@
 package com.ivy.wallet.ui.theme.modal
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.design.utils.thenIf
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Ivy
-import com.ivy.wallet.ui.theme.White
 import java.util.UUID
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -164,6 +153,7 @@ private fun save(
     dismiss()
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.NumberRow(
     selectedNumber: Int,
@@ -171,13 +161,13 @@ private fun ColumnScope.NumberRow(
     toInclusive: Int,
     onClick: (Int) -> Unit
 ) {
-    Row(
+    FlowRow(
         modifier = Modifier
-            .align(Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
+            .align(Alignment.CenterHorizontally)
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Spacer(Modifier.width(24.dp))
-
         for (number in fromInclusive..toInclusive) {
             NumberView(
                 number = number,
@@ -185,11 +175,7 @@ private fun ColumnScope.NumberRow(
             ) {
                 onClick(it)
             }
-
-            Spacer(Modifier.width(20.dp))
         }
-
-        Spacer(Modifier.width(24.dp))
     }
 }
 
@@ -199,28 +185,11 @@ private fun NumberView(
     selected: Boolean,
     onClick: (Int) -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .border(2.dp, if (selected) Ivy else UI.colors.medium, CircleShape)
-            .thenIf(selected) {
-                background(Ivy, CircleShape)
-            }
-            .clickable {
-                onClick(number)
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = number.toString(),
-            style = UI.typo.nB2.style(
-                fontWeight = FontWeight.ExtraBold,
-                color = if (selected) White else UI.colors.pureInverse,
-                textAlign = TextAlign.Center
-            )
-        )
-    }
+    FilterChip(
+        selected = selected,
+        onClick = { onClick(number) },
+        label = { Text(number.toString()) }
+    )
 }
 
 @Preview

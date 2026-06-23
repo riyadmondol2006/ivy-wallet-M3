@@ -40,6 +40,7 @@ class AccountCreator @Inject constructor(
                     icon = data.icon?.let(IconAsset::from)?.getOrNull(),
                     includeInBalance = data.includeBalance,
                     orderNum = accountDao.findMaxOrderNum().nextOrderNum(),
+                    creditLimit = data.creditLimit,
                 )
             }.getOrNull() ?: return@ioThread
             accountRepository.save(account)
@@ -50,6 +51,7 @@ class AccountCreator @Inject constructor(
                 color = data.color.toArgb(),
                 icon = data.icon,
                 includeInBalance = data.includeBalance,
+                creditLimit = data.creditLimit,
                 orderNum = accountDao.findMaxOrderNum().nextOrderNum(),
                 isSynced = false,
                 id = account.id.value

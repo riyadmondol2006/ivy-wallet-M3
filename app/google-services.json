@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:364763737033:android:634d1eb97e9254b3bc5618",
         "android_client_info": {
-          "package_name": "com.ivy.wallet"
+          "package_name": "com.ivym3.wallet"
         }
       },
       "oauth_client": [
@@ -18,7 +18,7 @@
           "client_id": "364763737033-k9vbsfmeou12rscq134lclc7sbr0608e.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.ivy.wallet",
+            "package_name": "com.ivym3.wallet",
             "certificate_hash": "f9b8505c2740756c704f8782b6fc3ddcaaea3d80"
           }
         },
@@ -47,7 +47,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:364763737033:android:7e379f986cb86320bc5618",
         "android_client_info": {
-          "package_name": "com.ivy.wallet.debug"
+          "package_name": "com.ivym3.wallet.debug"
         }
       },
       "oauth_client": [
@@ -55,7 +55,7 @@
           "client_id": "364763737033-ktnhou2u7q3num6aj02jj0v11dnp5imi.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.ivy.wallet.debug",
+            "package_name": "com.ivym3.wallet.debug",
             "certificate_hash": "962730459b106b8aa8fb225430deb6a97c559699"
           }
         },

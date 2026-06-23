@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,11 +32,8 @@ import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.NotBlankTrimmedString
-import com.ivy.design.l0_system.UI
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Black
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
@@ -68,17 +66,11 @@ fun PieChart(
         AndroidView(
             modifier = Modifier
                 .size((PIE_CHART_RADIUS_DP * 2).dp)
-                .drawColoredShadow(
-                    color = Black,
-                    alpha = if (UI.colors.isLight) 0.05f else 0.5f,
-                    offsetY = 32.dp,
-                    shadowRadius = 48.dp
-                )
                 .clip(CircleShape)
                 .background(
                     brush = Gradient(
-                        UI.colors.medium,
-                        UI.colors.pure
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.surface
                     ).asVerticalBrush(),
                     shape = CircleShape
                 )
@@ -99,10 +91,10 @@ fun PieChart(
             modifier = Modifier
                 .size(100.dp)
                 .clip(CircleShape)
-                .background(UI.colors.medium)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .padding(all = 20.dp),
             icon = if (type == TransactionType.INCOME) R.drawable.ic_income else R.drawable.ic_expense,
-            tint = Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

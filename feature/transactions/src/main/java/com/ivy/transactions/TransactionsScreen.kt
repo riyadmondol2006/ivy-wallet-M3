@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,7 +73,6 @@ import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
 import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.domain.pure.data.IncomeExpensePair
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.GreenDark
 import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.BalanceRowMedium
@@ -263,7 +263,8 @@ private fun BoxWithConstraintsScope.UI(
     onChoosePeriodModal: (ChoosePeriodModalData?) -> Unit,
 ) {
     val ivyContext = ivyWalletCtx()
-    val itemColor = (account?.color ?: category?.color?.value)?.toComposeColor() ?: Gray
+    val fallbackItemColor = MaterialTheme.colorScheme.primary
+    val itemColor = (account?.color ?: category?.color?.value)?.toComposeColor() ?: fallbackItemColor
 
     var categoryModalData: CategoryModalData? by remember { mutableStateOf(null) }
     var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
@@ -300,7 +301,7 @@ private fun BoxWithConstraintsScope.UI(
                 .statusBarsPadding()
                 .padding(top = 16.dp)
                 .clip(UI.shapes.r1Top)
-                .background(UI.colors.pure)
+                .background(MaterialTheme.colorScheme.surface)
                 .testTag("item_stats_lazy_column"),
             state = listState,
         ) {
@@ -492,7 +493,7 @@ private fun LazyListScope.choosePeriodModal(
                     .height(32.dp)
                     .fillMaxWidth()
                     .background(itemColor) // itemColor is displayed below the clip
-                    .background(UI.colors.pure, UI.shapes.r1Top)
+                    .background(MaterialTheme.colorScheme.surface, UI.shapes.r1Top)
             )
 
             PeriodSelector(

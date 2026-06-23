@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,17 +27,11 @@ import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.format
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.MediumBlack
-import com.ivy.wallet.ui.theme.MediumWhite
 import com.ivy.wallet.ui.theme.components.IvyButton
-import com.ivy.wallet.ui.theme.findContrastTextColor
-import com.ivy.wallet.ui.theme.isDarkColor
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Suppress("ParameterNaming")
@@ -113,21 +109,22 @@ private fun RowScope.HeaderCard(
     onHeaderCardClicked: () -> Unit = {},
     onAddClick: () -> Unit
 ) {
-    val backgroundColor = if (isDarkColor(itemColor)) {
-        MediumBlack.copy(alpha = 0.9f)
+    // M3 semantic containers: income -> tertiary, expense -> error.
+    val backgroundColor = if (isIncome) {
+        MaterialTheme.colorScheme.tertiaryContainer
     } else {
-        MediumWhite.copy(alpha = 0.9f)
+        MaterialTheme.colorScheme.errorContainer
     }
-
-    val contrastColor = findContrastTextColor(backgroundColor)
+    val contrastColor = if (isIncome) {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
 
     Column(
         modifier = Modifier
             .weight(1f)
-            .drawColoredShadow(
-                color = backgroundColor,
-                alpha = 0.1f
-            )
+            .clip(UI.shapes.r2)
             .background(backgroundColor, UI.shapes.r2)
             .clickable { onHeaderCardClicked() },
     ) {
@@ -183,7 +180,16 @@ private fun RowScope.HeaderCard(
         Spacer(Modifier.height(24.dp))
 
         if (addButtonText != null) {
-            val addButtonBackground = if (isIncome) Green else contrastColor
+            val addButtonBackground = if (isIncome) {
+                MaterialTheme.colorScheme.tertiary
+            } else {
+                MaterialTheme.colorScheme.error
+            }
+            val addButtonContent = if (isIncome) {
+                MaterialTheme.colorScheme.onTertiary
+            } else {
+                MaterialTheme.colorScheme.onError
+            }
             IvyButton(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -192,8 +198,9 @@ private fun RowScope.HeaderCard(
                 text = addButtonText,
                 shadowAlpha = 0.1f,
                 backgroundGradient = Gradient.solid(addButtonBackground),
+                iconTint = addButtonContent,
                 textStyle = UI.typo.b2.style(
-                    color = findContrastTextColor(addButtonBackground),
+                    color = addButtonContent,
                     fontWeight = FontWeight.Bold
                 ).copy(fontSize = 12.sp),
                 wrapContentMode = false

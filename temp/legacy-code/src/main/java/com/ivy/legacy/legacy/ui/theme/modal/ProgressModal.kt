@@ -1,23 +1,26 @@
 package com.ivy.wallet.ui.theme.modal
 
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
-import com.ivy.wallet.ui.theme.Red
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun BoxWithConstraintsScope.ProgressModal(
@@ -28,47 +31,43 @@ fun BoxWithConstraintsScope.ProgressModal(
     color: Color = UI.colors.orange,
     dismiss: () -> Unit = {},
 ) {
-    IvyModal(
-        id = id,
-        visible = visible,
-        dismiss = dismiss,
-        PrimaryAction = {}
-    ) {
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            text = title,
-            style = UI.typo.b1.style(
-                color = Red,
-                fontWeight = FontWeight.ExtraBold
+    if (visible) {
+        BasicAlertDialog(
+            onDismissRequest = dismiss,
+            properties = DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
             )
-        )
+        ) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-        Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(16.dp))
 
-        Text(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            text = description,
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.Medium
-            )
-        )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-        Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(24.dp))
 
-        LinearProgressIndicator(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .height(8.dp)
-                .clip(
-                    UI.shapes.rFull
-                ),
-            color = color
-        )
-
-        Spacer(Modifier.height(48.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
     }
 }

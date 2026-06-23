@@ -1,14 +1,16 @@
 package com.ivy.exchangerates.component
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,14 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.SpacerHor
 import com.ivy.design.l1_buildingBlocks.SpacerWeight
 import com.ivy.exchangerates.data.RateUi
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.utils.format
-import com.ivy.wallet.ui.theme.components.DeleteButton
 
 @Composable
 fun RateItem(
@@ -32,14 +31,10 @@ fun RateItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    OutlinedCard(
         modifier = modifier
-            .padding(
-                horizontal = 16.dp
-            )
-            .clickable(onClick = onClick)
-            .border(2.dp, UI.colors.medium, UI.shapes.r4)
-
+            .padding(horizontal = 16.dp),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -58,7 +53,8 @@ fun RateItem(
             SpacerHor(width = 16.dp)
             Icon(
                 imageVector = Icons.Filled.ArrowForward,
-                contentDescription = "arrow to next"
+                contentDescription = "arrow to next",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             SpacerHor(width = 16.dp)
             RateColumn(
@@ -69,7 +65,13 @@ fun RateItem(
 
             if (onDelete != null) {
                 SpacerWeight(weight = 1f)
-                DeleteButton(onClick = onDelete)
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Delete rate",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -80,21 +82,19 @@ private fun RateColumn(label: String, rate: String, value: String) {
     Column {
         Text(
             text = label,
-            style = UI.typo.c.style(
-                fontWeight = FontWeight.Normal
-            )
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = rate,
-            style = UI.typo.nB1.style(
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = value,
-            style = UI.typo.nB2.style(
-                fontWeight = FontWeight.Normal
-            )
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

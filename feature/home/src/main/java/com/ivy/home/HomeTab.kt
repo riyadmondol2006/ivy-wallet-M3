@@ -191,6 +191,12 @@ fun BoxWithConstraintsScope.HomeUi(
             customerJourneyCards = uiState.customerJourneyCards,
             shouldShowAccountSpecificColorInTransactions = uiState.shouldShowAccountSpecificColorInTransactions,
 
+            creditCardsEnabled = uiState.creditCardsEnabled,
+            creditSummary = uiState.creditSummary,
+            onCreditClick = {
+                ivyContext.selectMainTab(MainTab.ACCOUNTS)
+            },
+
             onPayOrGet = forward<Transaction>() then2 {
                 HomeEvent.PayOrGetPlanned(it)
             } then2 onEvent,
@@ -292,6 +298,10 @@ fun HomeLazyColumn(
     baseData: AppBaseData,
     shouldShowAccountSpecificColorInTransactions: Boolean,
 
+    creditCardsEnabled: Boolean,
+    creditSummary: CreditCardsSummary,
+    onCreditClick: () -> Unit,
+
     upcoming: LegacyDueSection,
     overdue: LegacyDueSection,
     balance: BigDecimal,
@@ -356,6 +366,18 @@ fun HomeLazyColumn(
                 hideIncome = hideIncome,
                 onHiddenIncomeClick = onHiddenIncomeClick
             )
+        }
+        if (creditCardsEnabled && creditSummary.cardCount > 0) {
+            item {
+                Spacer(Modifier.height(16.dp))
+
+                CreditCardsSummaryCard(
+                    currency = baseData.baseCurrency,
+                    summary = creditSummary,
+                    onClick = onCreditClick,
+                    modifier = Modifier.animateItem()
+                )
+            }
         }
         item {
             Spacer(Modifier.height(16.dp))

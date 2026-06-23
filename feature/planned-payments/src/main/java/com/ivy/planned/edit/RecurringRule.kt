@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +28,6 @@ import com.ivy.legacy.utils.formatDateOnly
 import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.legacy.utils.uppercaseLocal
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Orange
 import com.ivy.wallet.ui.theme.components.AddPrimaryAttributeButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import java.time.LocalDateTime
@@ -89,7 +89,7 @@ private fun RecurringRuleCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(UI.shapes.r4)
-            .background(UI.colors.medium, UI.shapes.r4)
+            .background(MaterialTheme.colorScheme.surfaceContainer, UI.shapes.r4)
             .clickable(onClick = onClick)
             .padding(vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -105,7 +105,7 @@ private fun RecurringRuleCard(
                 text = if (oneTime) stringResource(R.string.planned_for) else stringResource(R.string.planned_start_at),
                 style = UI.typo.b2.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
 
@@ -117,7 +117,7 @@ private fun RecurringRuleCard(
                     text = stringResource(R.string.repeats_every, intervalN, intervalTypeLabel),
                     style = UI.typo.c.style(
                         fontWeight = FontWeight.ExtraBold,
-                        color = Orange
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 )
             }

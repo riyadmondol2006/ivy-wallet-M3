@@ -1,39 +1,38 @@
 package com.ivy.wallet.ui.theme.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
 import com.ivy.legacy.IvyWalletComponentPreview
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
+/** Native Material 3 divider, colored from the active [MaterialTheme.colorScheme]. */
 @Composable
 fun IvyDividerLine(
     modifier: Modifier = Modifier
 ) {
-    Spacer(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(2.dp)
-            .background(UI.colors.medium)
+    HorizontalDivider(
+        modifier = modifier.fillMaxWidth(),
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant,
     )
 }
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun IvyDividerLineRounded(
     modifier: Modifier = Modifier
 ) {
-    Spacer(
+    androidx.compose.foundation.layout.Spacer(
         modifier = modifier
             .fillMaxWidth()
             .height(2.dp)
-            .background(UI.colors.medium, UI.shapes.rFull)
+            .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(percent = 50))
     )
 }
 

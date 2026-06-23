@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,12 +42,8 @@ import com.ivy.navigation.BalanceScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.IvyCircleButton
-import com.ivy.wallet.ui.theme.components.IvyDividerLine
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModal
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModalData
 import com.ivy.wallet.ui.theme.wallet.PeriodSelector
@@ -98,9 +96,10 @@ private fun BoxWithConstraintsScope.UI(
 
         Spacer(Modifier.height(32.dp))
 
-        IvyDividerLine(
+        HorizontalDivider(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 24.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
         )
 
         Spacer(Modifier.height(40.dp))
@@ -138,7 +137,7 @@ private fun ColumnScope.CurrentBalance(
         modifier = Modifier.align(Alignment.CenterHorizontally),
         text = stringResource(R.string.current_balance),
         style = UI.typo.b2.style(
-            color = Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.ExtraBold
         )
     )
@@ -164,7 +163,7 @@ private fun ColumnScope.BalanceAfterPlannedPayments(
             .padding(horizontal = 32.dp),
         text = stringResource(R.string.balance_after_payments),
         style = UI.typo.b2.style(
-            color = Orange,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.ExtraBold
         )
     )
@@ -198,7 +197,7 @@ private fun ColumnScope.BalanceAfterPlannedPayments(
             Text(
                 text = "${currentBalance.format(2)} $currency",
                 style = UI.typo.nC.style(
-                    color = UI.colors.pureInverse,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Normal
                 )
             )
@@ -209,7 +208,7 @@ private fun ColumnScope.BalanceAfterPlannedPayments(
             Text(
                 text = "${plusSign}${plannedPaymentsAmount.format(2)} $currency",
                 style = UI.typo.nC.style(
-                    color = UI.colors.pureInverse,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.ExtraBold
                 )
             )
@@ -230,9 +229,9 @@ private fun ColumnScope.CloseButton() {
             .zIndex(200f),
         backgroundPadding = 8.dp,
         icon = R.drawable.ic_add,
-        backgroundGradient = Gradient.solid(Gray),
+        backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceVariant),
         hasShadow = false,
-        tint = White
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
     ) {
         nav.back()
     }

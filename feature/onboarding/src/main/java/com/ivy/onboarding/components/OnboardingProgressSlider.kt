@@ -5,20 +5,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
 
 @Composable
 fun OnboardingProgressSlider(
     modifier: Modifier = Modifier,
     selectedStep: Int,
     stepsCount: Int,
-    selectedColor: Color
+    selectedColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Row(
         modifier = modifier,
@@ -28,7 +29,7 @@ fun OnboardingProgressSlider(
             val selected = selectedStep == i
             Line(
                 width = if (selected) 48.dp else 24.dp,
-                color = if (selected) selectedColor else UI.colors.medium
+                color = if (selected) selectedColor else MaterialTheme.colorScheme.surfaceVariant
             )
 
             if (i < stepsCount - 1) {
@@ -46,6 +47,6 @@ private fun Line(
     Spacer(
         modifier = Modifier
             .size(width = width, height = 4.dp)
-            .background(color, UI.shapes.rFull)
+            .background(color, CircleShape)
     )
 }

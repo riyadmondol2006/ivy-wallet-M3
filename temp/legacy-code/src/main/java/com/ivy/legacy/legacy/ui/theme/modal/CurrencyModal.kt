@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,7 +24,6 @@ import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.CurrencyPicker
 import java.util.UUID
 
@@ -75,7 +75,7 @@ fun BoxWithConstraintsScope.CurrencyModal(
                     text = stringResource(R.string.supports_crypto),
                     style = UI.typo.c.style(
                         fontWeight = FontWeight.ExtraBold,
-                        color = Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
 

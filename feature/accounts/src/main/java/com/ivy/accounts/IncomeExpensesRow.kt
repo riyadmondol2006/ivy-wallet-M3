@@ -7,17 +7,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
 
@@ -27,13 +27,18 @@ fun IncomeExpensesRow(
     expenses: Double,
     currency: String,
     modifier: Modifier = Modifier,
-    textColor: Color = UI.colors.pureInverse,
-    dividerColor: Color = UI.colors.medium,
+    textColor: Color = Color.Unspecified,
+    dividerColor: Color = MaterialTheme.colorScheme.outlineVariant,
     incomeLabel: String = stringResource(R.string.income_uppercase),
     expensesLabel: String = stringResource(R.string.expenses_uppercase),
     center: Boolean = true,
     dividerSpacer: Dp? = null,
 ) {
+    // M3 semantic roles: income reads as tertiary (positive), expenses as error (negative).
+    // A caller may still force a single uniform color via `textColor`.
+    val incomeColor = textColor.takeOrElse { MaterialTheme.colorScheme.tertiary }
+    val expensesColor = textColor.takeOrElse { MaterialTheme.colorScheme.error }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -43,7 +48,7 @@ fun IncomeExpensesRow(
         }
 
         LabelAmountColumn(
-            textColor = textColor,
+            textColor = incomeColor,
             label = incomeLabel,
             amount = income,
             currency = currency,
@@ -61,7 +66,7 @@ fun IncomeExpensesRow(
         // Divider
         Spacer(
             modifier = Modifier
-                .width(2.dp)
+                .width(1.dp)
                 .height(48.dp)
                 .background(dividerColor, UI.shapes.rFull)
         )
@@ -75,7 +80,7 @@ fun IncomeExpensesRow(
         }
 
         LabelAmountColumn(
-            textColor = textColor,
+            textColor = expensesColor,
             label = expensesLabel,
             amount = expenses,
             currency = currency,
@@ -101,10 +106,8 @@ private fun LabelAmountColumn(
     ) {
         Text(
             text = label,
-            style = UI.typo.c.style(
-                color = textColor,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(4.dp))

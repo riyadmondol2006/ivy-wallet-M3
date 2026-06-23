@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,7 +33,6 @@ import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import kotlinx.collections.immutable.ImmutableList
 import kotlin.math.absoluteValue
@@ -117,7 +117,7 @@ private fun LazyListScope.plannedPaymentItems(
                 expanded = oneTimeExpanded,
                 setExpanded = setOneTimeExpanded,
                 title = stringResource(R.string.one_time_payments),
-                titleColor = UI.colors.pureInverse,
+                titleColor = MaterialTheme.colorScheme.onSurface,
                 baseCurrency = currency,
                 income = oneTimeIncome,
                 expenses = oneTimeExpenses.absoluteValue
@@ -148,7 +148,7 @@ private fun LazyListScope.plannedPaymentItems(
                 expanded = recurringExpanded,
                 setExpanded = setRecurringExpanded,
                 title = stringResource(R.string.recurring_payments),
-                titleColor = UI.colors.pureInverse,
+                titleColor = MaterialTheme.colorScheme.onSurface,
                 baseCurrency = currency,
                 income = recurringIncome,
                 expenses = recurringExpenses.absoluteValue
@@ -210,7 +210,7 @@ private fun LazyItemScope.NoPlannedPaymentsEmptyState() {
 
         IvyIcon(
             icon = R.drawable.ic_planned_payments,
-            tint = Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(24.dp))
@@ -218,7 +218,7 @@ private fun LazyItemScope.NoPlannedPaymentsEmptyState() {
         Text(
             text = stringResource(R.string.no_planned_payments),
             style = UI.typo.b1.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.ExtraBold
             ),
             textAlign = TextAlign.Center
@@ -229,7 +229,7 @@ private fun LazyItemScope.NoPlannedPaymentsEmptyState() {
         Text(
             text = stringResource(R.string.no_planned_payments_description),
             style = UI.typo.b2.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )

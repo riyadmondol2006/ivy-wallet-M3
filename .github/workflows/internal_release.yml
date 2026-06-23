@@ -1,183 +1,81 @@
-name: Internal Release
+name: Release
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  google_play_release:
+  release:
+    # Auto-trigger only on the version-bump commits created by automatic_release.yml.
+    # workflow_dispatch bypasses this check so you can trigger a manual release any time.
     if: |
-      contains(github.event.head_commit.message, 'Automatic release')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout GIT
-        uses: actions/checkout@v4
-
-      - name: Verify Commit Author
-        id: verify_author
-        run: |
-          AUTHOR=$(git log -1 --pretty=format:'%an')
-          if [ "$AUTHOR" != "github-actions[bot]" ]; then
-            echo "Commit not authored by github-actions[bot], exiting."
-            exit 1
-          fi
-
-      - name: Setup Java SDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: '18'
-
-      - name: Setup Ruby (for Fastlane)
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-
-      - name: Install Fastlane
-        run: bundle install
-      #----------------------------------------------------
-
-      - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v4
-
-      # Decode Secrets for production build
-      - name: Create JKS for prod signing
-        run: |
-          echo "$SIGNING_KEYSTORE_JKS" > sign.jks.b64
-          base64 -d -i sign.jks.b64 > sign.jks
-        env:
-          SIGNING_KEYSTORE_JKS: ${{ secrets.SIGNING_KEYSTORE }}
-
-      - name: Create Google Play Config file
-        run: |
-          echo "$PLAY_CONFIG_JSON" > play_config.json.b64
-          base64 -d -i play_config.json.b64 > google-play-console-user.json
-        env:
-          PLAY_CONFIG_JSON: ${{ secrets.GOOGLE_PLAY_CONSOLE_JSON }}
-      #--------------------------------------------------------------------------------
-
-      - name: Build production App Bundle
-        run: bundle exec fastlane production_build
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-
-      - name: Upload App Bundle to GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release.aab
-          path: app/build/outputs/bundle/release/app-release.aab
-
-      - name: Release App Bundle to Google PlayStore Internal Testing
-        run: bundle exec fastlane internal_release
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-
-  github_release:
-    if: |
-      contains(github.event.head_commit.message, 'Automatic release')
+      github.event_name == 'workflow_dispatch' ||
+      (contains(github.event.head_commit.message, 'Automatic release') &&
+       github.event.head_commit.author.name == 'GitHub Actions')
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout GIT
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for all branches and tags
+          fetch-depth: 0
 
-      - name: Verify Commit Author
-        id: verify_author
-        run: |
-          AUTHOR=$(git log -1 --pretty=format:'%an')
-          if [ "$AUTHOR" != "github-actions[bot]" ]; then
-            echo "Commit not authored by github-actions[bot], exiting."
-            exit 1
-          fi
-
-      - name: Setup Java SDK
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
-          java-version: '18'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Enable Gradle Wrapper caching (optimization)
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Get version name and code from libs.versions.toml
-        id: get_version
+      - name: Get version info
+        id: version
         run: |
-          VERSION_NAME=$(grep 'version-name =' gradle/libs.versions.toml | awk -F'=' '{print $2}' | tr -d ' "')
-          VERSION_CODE=$(grep 'version-code =' gradle/libs.versions.toml | awk -F'=' '{print $2}' | tr -d ' "')
-          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          VERSION_NAME=$(grep 'version-name =' gradle/libs.versions.toml | awk -F'"' '{print $2}')
+          VERSION_CODE=$(grep 'version-code =' gradle/libs.versions.toml | awk -F'"' '{print $2}')
+          echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION_NAME}-${VERSION_CODE}" >> $GITHUB_OUTPUT
 
-      - name: Create and push tag
-        run: |
-          TAG_NAME="v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}"
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+      # Decode the base64-encoded keystore stored in the SIGNING_KEYSTORE secret.
+      # To encode your keystore: base64 -i sign.jks | pbcopy  (macOS)
+      - name: Decode signing keystore
+        run: echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > sign.jks
 
-      - name: Build Demo APK
-        run: ./gradlew assembleDemo
-
-      - name: Upload APK to Github Actions
-        uses: actions/upload-artifact@v4
-        with:
-          name: Ivy-Wallet-Demo.apk
-          path: app/build/outputs/apk/demo/app-demo.apk
-
-      - name: Prepare changelog for GitHub Release
-        id: changelog
-        continue-on-error: true
-        uses: Bullrich/generate-release-changelog@master
+      - name: Build signed release APK
         env:
-          REPO: ${{ github.repository }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-configuration-cache
+
+      - name: Create Git tag
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git tag ${{ steps.version.outputs.tag }} || true
+          git push origin ${{ steps.version.outputs.tag }} || true
 
       - name: Create GitHub Release
-        id: create_github_release
-        uses: actions/create-release@v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG_NAME }}
-          release_name: Release ${{ env.TAG_NAME }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Ivy Wallet M3 ${{ steps.version.outputs.tag }}"
           body: |
-            ${{ steps.changelog.outputs.changelog }}
+            **Version:** ${{ steps.version.outputs.name }} (build ${{ steps.version.outputs.code }})
+
+            ### Install
+            Download **app-release.apk** below and install it on your Android device (API 28+).
+
+            > Signed with a private key. Not distributed via Google Play.
+
+            ### What's new
+            See the [README](https://github.com/${{ github.repository }}/blob/main/README.md#whats-new-vs-upstream) for a full list of features added in this fork.
+          files: app/build/outputs/apk/release/app-release.apk
           draft: false
           prerelease: false
-
-      - name: Upload APK to GitHub Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_github_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/demo/app-demo.apk
-          asset_name: Ivy-Wallet-${{ env.TAG_NAME }}.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Announce in Telegram group
-        run: |
-          RELEASE_TAG=${{ env.TAG_NAME }}
-          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
-          CAPTION=$'🚀 Ivy Wallet '"$RELEASE_TAG"$' release\n\nCheck it out here: '"$RELEASE_URL"'    🚢 Please, test the release candidate before we ship it.'
-
-          curl -F "chat_id=-1001647280565" \
-               -F "document=@app/build/outputs/apk/demo/app-demo.apk" \
-               -F "reply_to_message_id=16118" \
-               -F "caption=$CAPTION" \
-               https://api.telegram.org/bot${{ secrets.BOTFATHER_TELEGRAM_BOT_TOKEN }}/sendDocument

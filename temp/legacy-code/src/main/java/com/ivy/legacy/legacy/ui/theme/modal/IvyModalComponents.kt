@@ -3,6 +3,7 @@ package com.ivy.wallet.ui.theme.modal
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,9 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.GradientGreen
-import com.ivy.wallet.ui.theme.GradientRed
-import com.ivy.wallet.ui.theme.White
+import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyCircleButton
 import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
@@ -157,8 +156,13 @@ fun ModalNegativeButton(
 ) {
     IvyButton(
         text = text,
-        backgroundGradient = GradientRed,
+        backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.error),
+        textStyle = UI.typo.b2.style(
+            color = MaterialTheme.colorScheme.onError,
+            fontWeight = FontWeight.Bold
+        ),
         iconStart = iconStart,
+        iconTint = MaterialTheme.colorScheme.onError,
         onClick = onClick,
         enabled = enabled
     )
@@ -176,8 +180,13 @@ fun ModalPositiveButton(
     IvyButton(
         modifier = modifier,
         text = text,
-        backgroundGradient = GradientGreen,
+        backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary),
+        textStyle = UI.typo.b2.style(
+            color = MaterialTheme.colorScheme.onPrimary,
+            fontWeight = FontWeight.Bold
+        ),
         iconStart = iconStart,
+        iconTint = MaterialTheme.colorScheme.onPrimary,
         onClick = onClick,
         enabled = enabled
     )
@@ -195,9 +204,9 @@ fun ModalDelete(
             .size(40.dp)
             .testTag(testTag),
         icon = R.drawable.ic_delete,
-        backgroundGradient = GradientRed,
+        backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.error),
         enabled = enabled,
-        tint = White,
+        tint = MaterialTheme.colorScheme.onError,
         onClick = onClick
     )
 }

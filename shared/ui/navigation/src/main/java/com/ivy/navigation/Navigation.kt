@@ -15,6 +15,10 @@ class Navigation @Inject constructor() {
   var currentScreen: Screen? by mutableStateOf(null)
     private set
 
+  /** True when the last screen change was a back-navigation (pop) — drives directional transitions. */
+  var isBack: Boolean by mutableStateOf(false)
+    private set
+
   @Deprecated("Legacy code. Don't use it, please.")
   val modalBackHandling: Stack<ModalBackHandler> = Stack()
 
@@ -41,6 +45,7 @@ class Navigation @Inject constructor() {
   }
 
   fun navigateTo(screen: Screen) {
+    isBack = false
     if (lastScreen != null) {
       backStack.push(lastScreen)
     }
@@ -64,6 +69,7 @@ class Navigation @Inject constructor() {
 
   fun back(): Boolean {
     if (!backStack.empty()) {
+      isBack = true
       switchScreen(backStack.pop())
       return true
     }

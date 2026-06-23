@@ -26,10 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ivy.design.system.colors.IvyColors.Gray
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -171,8 +171,9 @@ private fun FeatureRow(
 @Composable
 private fun FeatureSectionDivider(
     text: String,
-    color: Color = Gray
+    color: Color = Color.Unspecified
 ) {
+    val resolvedColor = color.takeOrElse { MaterialTheme.colorScheme.onSurfaceVariant }
     Column {
         Spacer(Modifier.height(16.dp))
 
@@ -180,7 +181,7 @@ private fun FeatureSectionDivider(
             modifier = Modifier.padding(start = 16.dp),
             text = text,
             style = MaterialTheme.typography.titleMedium.copy(
-                color = color,
+                color = resolvedColor,
                 fontWeight = FontWeight.Bold
             )
         )

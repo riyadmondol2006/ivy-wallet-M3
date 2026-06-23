@@ -2,6 +2,7 @@ package com.ivy.wallet.domain.deprecated.logic.model
 
 import androidx.compose.ui.graphics.Color
 
+@Suppress("DataClassDefaultValues")
 data class CreateAccountData(
     val name: String,
     val currency: String,
@@ -9,4 +10,5 @@ data class CreateAccountData(
     val icon: String?,
     val balance: Double,
     val includeBalance: Boolean = true,
+    val creditLimit: Double? = null,
 )

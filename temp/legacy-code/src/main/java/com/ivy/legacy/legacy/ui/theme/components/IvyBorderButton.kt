@@ -1,20 +1,19 @@
 package com.ivy.wallet.ui.theme.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +26,12 @@ import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
 
+/**
+ * Native Material 3 [OutlinedButton]. The legacy gradient border is dropped for a clean M3 pill
+ * with the standard 1dp outline. [backgroundGradient]/[wrapContentMode] are retained for source
+ * compatibility but are no-ops under the M3 button.
+ */
+@Suppress("UNUSED_PARAMETER", "LongParameterList")
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun IvyBorderButton(
@@ -46,107 +51,36 @@ fun IvyBorderButton(
     padding: Dp = 12.dp,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = modifier
-            .clip(UI.shapes.rFull)
-            .border(
-                width = 2.dp,
-                brush = if (enabled) {
-                    backgroundGradient.asHorizontalBrush()
-                } else {
-                    SolidColor(UI.colors.gray)
-                },
-                shape = UI.shapes.rFull
-            )
-            .clickable(onClick = onClick, enabled = enabled),
-        verticalAlignment = Alignment.CenterVertically
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = RoundedCornerShape(percent = 50),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = iconTint),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = padding),
     ) {
-        when {
-            iconStart != null -> {
-                IconStart(
-                    icon = iconStart,
-                    tint = iconTint,
-                )
-            }
-            iconEnd != null && !wrapContentMode -> {
-                IconEnd(
-                    icon = iconEnd,
-                    tint = Color.Transparent
-                )
-            }
-            else -> {
-                Spacer(modifier = Modifier.width(24.dp))
-            }
+        if (iconStart != null) {
+            Icon(
+                painter = painterResource(id = iconStart),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                tint = iconTint,
+            )
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         }
 
-        if (!wrapContentMode) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
+        Text(text = text, style = textStyle)
 
-        Text(
-            modifier = Modifier.padding(
-                vertical = padding,
-            ),
-            text = text,
-            style = textStyle
-        )
-
-        if (!wrapContentMode) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
-
-        when {
-            iconStart != null && !wrapContentMode -> {
-                IconStart(
-                    icon = iconStart,
-                    tint = Color.Transparent,
-                )
-            }
-            iconEnd != null -> {
-                IconEnd(
-                    icon = iconEnd,
-                    tint = iconTint,
-                )
-            }
-            else -> {
-                Spacer(modifier = Modifier.width(24.dp))
-            }
+        if (iconEnd != null) {
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+            Icon(
+                painter = painterResource(id = iconEnd),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                tint = iconTint,
+            )
         }
     }
-}
-
-@Composable
-private fun IconStart(
-    icon: Int,
-    tint: Color,
-) {
-    Spacer(modifier = Modifier.width(12.dp))
-
-    Icon(
-        modifier = Modifier,
-        painter = painterResource(id = icon),
-        contentDescription = "icon",
-        tint = tint,
-    )
-
-    Spacer(modifier = Modifier.width(4.dp))
-}
-
-@Composable
-private fun IconEnd(
-    icon: Int,
-    tint: Color,
-) {
-    Spacer(modifier = Modifier.width(4.dp))
-
-    Icon(
-        modifier = Modifier,
-        painter = painterResource(id = icon),
-        contentDescription = "icon",
-        tint = tint,
-    )
-
-    Spacer(modifier = Modifier.width(12.dp))
 }
 
 @Preview

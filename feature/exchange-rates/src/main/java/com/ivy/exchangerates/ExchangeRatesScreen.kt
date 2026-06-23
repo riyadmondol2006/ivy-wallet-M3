@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -135,7 +136,7 @@ private fun BoxWithConstraintsScope.UI(
                     text = "${it.from}-${it.to}",
                     style = UI.typo.nH2.style(
                         textAlign = TextAlign.Center,
-                        color = UI.colors.primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -158,7 +159,8 @@ private fun LazyListScope.ratesSection(
             SpacerHor(width = 16.dp)
             Text(
                 text = text,
-                style = UI.typo.h2
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             SpacerHor(width = 16.dp)
             DividerW()

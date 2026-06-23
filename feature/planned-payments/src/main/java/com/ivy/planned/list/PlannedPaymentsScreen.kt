@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -62,7 +63,7 @@ private fun BoxWithConstraintsScope.UI(
                 text = stringResource(R.string.planned_payments_inline),
                 style = UI.typo.h2.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
 

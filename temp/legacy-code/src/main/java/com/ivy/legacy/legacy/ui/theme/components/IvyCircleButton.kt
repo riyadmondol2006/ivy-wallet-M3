@@ -1,28 +1,30 @@
 package com.ivy.wallet.ui.theme.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
 import com.ivy.legacy.IvyWalletComponentPreview
-import com.ivy.legacy.utils.drawColoredShadow
-import com.ivy.design.utils.thenIf
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientIvy
 import com.ivy.wallet.ui.theme.GradientRed
 import com.ivy.wallet.ui.theme.White
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
+/**
+ * Native Material 3 circular icon button ([FilledIconButton]). The legacy gradient/glow is
+ * dropped: the caller's [backgroundGradient] start color becomes the solid M3 container color.
+ * [backgroundPadding], [horizontalGradient] and [hasShadow] are kept for source compatibility.
+ */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun IvyCircleButton(
     modifier: Modifier = Modifier,
@@ -35,36 +37,22 @@ fun IvyCircleButton(
     hasShadow: Boolean = true,
     onClick: () -> Unit
 ) {
-    IvyIcon(
-        modifier = modifier
-            .thenIf(enabled && hasShadow) {
-                drawColoredShadow(
-                    color = backgroundGradient.startColor,
-                    borderRadius = 0.dp,
-                    shadowRadius = 16.dp,
-                    offsetX = 0.dp,
-                    offsetY = 8.dp
-                )
-            }
-            .clip(UI.shapes.rFull)
-            .background(
-                brush = if (enabled) {
-                    if (horizontalGradient) {
-                        backgroundGradient.asHorizontalBrush()
-                    } else {
-                        backgroundGradient.asVerticalBrush()
-                    }
-                } else {
-                    SolidColor(UI.colors.gray)
-                },
-                shape = UI.shapes.rFull
-            )
-            .clickable(onClick = onClick, enabled = enabled)
-            .padding(all = backgroundPadding),
-        icon = icon,
-        tint = tint,
-        contentDescription = "circle button"
-    )
+    FilledIconButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = CircleShape,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = backgroundGradient.startColor,
+            contentColor = tint,
+        ),
+    ) {
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = "circle button",
+            tint = tint,
+        )
+    }
 }
 
 @Preview

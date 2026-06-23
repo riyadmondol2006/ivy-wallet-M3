@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,15 +26,12 @@ import com.ivy.design.l0_system.style
 import com.ivy.domain.RootScreen
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.rootScreen
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.navigation.IvyPreview
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
-import com.ivy.wallet.ui.theme.dynamicContrast
-import com.ivy.wallet.ui.theme.findContrastTextColor
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
@@ -77,13 +75,15 @@ fun CustomerJourneyCard(
     modifier: Modifier = Modifier,
     onCTA: () -> Unit,
 ) {
+    // Soft M3 tonal card that follows Material You (no saturated hardcoded fill).
+    val container = MaterialTheme.colorScheme.primaryContainer
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .drawColoredShadow(cardData.background.startColor)
-            .background(cardData.background.asHorizontalBrush(), UI.shapes.r3)
             .clip(UI.shapes.r3)
+            .background(container, UI.shapes.r3)
             .clickable {
                 onCTA()
             }
@@ -100,7 +100,7 @@ fun CustomerJourneyCard(
                 text = cardData.title,
                 style = UI.typo.b1.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = findContrastTextColor(cardData.background.startColor)
+                    color = onContainer
                 )
             )
 
@@ -112,7 +112,7 @@ fun CustomerJourneyCard(
                         }
                         .padding(8.dp), // enlarge click area
                     icon = R.drawable.ic_dismiss,
-                    tint = cardData.background.startColor.dynamicContrast(),
+                    tint = onContainer,
                     contentDescription = "prompt_dismiss",
                 )
 
@@ -129,7 +129,7 @@ fun CustomerJourneyCard(
             text = cardData.description,
             style = UI.typo.b2.style(
                 fontWeight = FontWeight.Medium,
-                color = findContrastTextColor(cardData.background.startColor)
+                color = onContainer
             )
         )
 
@@ -144,13 +144,13 @@ fun CustomerJourneyCard(
                 text = cardData.cta,
                 shadowAlpha = 0f,
                 iconStart = cardData.ctaIcon,
-                iconTint = cardData.background.startColor,
+                iconTint = MaterialTheme.colorScheme.onPrimary,
                 textStyle = UI.typo.b2.style(
-                    color = cardData.background.startColor,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold
                 ),
                 padding = 8.dp,
-                backgroundGradient = Gradient.solid(findContrastTextColor(cardData.background.startColor))
+                backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary)
             ) {
                 onCTA()
             }

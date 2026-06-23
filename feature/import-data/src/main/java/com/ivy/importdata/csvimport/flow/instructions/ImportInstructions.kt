@@ -18,33 +18,29 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.importdata.csvimport.flow.ImportSteps
 import com.ivy.legacy.domain.deprecated.logic.csv.model.ImportType
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.navigation.navigation
 import com.ivy.onboarding.components.OnboardingToolbar
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.White
-import com.ivy.wallet.ui.theme.components.GradientCutBottom
-import com.ivy.wallet.ui.theme.components.IvyDividerLine
 import com.ivy.wallet.ui.theme.components.IvyIcon
-import com.ivy.wallet.ui.theme.components.OnboardingButton
 
 @ExperimentalFoundationApi
 @Composable
@@ -77,9 +73,9 @@ fun BoxWithConstraintsScope.ImportInstructions(
             Text(
                 modifier = Modifier.padding(start = 32.dp),
                 text = stringResource(R.string.how_to_import),
-                style = UI.typo.h2.style(
-                    fontWeight = FontWeight.Black
-                )
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(Modifier.height(8.dp))
@@ -87,10 +83,9 @@ fun BoxWithConstraintsScope.ImportInstructions(
             Text(
                 modifier = Modifier.padding(start = 32.dp),
                 text = stringResource(R.string.open),
-                style = UI.typo.b2.style(
-                    color = Gray,
-                    fontWeight = Bold
-                )
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = Bold
             )
 
             Spacer(Modifier.height(24.dp))
@@ -101,7 +96,7 @@ fun BoxWithConstraintsScope.ImportInstructions(
 
             Spacer(Modifier.height(24.dp))
 
-            IvyDividerLine(
+            HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
         }
@@ -112,9 +107,9 @@ fun BoxWithConstraintsScope.ImportInstructions(
             Text(
                 modifier = Modifier.padding(start = 32.dp),
                 text = stringResource(R.string.steps),
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.Black
-                )
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             importType.ImportSteps(onUploadClick = onUploadClick)
@@ -122,13 +117,9 @@ fun BoxWithConstraintsScope.ImportInstructions(
 
         item {
             // last spacer
-            Spacer(Modifier.height(96.dp))
+            Spacer(Modifier.height(24.dp))
         }
     }
-
-    GradientCutBottom(
-        height = 96.dp
-    )
 }
 
 @Composable
@@ -206,45 +197,46 @@ fun InstructionButton(
 
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = modifier
-            .clip(UI.shapes.r3)
-            .background(UI.colors.medium, UI.shapes.r3)
-            .clickable {
-                onClick()
-            }
-            .padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = modifier,
+        onClick = onClick
     ) {
-        Spacer(Modifier.width(16.dp))
+        Row(
+            modifier = Modifier.padding(vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(Modifier.width(16.dp))
 
-        if (icon != null) {
-            IvyIcon(
-                modifier = Modifier.background(UI.colors.pure, CircleShape),
-                icon = icon,
-                tint = Color.Unspecified
-            )
-        }
+            if (icon != null) {
+                IvyIcon(
+                    modifier = Modifier.background(
+                        MaterialTheme.colorScheme.surface,
+                        CircleShape
+                    ),
+                    icon = icon,
+                    tint = Color.Unspecified
+                )
+            }
 
-        Spacer(Modifier.width(if (icon != null) 24.dp else 12.dp))
+            Spacer(Modifier.width(if (icon != null) 24.dp else 12.dp))
 
-        Column {
-            Text(
-                text = caption,
-                style = UI.typo.c.style(
-                    color = Gray,
+            Column {
+                Text(
+                    text = caption,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = Bold
                 )
-            )
 
-            Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(2.dp))
 
-            Text(
-                text = text,
-                style = UI.typo.b2.style(
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = Bold
                 )
-            )
+            }
         }
     }
 }
@@ -263,17 +255,21 @@ fun UploadFileStep(
 
     Spacer(Modifier.height(16.dp))
 
-    OnboardingButton(
+    Button(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        text = btnTitle,
-        textColor = White,
-        backgroundGradient = GradientIvy,
-        hasNext = false,
-        iconStart = R.drawable.ic_upload
+        onClick = onUploadClick
     ) {
-        onUploadClick()
+        Icon(
+            painter = painterResource(id = R.drawable.ic_upload),
+            contentDescription = null
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = btnTitle,
+            fontWeight = Bold
+        )
     }
 }
 
@@ -292,12 +288,12 @@ fun StepTitle(
         Text(
             modifier = Modifier
                 .size(24.dp)
-                .background(UI.colors.medium, CircleShape),
+                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
             text = number.toString(),
-            style = UI.typo.nB2.style(
-                fontWeight = Bold,
-                textAlign = TextAlign.Center
-            )
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = Bold,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
@@ -305,9 +301,9 @@ fun StepTitle(
                 .weight(1f)
                 .padding(start = 8.dp, end = 32.dp),
             text = title,
-            style = UI.typo.b2.style(
-                fontWeight = Bold
-            )
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 
@@ -317,10 +313,9 @@ fun StepTitle(
         Text(
             modifier = Modifier.padding(horizontal = 24.dp),
             text = description,
-            style = UI.typo.c.style(
-                fontWeight = Bold,
-                color = Gray
-            )
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -342,9 +337,7 @@ private fun App(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IvyIcon(
-            modifier = Modifier
-                .drawColoredShadow(importType.color())
-                .size(48.dp),
+            modifier = Modifier.size(48.dp),
             icon = importType.logo(),
             tint = Color.Unspecified
         )
@@ -353,9 +346,9 @@ private fun App(
 
         Text(
             text = importType.appName(),
-            style = UI.typo.b2.style(
-                fontWeight = Bold
-            )
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

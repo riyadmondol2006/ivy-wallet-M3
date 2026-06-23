@@ -10,13 +10,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -26,42 +28,40 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ivy.base.model.TransactionType
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.api.LocalTimeProvider
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
-import com.ivy.design.utils.thenIf
+import com.ivy.design.system.expense
+import com.ivy.design.system.financialNumberStyle
+import com.ivy.design.system.income
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.ui.component.transaction.TransactionsDividerLine
 import com.ivy.legacy.utils.clickableNoIndication
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.horizontalSwipeListener
 import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.legacy.utils.rememberSwipeListenerState
+import com.ivy.legacy.utils.shortenAmount
+import com.ivy.legacy.utils.shouldShortAmount
 import com.ivy.legacy.utils.springBounce
 import com.ivy.legacy.utils.verticalSwipeListener
 import com.ivy.navigation.PieChartStatisticScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.GradientGreen
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.White
-import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.BalanceRowMini
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 @ExperimentalAnimationApi
 @Composable
@@ -152,9 +152,8 @@ private fun HeaderStickyRow(
                 } else {
                     stringResource(R.string.hi)
                 },
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
                 ),
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
@@ -226,6 +225,7 @@ fun CashFlowInfo(
     onHiddenBalanceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val nav = navigation()
     Column(
         modifier = modifier
             .verticalSwipeListener(
@@ -234,44 +234,95 @@ fun CashFlowInfo(
                 onSwipeDown = {
                     onOpenMoreMenu()
                 },
-            ),
+            )
+            .padding(horizontal = 16.dp),
     ) {
-        BalanceRow(
+        // M3 hero balance card: total balance + inline income/expense split.
+        Column(
             modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .clickableNoIndication(rememberInteractionSource()) {
-                    if (hideBalance) {
-                        onHiddenBalanceClick()
-                    } else {
-                        onBalanceClick()
+                .fillMaxWidth()
+                .clip(UI.shapes.r3)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, UI.shapes.r3)
+                .padding(20.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.total_balance),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            ExpressiveBalanceRow(
+                modifier = Modifier
+                    .clickableNoIndication(rememberInteractionSource()) {
+                        if (hideBalance) {
+                            onHiddenBalanceClick()
+                        } else {
+                            onBalanceClick()
+                        }
                     }
-                }
-                .testTag("home_balance"),
-            currency = currency,
-            balance = balance,
-            shortenBigNumbers = true,
-            hiddenMode = hideBalance
-        )
+                    .testTag("home_balance"),
+                currency = currency,
+                balance = balance,
+                percentExpanded = percentExpanded,
+                hiddenMode = hideBalance,
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
 
-        IncomeExpenses(
-            percentExpanded = percentExpanded,
-            currency = currency,
-            monthlyIncome = monthlyIncome,
-            monthlyExpenses = monthlyExpenses,
-            hideIncome = hideIncome,
-            onHiddenIncomeClick = onHiddenIncomeClick
-        )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BalanceStat(
+                    modifier = Modifier.weight(1f),
+                    icon = R.drawable.ic_income,
+                    label = stringResource(R.string.income),
+                    amount = monthlyIncome,
+                    currency = currency,
+                    amountColor = MaterialTheme.colorScheme.income,
+                    testTag = "home_card_income",
+                    onClick = {
+                        if (hideIncome) {
+                            onHiddenIncomeClick()
+                        } else {
+                            nav.navigateTo(
+                                PieChartStatisticScreen(type = TransactionType.INCOME),
+                            )
+                        }
+                    },
+                )
+
+                VerticalDivider(
+                    modifier = Modifier.height(40.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+
+                BalanceStat(
+                    modifier = Modifier.weight(1f),
+                    icon = R.drawable.ic_expense,
+                    label = stringResource(R.string.expenses),
+                    amount = monthlyExpenses.absoluteValue,
+                    currency = currency,
+                    amountColor = MaterialTheme.colorScheme.expense,
+                    testTag = "home_card_expense",
+                    onClick = {
+                        nav.navigateTo(
+                            PieChartStatisticScreen(type = TransactionType.EXPENSE),
+                        )
+                    },
+                )
+            }
+        }
 
         val cashflow = monthlyIncome - monthlyExpenses
         if (cashflow != 0.0 && !hideBalance) {
             Spacer(Modifier.height(12.dp))
 
             Text(
-                modifier = Modifier.padding(
-                    start = 24.dp,
-                ),
+                modifier = Modifier.padding(start = 8.dp),
                 text = stringResource(
                     R.string.cashflow,
                     (if (cashflow > 0) "+" else ""),
@@ -279,146 +330,92 @@ fun CashFlowInfo(
                     currency,
                 ),
                 style = UI.typo.nB2.style(
-                    color = if (cashflow < 0) Gray else Green,
+                    color = if (cashflow < 0) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.income
+                    },
                 ),
             )
-
-            Spacer(Modifier.height(4.dp))
-        } else {
-            Spacer(Modifier.height(16.dp))
         }
     }
 }
 
+/**
+ * Material 3 Expressive total-balance display.
+ *
+ * The number is rendered with the variable-font [financialNumberStyle]: heavy + large while the
+ * header is expanded, smoothly thinning and shrinking as it collapses on scroll. [percentExpanded]
+ * is already a spring-animated float, so the morph inherits physics-based motion for free.
+ */
 @Composable
-private fun IncomeExpenses(
+private fun ExpressiveBalanceRow(
+    currency: String,
+    balance: Double,
     percentExpanded: Float,
-    currency: String,
-    monthlyIncome: Double,
-    monthlyExpenses: Double,
-    hideIncome: Boolean,
-    onHiddenIncomeClick: () -> Unit,
+    hiddenMode: Boolean,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Spacer(Modifier.width(16.dp))
-
-        val nav = navigation()
-
-        HeaderCard(
-            percentVisible = percentExpanded,
-            icon = R.drawable.ic_income,
-            backgroundGradient = GradientGreen,
-            textColor = White,
-            label = stringResource(R.string.income),
-            currency = currency,
-            amount = monthlyIncome,
-            testTag = "home_card_income"
-        ) {
-            if (hideIncome) {
-                onHiddenIncomeClick()
-            } else {
-                nav.navigateTo(
-                    PieChartStatisticScreen(
-                        type = TransactionType.INCOME,
-                    ),
-                )
-            }
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        HeaderCard(
-            percentVisible = percentExpanded,
-            icon = R.drawable.ic_expense,
-            backgroundGradient = Gradient(UI.colors.pureInverse, UI.colors.gray),
-            textColor = UI.colors.pure,
-            label = stringResource(R.string.expenses),
-            currency = currency,
-            amount = monthlyExpenses.absoluteValue,
-            testTag = "home_card_expense",
-        ) {
-            nav.navigateTo(
-                PieChartStatisticScreen(
-                    type = TransactionType.EXPENSE,
-                ),
-            )
-        }
-
-        Spacer(Modifier.width(16.dp))
+    val amountText = when {
+        hiddenMode -> "****"
+        shouldShortAmount(balance) -> shortenAmount(balance)
+        else -> balance.format(currency)
     }
+
+    // Expressive scaling: collapsed (0f) -> 30sp / weight 550 ; expanded (1f) -> 48sp / weight 1000.
+    val fontSize = (30f + 18f * percentExpanded).sp
+    val weight = (550f + 450f * percentExpanded).roundToInt()
+
+    Text(
+        modifier = modifier,
+        text = "$currency $amountText",
+        style = financialNumberStyle(fontSize = fontSize, weight = weight)
+            .copy(color = MaterialTheme.colorScheme.onSurface),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
-private fun RowScope.HeaderCard(
+private fun BalanceStat(
     @DrawableRes icon: Int,
-    backgroundGradient: Gradient,
-    percentVisible: Float,
-    textColor: Color,
     label: String,
-    currency: String,
     amount: Double,
+    currency: String,
+    amountColor: Color,
     testTag: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
-            .weight(1f)
-            .thenIf(percentVisible == 1f) {
-                drawColoredShadow(backgroundGradient.startColor)
-            }
+        modifier = modifier
             .clip(UI.shapes.r4)
-            .background(backgroundGradient.asHorizontalBrush())
+            .clickable(onClick = onClick)
             .testTag(testTag)
-            .clickable(
-                onClick = onClick,
-            ),
+            .padding(vertical = 6.dp, horizontal = 8.dp),
     ) {
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Spacer(Modifier.width(16.dp))
-
+        Row(verticalAlignment = Alignment.CenterVertically) {
             IvyIcon(
                 icon = icon,
-                tint = textColor,
+                tint = amountColor,
             )
 
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(6.dp))
 
             Text(
                 text = label,
-                style = UI.typo.c.style(
-                    color = textColor,
-                    fontWeight = FontWeight.ExtraBold,
-                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         Spacer(Modifier.height(4.dp))
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Spacer(Modifier.width(20.dp))
-
-            AmountCurrencyB1(
-                amount = amount,
-                currency = currency,
-                textColor = textColor,
-                shortenBigNumbers = true,
-            )
-
-            Spacer(Modifier.width(4.dp))
-        }
-
-        Spacer(Modifier.height(20.dp))
+        AmountCurrencyB1(
+            amount = amount,
+            currency = currency,
+            textColor = amountColor,
+            shortenBigNumbers = true,
+        )
     }
 }

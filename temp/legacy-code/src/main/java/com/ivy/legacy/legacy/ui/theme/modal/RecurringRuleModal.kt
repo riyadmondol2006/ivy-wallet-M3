@@ -1,13 +1,10 @@
 package com.ivy.wallet.ui.theme.modal
 
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,12 +26,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.data.model.IntervalType
@@ -46,13 +46,9 @@ import com.ivy.legacy.utils.formatDateWeekDayLong
 import com.ivy.legacy.utils.formatNicely
 import com.ivy.legacy.utils.hideKeyboard
 import com.ivy.legacy.utils.onScreenStart
-import com.ivy.design.utils.thenIf
 import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.IntervalPickerRow
 import com.ivy.wallet.ui.theme.components.IvyCircleButton
 import com.ivy.wallet.ui.theme.components.IvyDividerLine
@@ -169,68 +165,31 @@ private fun validate(
     return oneTime || intervalN != null && intervalN > 0 && intervalType != null
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TimesSelector(
     oneTime: Boolean,
 
     onSetOneTime: (Boolean) -> Unit
 ) {
-    Row(
+    SingleChoiceSegmentedButtonRow(
         modifier = Modifier
             .padding(horizontal = 24.dp)
             .fillMaxWidth()
-            .background(UI.colors.medium, UI.shapes.r2),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(8.dp))
-
-        TimesSelectorButton(
+        SegmentedButton(
             selected = oneTime,
-            label = stringResource(R.string.one_time)
-        ) {
-            onSetOneTime(true)
-        }
-
-        Spacer(Modifier.width(8.dp))
-
-        TimesSelectorButton(
-            selected = !oneTime,
-            label = stringResource(R.string.multiple_times)
-        ) {
-            onSetOneTime(false)
-        }
-
-        Spacer(Modifier.width(8.dp))
-    }
-}
-
-@Composable
-private fun RowScope.TimesSelectorButton(
-    selected: Boolean,
-    label: String,
-    onClick: () -> Unit
-) {
-    val rFull = UI.shapes.rFull
-
-    Text(
-        modifier = Modifier
-            .weight(1f)
-            .clip(UI.shapes.rFull)
-            .clickable {
-                onClick()
-            }
-            .padding(vertical = 8.dp)
-            .thenIf(selected) {
-                background(GradientIvy.asHorizontalBrush(), rFull)
-            }
-            .padding(vertical = 8.dp),
-        text = label,
-        style = UI.typo.b2.style(
-            color = if (selected) White else Gray,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
+            onClick = { onSetOneTime(true) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            label = { Text(text = stringResource(R.string.one_time)) }
         )
-    )
+        SegmentedButton(
+            selected = !oneTime,
+            onClick = { onSetOneTime(false) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            label = { Text(text = stringResource(R.string.multiple_times)) }
+        )
+    }
 }
 
 @Composable
@@ -267,7 +226,7 @@ private fun MultipleTimes(
             .padding(start = 32.dp),
         text = stringResource(R.string.starts_on),
         style = UI.typo.b2.style(
-            color = UI.colors.pureInverse,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.ExtraBold
         )
     )
@@ -292,7 +251,7 @@ private fun MultipleTimes(
         text = stringResource(R.string.repeats_every_text),
         style = UI.typo.b2.style(
             fontWeight = FontWeight.ExtraBold,
-            color = UI.colors.pureInverse
+            color = MaterialTheme.colorScheme.onSurface
         )
     )
 
@@ -351,7 +310,7 @@ private fun DateRow(
                 ),
                 style = UI.typo.h2.style(
                     fontWeight = FontWeight.Normal,
-                    color = UI.colors.pureInverse
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
 
@@ -362,7 +321,7 @@ private fun DateRow(
                     text = date.formatDateWeekDayLong(),
                     style = UI.typo.b2.style(
                         fontWeight = FontWeight.SemiBold,
-                        color = Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }

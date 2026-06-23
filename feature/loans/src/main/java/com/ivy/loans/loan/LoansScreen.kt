@@ -51,7 +51,6 @@ import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.ui.theme.Blue
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.CircleButtonFilled
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
@@ -182,7 +181,7 @@ private fun BoxWithConstraintsScope.UI(
                 .padding(vertical = 8.dp),
             text = item.loan.name,
             style = UI.typo.b1.style(
-                color = UI.colors.pureInverse,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
         )
@@ -232,7 +231,7 @@ private fun Toolbar(
             Text(
                 text = stringResource(R.string.loans),
                 style = UI.typo.h2.style(
-                    color = UI.colors.pureInverse,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.ExtraBold
                 )
             )
@@ -283,7 +282,7 @@ private fun LoanItem(
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(UI.shapes.r4)
-            .border(2.dp, UI.colors.medium, UI.shapes.r4)
+            .border(2.dp, MaterialTheme.colorScheme.surfaceContainerHighest, UI.shapes.r4)
             .testTag("loan_item")
             .clickable(
                 onClick = onClick
@@ -390,7 +389,7 @@ private fun ColumnScope.LoanInfo(
             .fillMaxWidth()
             .height(24.dp)
             .padding(horizontal = 24.dp),
-        notFilledColor = UI.colors.medium,
+        notFilledColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         percent = displayLoan.percentPaid
     )
 }
@@ -409,7 +408,7 @@ private fun NoLoansEmptyState(
 
         IvyIcon(
             icon = R.drawable.ic_custom_loan_l,
-            tint = Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(24.dp))
@@ -417,7 +416,7 @@ private fun NoLoansEmptyState(
         Text(
             text = emptyStateTitle,
             style = UI.typo.b1.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.ExtraBold
             )
         )
@@ -428,7 +427,7 @@ private fun NoLoansEmptyState(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = emptyStateText,
             style = UI.typo.b2.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )

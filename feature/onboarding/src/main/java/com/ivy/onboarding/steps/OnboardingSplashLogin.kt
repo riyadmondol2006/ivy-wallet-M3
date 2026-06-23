@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,19 +17,18 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalUriHandler
@@ -43,27 +41,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.utils.clickableNoIndication
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.lerp
 import com.ivy.legacy.utils.openUrl
 import com.ivy.legacy.utils.springBounceSlow
-import com.ivy.design.utils.thenIf
 import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.legacy.utils.toDensityDp
 import com.ivy.legacy.utils.toDensityPx
 import com.ivy.onboarding.OnboardingState
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.components.IvyIcon
 import kotlin.math.roundToInt
 
 @Composable
@@ -146,7 +136,7 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(UI.colors.pure)
+            .background(MaterialTheme.colorScheme.surface)
             .systemBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -187,10 +177,9 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 percentTransition = percentTransition
             ),
             text = "Ivy Wallet",
-            style = UI.typo.h2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -201,10 +190,8 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 percentTransition = percentTransition
             ),
             text = stringResource(R.string.your_personal_money_manager),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.SemiBold
-            )
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         val uriHandler = LocalUriHandler.current
@@ -223,10 +210,8 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 .padding(vertical = 8.dp)
                 .padding(end = 8.dp),
             text = stringResource(R.string.opensource),
-            style = UI.typo.c.style(
-                color = Green,
-                fontWeight = FontWeight.Bold
-            )
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
         )
 
         LoginSection(
@@ -275,9 +260,6 @@ private fun LoginSection(
             LoginButton(
                 icon = R.drawable.ic_local_account,
                 text = stringResource(R.string.offline_account),
-                textColor = UI.colors.pureInverse,
-                backgroundGradient = Gradient.solid(UI.colors.medium),
-                hasShadow = false
             ) {
                 onSkip()
             }
@@ -297,10 +279,8 @@ private fun LocalAccountExplanation() {
     Text(
         modifier = Modifier.padding(start = 32.dp),
         text = stringResource(R.string.enter_with_offline_account),
-        style = UI.typo.c.style(
-            color = Gray,
-            fontWeight = FontWeight.ExtraBold
-        )
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
     Spacer(Modifier.height(4.dp))
@@ -308,10 +288,8 @@ private fun LocalAccountExplanation() {
     Text(
         modifier = Modifier.padding(start = 32.dp, end = 32.dp),
         text = stringResource(R.string.your_data_will_be_saved_only_locally),
-        style = UI.typo.c.style(
-            color = Gray,
-            fontWeight = FontWeight.Medium
-        )
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -327,6 +305,7 @@ private fun PrivacyPolicyAndTC() {
     val privacyStart = text.indexOf(privacy)
     val privacyEnd = privacyStart + privacy.length
 
+    val linkColor = MaterialTheme.colorScheme.primary
     val annotatedString = buildAnnotatedString {
         append(text)
 
@@ -346,7 +325,7 @@ private fun PrivacyPolicyAndTC() {
 
         addStyle(
             style = SpanStyle(
-                color = Green,
+                color = linkColor,
                 textDecoration = TextDecoration.Underline
             ),
             start = tcStart,
@@ -355,7 +334,7 @@ private fun PrivacyPolicyAndTC() {
 
         addStyle(
             style = SpanStyle(
-                color = Green,
+                color = linkColor,
                 textDecoration = TextDecoration.Underline
             ),
             start = privacyStart,
@@ -369,9 +348,8 @@ private fun PrivacyPolicyAndTC() {
             .fillMaxWidth()
             .padding(horizontal = 32.dp),
         text = annotatedString,
-        style = UI.typo.c.style(
-            color = UI.colors.pureInverse,
-            fontWeight = FontWeight.Medium,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         ),
         onClick = {
@@ -388,44 +366,27 @@ private fun PrivacyPolicyAndTC() {
 private fun LoginButton(
     @DrawableRes icon: Int,
     text: String,
-    textColor: Color,
-    backgroundGradient: Gradient,
-    hasShadow: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
+    Button(
+        onClick = onClick,
         modifier = Modifier
             .padding(horizontal = 24.dp)
             .fillMaxWidth()
-            .thenIf(hasShadow) {
-                drawColoredShadow(backgroundGradient.startColor)
-            }
-            .clip(UI.shapes.r4)
-            .background(backgroundGradient.asHorizontalBrush(), UI.shapes.r4)
-            .clickable {
-                onClick()
-            },
-        verticalAlignment = Alignment.CenterVertically
+            .height(56.dp),
     ) {
-        Spacer(Modifier.width(20.dp))
-
-        IvyIcon(
-            icon = icon,
-            tint = textColor
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
         )
 
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.size(12.dp))
 
         Text(
-            modifier = Modifier.padding(vertical = 20.dp),
             text = text,
-            style = UI.typo.b2.style(
-                color = textColor,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleMedium,
         )
-
-        Spacer(Modifier.width(20.dp))
     }
 }
 

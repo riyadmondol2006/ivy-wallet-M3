@@ -21,6 +21,7 @@ import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.design.system.IvyMotion
 import com.ivy.legacy.data.AppBaseData
 import com.ivy.legacy.data.LegacyDueSection
 import com.ivy.navigation.EditTransactionScreen
@@ -177,7 +178,9 @@ private fun LazyListScope.overdueSection(
             item {
                 val isLightTheme = UI.colors.pure == White
                 IvyButton(
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier = Modifier
+                        .animateItem(placementSpec = IvyMotion.placementSpring())
+                        .padding(horizontal = 24.dp),
                     text = stringRes(R.string.skip_all),
                     wrapContentMode = false,
                     backgroundGradient = if (isLightTheme) {
@@ -222,18 +225,24 @@ private fun LazyListScope.trnItems(
         key = { it.id }
     ) {
         val nav = navigation()
-        TransactionCard(
-            baseData = baseData,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateItem(placementSpec = IvyMotion.placementSpring())
+        ) {
+            TransactionCard(
+                baseData = baseData,
 
-            transaction = it,
-            shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
-            onPayOrGet = onPayOrGet,
-            onSkipTransaction = onSkipTransaction
-        ) { trn ->
-            onTransactionClick(
-                nav = nav,
-                transaction = trn
-            )
+                transaction = it,
+                shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
+                onPayOrGet = onPayOrGet,
+                onSkipTransaction = onSkipTransaction
+            ) { trn ->
+                onTransactionClick(
+                    nav = nav,
+                    transaction = trn
+                )
+            }
         }
     }
 }
@@ -258,33 +267,39 @@ private fun LazyListScope.historySection(
                 }
             }
         ) {
-            when (it) {
-                is Transaction -> {
-                    val nav = navigation()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateItem(placementSpec = IvyMotion.placementSpring())
+            ) {
+                when (it) {
+                    is Transaction -> {
+                        val nav = navigation()
 
-                    TransactionCard(
-                        baseData = baseData,
+                        TransactionCard(
+                            baseData = baseData,
 
-                        transaction = it,
-                        shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
-                        onPayOrGet = onPayOrGet
-                    ) { trn ->
-                        onTransactionClick(
-                            nav = nav,
-                            transaction = trn
+                            transaction = it,
+                            shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
+                            onPayOrGet = onPayOrGet
+                        ) { trn ->
+                            onTransactionClick(
+                                nav = nav,
+                                transaction = trn
+                            )
+                        }
+                    }
+
+                    is TransactionHistoryDateDivider -> {
+                        HistoryDateDivider(
+                            date = it.date,
+                            spacerTop = dateDividerMarginTop
+                                ?: if (it == history.firstOrNull()) 24.dp else 32.dp,
+                            baseCurrency = baseData.baseCurrency,
+                            income = it.income,
+                            expenses = it.expenses
                         )
                     }
-                }
-
-                is TransactionHistoryDateDivider -> {
-                    HistoryDateDivider(
-                        date = it.date,
-                        spacerTop = dateDividerMarginTop
-                            ?: if (it == history.firstOrNull()) 24.dp else 32.dp,
-                        baseCurrency = baseData.baseCurrency,
-                        income = it.income,
-                        expenses = it.expenses
-                    )
                 }
             }
         }

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.ivy.base.legacy.appContext
+import com.ivy.design.system.IvyThemeController
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import timber.log.Timber.DebugTree
@@ -25,6 +26,8 @@ class IvyAndroidApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         appContext = this
+        // Load saved appearance prefs (dynamic color + accent) before any UI composes.
+        IvyThemeController.ensureLoaded(this)
 
         if (BuildConfig.DEBUG) {
             Timber.plant(DebugTree())

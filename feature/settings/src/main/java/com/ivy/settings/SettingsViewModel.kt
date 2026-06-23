@@ -20,6 +20,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.domain.RootScreen
+import com.ivy.domain.features.Features
 import com.ivy.domain.usecase.csv.ExportCsvUseCase
 import com.ivy.domain.usecase.exchange.SyncExchangeRatesUseCase
 import com.ivy.frp.monad.Res
@@ -57,6 +58,7 @@ class SettingsViewModel @Inject constructor(
     private val updateSettingsAct: UpdateSettingsAct,
     private val settingsWriter: WriteSettingsDao,
     private val exportCsvUseCase: ExportCsvUseCase,
+    private val features: Features,
     @ApplicationContext private val context: Context
 ) : ComposeViewModel<SettingsState, SettingsEvent>() {
 
@@ -68,6 +70,7 @@ class SettingsViewModel @Inject constructor(
     private val hideCurrentBalance = mutableStateOf(false)
     private val hideIncome = mutableStateOf(false)
     private val treatTransfersAsIncomeExpense = mutableStateOf(false)
+    private val creditCardsEnabled = mutableStateOf(false)
     private val startDateOfMonth = mutableIntStateOf(1)
     private val progressState = mutableStateOf(false)
 
@@ -85,6 +88,7 @@ class SettingsViewModel @Inject constructor(
             showNotifications = getShowNotifications(),
             hideCurrentBalance = getHideCurrentBalance(),
             treatTransfersAsIncomeExpense = getTreatTransfersAsIncomeExpense(),
+            creditCardsEnabled = getCreditCardsEnabled(),
             startDateOfMonth = getStartDateOfMonth(),
             progressState = getProgressState(),
             hideIncome = getHideIncome(),
@@ -101,7 +105,12 @@ class SettingsViewModel @Inject constructor(
         initializeHideCurrentBalance()
         initializeHideIncome()
         initializeTransfersAsIncomeExpense()
+        initializeCreditCardsEnabled()
         initializeStartDateOfMonth()
+    }
+
+    private suspend fun initializeCreditCardsEnabled() {
+        creditCardsEnabled.value = features.creditCardsEnabled.isEnabled(context)
     }
 
     private suspend fun initializeCurrency() {
@@ -194,6 +203,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     @Composable
+    private fun getCreditCardsEnabled(): Boolean {
+        return creditCardsEnabled.value
+    }
+
+    @Composable
     private fun getStartDateOfMonth(): String {
         return startDateOfMonth.intValue.toString()
     }
@@ -227,6 +241,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.SetTransfersAsIncomeExpense -> setTransfersAsIncomeExpense(
                 event.treatTransfersAsIncomeExpense
             )
+
+            is SettingsEvent.SetCreditCardsEnabled -> setCreditCardsEnabled(event.enabled)
 
             is SettingsEvent.SetStartDateOfMonth -> setStartDateOfMonth(event.startDate)
 
@@ -359,6 +375,14 @@ class SettingsViewModel @Inject constructor(
                 SharedPrefs.TRANSFERS_AS_INCOME_EXPENSE,
                 treatTransfersAsIncomeExpense.value
             )
+        }
+    }
+
+    private fun setCreditCardsEnabled(enabled: Boolean) {
+        creditCardsEnabled.value = enabled
+
+        viewModelScope.launch {
+            features.creditCardsEnabled.set(context, enabled)
         }
     }
 

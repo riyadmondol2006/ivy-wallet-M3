@@ -2,7 +2,6 @@ package com.ivy.wallet.ui.theme.modal.edit
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -478,14 +478,14 @@ private fun circleButtonModifier(
     size: Dp = 80.dp,
     onClick: () -> Unit,
 ): Modifier {
+    // M3 filled-tonal key: a solid tonal circle (no legacy 2dp outline).
     return Modifier
         .size(size)
         .clip(CircleShape)
+        .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape)
         .clickable(
             onClick = onClick
         )
-        .background(UI.colors.pure, UI.shapes.rFull)
-        .border(2.dp, UI.colors.medium, UI.shapes.rFull)
         .wrapContentHeight()
 }
 

@@ -1,15 +1,18 @@
 package com.ivy.wallet.ui.theme.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,8 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,12 +33,8 @@ import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.forDisplay
 import com.ivy.legacy.utils.capitalizeLocal
-import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.selectEndTextFieldValue
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.White
 
 private const val RepeatIntervalCharLimit = 5
 
@@ -56,23 +56,15 @@ fun IntervalPickerRow(
             mutableStateOf(selectEndTextFieldValue(intervalN.toString()))
         }
 
-        val validInput = intervalN > 0 && interNTextFieldValue.text.isNotNullOrBlank()
-
         IvyNumberTextField(
             modifier = Modifier
                 .background(
-                    brush = if (validInput) {
-                        GradientIvy.asHorizontalBrush()
-                    } else {
-                        Gradient
-                            .solid(UI.colors.medium)
-                            .asHorizontalBrush()
-                    },
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     shape = UI.shapes.rFull
                 )
                 .padding(vertical = 12.dp),
             value = interNTextFieldValue,
-            textColor = if (validInput) White else UI.colors.pureInverse,
+            textColor = MaterialTheme.colorScheme.onSurface,
             hint = "0"
         ) {
             val filteredText = it.text.take(RepeatIntervalCharLimit)
@@ -105,19 +97,22 @@ private fun RowScope.IntervalTypeSelector(
 
     onSetIntervalType: (IntervalType) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .weight(1f)
-            .border(2.dp, UI.colors.medium, UI.shapes.rFull),
-        verticalAlignment = Alignment.CenterVertically
+    OutlinedCard(
+        modifier = Modifier.weight(1f),
+        shape = UI.shapes.rFull,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = Color.Transparent
+        ),
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Spacer(Modifier.width(20.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(Modifier.width(20.dp))
 
-        IvyIcon(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .clickable {
+            IconButton(
+                modifier = Modifier.size(48.dp),
+                onClick = {
                     onSetIntervalType(
                         when (intervalType) {
                             IntervalType.DAY -> IntervalType.YEAR
@@ -127,29 +122,30 @@ private fun RowScope.IntervalTypeSelector(
                         }
                     )
                 }
-                .padding(all = 8.dp)
-                .rotate(-180f),
-            icon = R.drawable.ic_arrow_right,
-            contentDescription = "interval_type_arrow_left"
-        )
+            ) {
+                Icon(
+                    modifier = Modifier.rotate(-180f),
+                    painter = painterResource(id = R.drawable.ic_arrow_right),
+                    contentDescription = "interval_type_arrow_left",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-        Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-        Text(
-            text = intervalType.forDisplay(intervalN).capitalizeLocal(),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.Bold
+            Text(
+                text = intervalType.forDisplay(intervalN).capitalizeLocal(),
+                style = UI.typo.b2.style(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
             )
-        )
 
-        Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-        IvyIcon(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .clickable {
+            IconButton(
+                modifier = Modifier.size(48.dp),
+                onClick = {
                     onSetIntervalType(
                         when (intervalType) {
                             IntervalType.DAY -> IntervalType.WEEK
@@ -159,12 +155,16 @@ private fun RowScope.IntervalTypeSelector(
                         }
                     )
                 }
-                .padding(all = 8.dp),
-            icon = R.drawable.ic_arrow_right,
-            contentDescription = "interval_type_arrow_right"
-        )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_right),
+                    contentDescription = "interval_type_arrow_right",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-        Spacer(Modifier.width(20.dp))
+            Spacer(Modifier.width(20.dp))
+        }
     }
 }
 

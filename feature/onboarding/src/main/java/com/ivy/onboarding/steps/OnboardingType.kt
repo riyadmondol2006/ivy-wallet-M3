@@ -8,32 +8,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.navigation.navigation
 import com.ivy.onboarding.components.OnboardingProgressSlider
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.CloseButton
-import com.ivy.wallet.ui.theme.components.IvyOutlinedButtonFillMaxWidth
-import com.ivy.wallet.ui.theme.components.OnboardingButton
 
 @Composable
 fun OnboardingType(
@@ -61,9 +56,8 @@ fun OnboardingType(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.import_csv_file),
-            style = UI.typo.h2.style(
-                fontWeight = FontWeight.Black
-            )
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(Modifier.height(8.dp))
@@ -71,10 +65,8 @@ fun OnboardingType(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.from_ivy_or_another_app),
-            style = UI.typo.nB2.style(
-                fontWeight = FontWeight.Bold,
-                color = Gray
-            )
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.weight(1f))
@@ -89,7 +81,6 @@ fun OnboardingType(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             selectedStep = 0,
             stepsCount = 4,
-            selectedColor = Orange
         )
 
         Spacer(Modifier.weight(1f))
@@ -97,37 +88,44 @@ fun OnboardingType(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.importing_another_time_warning),
-            style = UI.typo.b2.style(
-                fontWeight = FontWeight.Bold
-            )
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.height(16.dp))
 
-        IvyOutlinedButtonFillMaxWidth(
+        OutlinedButton(
+            onClick = onStartImport,
             modifier = Modifier
-                .padding(16.dp),
-            text = stringResource(R.string.import_backup_file),
-            iconStart = R.drawable.ic_export_csv,
-            iconTint = Green,
-            textColor = Green
+                .padding(16.dp)
+                .fillMaxWidth()
+                .height(56.dp),
         ) {
-            onStartImport()
+            Icon(
+                painter = painterResource(id = R.drawable.ic_export_csv),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = stringResource(R.string.import_backup_file),
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
 
         Spacer(Modifier.weight(1f))
 
-        OnboardingButton(
+        Button(
+            onClick = onStartFresh,
             modifier = Modifier
                 .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
-            text = stringResource(R.string.start_fresh),
-            textColor = White,
-            backgroundGradient = GradientIvy,
-            hasNext = true,
-            enabled = true
+                .fillMaxWidth()
+                .height(56.dp),
         ) {
-            onStartFresh()
+            Text(
+                text = stringResource(R.string.start_fresh),
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
 
         Spacer(Modifier.height(24.dp))

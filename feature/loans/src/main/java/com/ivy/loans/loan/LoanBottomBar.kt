@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,13 +40,7 @@ import com.ivy.legacy.utils.navigationBarInset
 import com.ivy.legacy.utils.toDensityPx
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Blue
-import com.ivy.wallet.ui.theme.GradientPurple
-import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.Purple
-import com.ivy.wallet.ui.theme.White
-import com.ivy.wallet.ui.theme.components.IvyCircleButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
-import com.ivy.wallet.ui.theme.pureBlur
 import kotlin.math.roundToInt
 
 val FAB_BUTTON_SIZE = 56.dp
@@ -57,7 +56,7 @@ internal fun BoxWithConstraintsScope.LoanBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .align(Alignment.BottomCenter)
-            .background(pureBlur())
+            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -65,7 +64,7 @@ internal fun BoxWithConstraintsScope.LoanBottomBar(
             icon = R.drawable.ic_custom_loan_s,
             name = "Pending",
             selected = tab == LoanTab.PENDING,
-            selectedColor = Purple
+            selectedColor = MaterialTheme.colorScheme.primary
         ) {
             selectTab(LoanTab.PENDING)
         }
@@ -76,7 +75,7 @@ internal fun BoxWithConstraintsScope.LoanBottomBar(
             icon = R.drawable.ic_custom_loan_s,
             name = "Completed",
             selected = tab == LoanTab.COMPLETED,
-            selectedColor = Green
+            selectedColor = MaterialTheme.colorScheme.tertiary
         ) {
             selectTab(LoanTab.COMPLETED)
         }
@@ -87,7 +86,8 @@ internal fun BoxWithConstraintsScope.LoanBottomBar(
     val fabStartY = ivyContext.screenHeight - navigationBarInset() -
             30.dp.toDensityPx() - FAB_BUTTON_SIZE.toDensityPx()
 
-    IvyCircleButton(
+    FloatingActionButton(
+        onClick = onAdd,
         modifier = Modifier
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
@@ -100,13 +100,13 @@ internal fun BoxWithConstraintsScope.LoanBottomBar(
             }
             .size(FAB_BUTTON_SIZE)
             .zIndex(ZINDEX),
-        backgroundPadding = 8.dp,
-        icon = R.drawable.ic_add,
-        backgroundGradient = GradientPurple,
-        hasShadow = true,
-        tint = White
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
     ) {
-        onAdd()
+        Icon(
+            painter = painterResource(R.drawable.ic_add),
+            contentDescription = stringResource(R.string.add)
+        )
     }
 }
 

@@ -2,21 +2,22 @@ package com.ivy.wallet.ui.theme.modal
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,11 +50,7 @@ import com.ivy.legacy.utils.dateNowUTC
 import com.ivy.legacy.utils.formatDateOnlyWithYear
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.CircleButtonFilled
 import com.ivy.wallet.ui.theme.components.IntervalPickerRow
 import com.ivy.wallet.ui.theme.components.IvyDividerLine
@@ -159,6 +156,7 @@ fun BoxWithConstraintsScope.ChoosePeriodModal(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 @Suppress("ParameterNaming")
 private fun ColumnScope.ChooseMonth(
@@ -170,7 +168,11 @@ private fun ColumnScope.ChooseMonth(
             .padding(start = 32.dp),
         text = stringResource(R.string.choose_month),
         style = UI.typo.b1.style(
-            color = if (selectedMonthYear != null) UI.colors.pureInverse else Gray,
+            color = if (selectedMonthYear != null) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             fontWeight = FontWeight.ExtraBold
         )
     )
@@ -191,48 +193,18 @@ private fun ColumnScope.ChooseMonth(
             )
     }
 
-    val state = rememberLazyListState()
-
-    val coroutineScope = rememberCoroutineScope()
-    onScreenStart {
-        if (selectedMonthYear != null) {
-            val selectedMonthIndex = months.indexOf(selectedMonthYear)
-            if (selectedMonthIndex != -1) {
-                coroutineScope.launch {
-                    state.scrollToItem(selectedMonthIndex)
-                }
-            }
-        } else {
-            val currentMonthYear = MonthYear(
-                month = fromMonthValue(dateNowUTC().monthValue),
-                year = currentYear
-            )
-            val currentMonthIndex = months.indexOf(currentMonthYear)
-            if (currentMonthIndex != -1) {
-                coroutineScope.launch {
-                    state.scrollToItem(currentMonthIndex)
-                }
-            }
-        }
-    }
-
-    LazyRow(
-        state = state,
-        verticalAlignment = Alignment.CenterVertically
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
-            Spacer(Modifier.width(12.dp))
-        }
-
-        items(items = months) { monthYear ->
+        months.forEach { monthYear ->
             MonthButton(
                 selected = monthYear == selectedMonthYear,
                 text = monthYear.forDisplay(currentYear = currentYear)
             ) {
                 onSelected(monthYear)
             }
-
-            Spacer(Modifier.width(12.dp))
         }
     }
 }
@@ -262,26 +234,11 @@ private fun MonthButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val background = if (selected) GradientIvy else Gradient.solid(UI.colors.medium)
-    Text(
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text) },
         modifier = modifier
-            .clip(UI.shapes.rFull)
-            .background(
-                brush = background.asHorizontalBrush(),
-                shape = UI.shapes.rFull
-            )
-            .clickable {
-                onClick()
-            }
-            .padding(horizontal = 24.dp)
-            .padding(
-                vertical = 12.dp,
-            ),
-        text = text,
-        style = UI.typo.b2.style(
-            fontWeight = FontWeight.Bold,
-            color = if (selected) White else Gray
-        )
     )
 }
 
@@ -296,7 +253,11 @@ private fun ColumnScope.FromToRange(
             .padding(start = 32.dp),
         text = stringResource(R.string.or_custom_range),
         style = UI.typo.b1.style(
-            color = if (timeRange != null) UI.colors.pureInverse else Gray,
+            color = if (timeRange != null) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             fontWeight = FontWeight.ExtraBold
         )
     )
@@ -360,7 +321,7 @@ private fun IntervalFromToDate(
             .padding(horizontal = 24.dp)
             .fillMaxWidth()
             .clip(UI.shapes.rFull)
-            .border(2.dp, UI.colors.medium, UI.shapes.rFull)
+            .border(1.dp, MaterialTheme.colorScheme.outline, UI.shapes.rFull)
             .clickable {
                 ivyContext.datePicker(
                     minDate = if (border == IntervalBorder.TO) {
@@ -400,7 +361,7 @@ private fun IntervalFromToDate(
             },
             style = UI.typo.b2.style(
                 fontWeight = FontWeight.ExtraBold,
-                color = if (dateTime != null) Green else UI.colors.pureInverse
+                color = if (dateTime != null) Green else MaterialTheme.colorScheme.onSurface
             )
         )
 
@@ -415,7 +376,11 @@ private fun IntervalFromToDate(
                 ?: stringResource(R.string.add_date),
             style = UI.typo.nB2.style(
                 fontWeight = FontWeight.Bold,
-                color = if (dateTime != null) UI.colors.pureInverse else Gray
+                color = if (dateTime != null) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         )
 
@@ -466,7 +431,11 @@ private fun ColumnScope.LastNPeriod(
             .padding(start = 32.dp),
         text = stringResource(R.string.or_in_the_last),
         style = UI.typo.b1.style(
-            color = if (lastNTimeRange != null) UI.colors.pureInverse else Gray,
+            color = if (lastNTimeRange != null) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             fontWeight = FontWeight.ExtraBold
         )
     )
@@ -514,7 +483,11 @@ private fun ColumnScope.AllTime(
             .padding(start = 32.dp),
         text = stringResource(R.string.or_all_time),
         style = UI.typo.b1.style(
-            color = if (active) UI.colors.pureInverse else Gray,
+            color = if (active) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             fontWeight = FontWeight.ExtraBold
         )
     )

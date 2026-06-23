@@ -1,11 +1,15 @@
 package com.ivy.onboarding.steps
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,11 +17,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,40 +47,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.data.model.AccountBalance
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.utils.toLowerCaseLocal
 import com.ivy.navigation.navigation
-import com.ivy.onboarding.components.OnboardingProgressSlider
 import com.ivy.onboarding.components.OnboardingToolbar
-import com.ivy.onboarding.components.Suggestions
 import com.ivy.ui.R
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
-import com.ivy.wallet.ui.theme.GradientIvy
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.Ivy
 import com.ivy.wallet.ui.theme.IvyDark
-import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.White
-import com.ivy.wallet.ui.theme.components.GradientCutBottom
 import com.ivy.wallet.ui.theme.components.ItemIconMDefaultIcon
-import com.ivy.wallet.ui.theme.components.OnboardingButton
-import com.ivy.wallet.ui.theme.dynamicContrast
 import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.edit.AccountModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 import com.ivy.wallet.ui.theme.toComposeColor
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1Row
 
+/**
+ * Material 3 Expressive onboarding step for adding accounts.
+ *
+ * Rebuilt from scratch: the heavy raster illustration is replaced by lightweight M3 line-art,
+ * the split-color account rows become asymmetrical [ElevatedCard]s on a tonal surface, and the
+ * rigid suggestion pills become a responsive, reflowing [FlowRow] of [InputChip]s.
+ */
 @ExperimentalFoundationApi
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun BoxWithConstraintsScope.OnboardingAccounts(
     baseCurrency: String,
@@ -93,79 +110,64 @@ fun BoxWithConstraintsScope.OnboardingAccounts(
         }
 
         item {
-            Column {
+            Column(
+                modifier = Modifier.animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    )
+                )
+            ) {
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    modifier = Modifier.padding(horizontal = 32.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                     text = stringResource(R.string.add_accounts),
-                    style = UI.typo.h2.style(
-                        fontWeight = FontWeight.Black
-                    )
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
-
-//                PremiumInfo(
-//                    itemLabelPlural = "accounts",
-//                    itemsCount = accounts.size,
-//                    freeItemsCount = Constants.FREE_ACCOUNTS
-//                )
 
                 if (accounts.isEmpty()) {
-                    Spacer(Modifier.height(16.dp))
-
-                    Image(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        painter = painterResource(id = R.drawable.onboarding_illustration_accounts),
-                        contentDescription = "account illustration"
-                    )
-
-                    OnboardingProgressSlider(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        selectedStep = 2,
-                        stepsCount = 4,
-                        selectedColor = Orange
-                    )
-
-                    Spacer(Modifier.height(48.dp))
+                    Spacer(Modifier.height(24.dp))
+                    LineArtHero()
+                    Spacer(Modifier.height(32.dp))
                 } else {
                     Spacer(Modifier.height(24.dp))
-                }
 
-                Accounts(
-                    baseCurrency = baseCurrency,
-                    accounts = accounts,
-                    onClick = {
-                        accountModalData = AccountModalData(
-                            account = it.account,
+                    accounts.forEach { accountBalance ->
+                        AccountCard(
                             baseCurrency = baseCurrency,
-                            balance = it.balance,
-                            autoFocusKeyboard = false
+                            accountBalance = accountBalance,
+                            onClick = {
+                                accountModalData = AccountModalData(
+                                    account = accountBalance.account,
+                                    baseCurrency = baseCurrency,
+                                    balance = accountBalance.balance,
+                                    autoFocusKeyboard = false
+                                )
+                            }
                         )
+                        Spacer(Modifier.height(12.dp))
                     }
-                )
 
-                if (accounts.isNotEmpty()) {
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 Text(
-                    modifier = Modifier.padding(horizontal = 32.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                     text = stringResource(R.string.suggestions),
-                    style = UI.typo.b1.style(
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
-                Suggestions(
+                SuggestionChips(
                     suggestions = suggestions.filter { suggestion ->
                         accounts.map { it.account.name.toLowerCaseLocal() }
                             .contains(suggestion.name.toLowerCaseLocal()).not()
                     },
-                    onAddSuggestion = {
-                        onCreateAccount(it as CreateAccountData)
-                    },
+                    onAddSuggestion = onCreateAccount,
                     onAddNew = {
                         accountModalData = AccountModalData(
                             account = null,
@@ -175,31 +177,28 @@ fun BoxWithConstraintsScope.OnboardingAccounts(
                     }
                 )
 
-                Spacer(Modifier.height(96.dp))
+                Spacer(Modifier.height(120.dp))
             }
         }
     }
 
-    GradientCutBottom(
-        height = 96.dp
-    )
-
     if (accounts.isNotEmpty()) {
-        OnboardingButton(
-            Modifier
+        Button(
+            onClick = onDoneClick,
+            modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 20.dp),
-
-            text = stringResource(R.string.next),
-            textColor = White,
-            backgroundGradient = GradientIvy,
-            hasNext = true,
-            enabled = true
+                .padding(bottom = 20.dp)
+                .height(56.dp)
+                .testTag("next"),
+            shape = RoundedCornerShape(percent = 50),
         ) {
-            onDoneClick()
+            Text(
+                text = stringResource(R.string.next),
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
     }
 
@@ -213,21 +212,75 @@ fun BoxWithConstraintsScope.OnboardingAccounts(
     )
 }
 
+/** Lightweight Material 3 line-art hero — replaces the heavy isometric raster illustration. */
 @Composable
-private fun Accounts(
-    baseCurrency: String,
-    accounts: List<AccountBalance>,
-    onClick: (AccountBalance) -> Unit
-) {
-    for (account in accounts) {
-        AccountCard(
-            baseCurrency = baseCurrency,
-            accountBalance = account
+private fun LineArtHero() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(132.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.tertiaryContainer),
+            contentAlignment = Alignment.Center,
         ) {
-            onClick(account)
+            Icon(
+                imageVector = Icons.Outlined.AccountBalanceWallet,
+                contentDescription = null,
+                modifier = Modifier.size(68.dp),
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        }
+    }
+}
+
+/** Responsive, reflowing suggestion chips. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SuggestionChips(
+    suggestions: List<CreateAccountData>,
+    onAddSuggestion: (CreateAccountData) -> Unit,
+    onAddNew: () -> Unit,
+) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        suggestions.forEach { suggestion ->
+            InputChip(
+                selected = false,
+                onClick = { onAddSuggestion(suggestion) },
+                label = { Text(suggestion.name) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(InputChipDefaults.AvatarSize),
+                    )
+                },
+                shape = RoundedCornerShape(percent = 50),
+            )
         }
 
-        Spacer(Modifier.height(12.dp))
+        AssistChip(
+            onClick = onAddNew,
+            label = { Text(stringResource(R.string.add_new)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(AssistChipDefaults.IconSize),
+                )
+            },
+            shape = RoundedCornerShape(percent = 50),
+        )
     }
 }
 
@@ -238,51 +291,62 @@ private fun AccountCard(
     onClick: () -> Unit
 ) {
     val account = accountBalance.account
-    val accountColor = account.color.toComposeColor()
-    val dynamicContrast = accountColor.dynamicContrast()
+    val accentColor = account.color.toComposeColor()
+    val onAccent = findContrastTextColor(accentColor)
 
-    Row(
+    // Expressive ElevatedCard with a sweeping, asymmetrical corner profile.
+    ElevatedCard(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(UI.shapes.r3)
-            .background(accountColor, UI.shapes.r3)
-            .clickable {
-                onClick()
-            },
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(
+            topStart = 28.dp,
+            topEnd = 8.dp,
+            bottomEnd = 28.dp,
+            bottomStart = 8.dp,
+        ),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
     ) {
-        Spacer(Modifier.width(24.dp))
-
-        ItemIconMDefaultIcon(
-            modifier = Modifier
-                .padding(vertical = 16.dp)
-                .background(dynamicContrast, CircleShape),
-            iconName = account.icon,
-            defaultIcon = R.drawable.ic_custom_account_m,
-            tint = accountColor
-        )
-
-        Spacer(Modifier.width(20.dp))
-
-        Column {
-            Text(
-                text = account.name,
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = dynamicContrast
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(accentColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                ItemIconMDefaultIcon(
+                    iconName = account.icon,
+                    defaultIcon = R.drawable.ic_custom_account_m,
+                    tint = onAccent
                 )
-            )
+            }
 
-            AmountCurrencyB1Row(
-                amount = accountBalance.balance,
-                currency = account.currency ?: baseCurrency,
-                amountFontWeight = FontWeight.ExtraBold,
-                textColor = findContrastTextColor(accountColor)
-            )
+            Spacer(Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = account.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                AmountCurrencyB1Row(
+                    amount = accountBalance.balance,
+                    currency = account.currency ?: baseCurrency,
+                    amountFontWeight = FontWeight.ExtraBold,
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-
-        Spacer(Modifier.width(24.dp))
     }
 }
 
@@ -295,27 +359,9 @@ private fun Preview_Empty() {
         OnboardingAccounts(
             baseCurrency = baseCurrency,
             suggestions = listOf(
-                CreateAccountData(
-                    name = "Cash",
-                    currency = baseCurrency,
-                    color = Green,
-                    icon = "cash",
-                    balance = 0.0
-                ),
-                CreateAccountData(
-                    name = "Bank",
-                    currency = baseCurrency,
-                    color = Ivy,
-                    icon = "bank",
-                    balance = 0.0
-                ),
-                CreateAccountData(
-                    name = "Revolut",
-                    currency = baseCurrency,
-                    color = Color(0xFF4DCAFF),
-                    icon = "revolut",
-                    balance = 0.0
-                ),
+                CreateAccountData("Cash", baseCurrency, Green, "cash", 0.0),
+                CreateAccountData("Bank", baseCurrency, Ivy, "bank", 0.0),
+                CreateAccountData("Revolut", baseCurrency, Color(0xFF4DCAFF), "revolut", 0.0),
             ),
             accounts = listOf()
         )
@@ -331,96 +377,17 @@ private fun Preview_Accounts() {
         OnboardingAccounts(
             baseCurrency = baseCurrency,
             suggestions = listOf(
-                CreateAccountData(
-                    name = "Cash",
-                    currency = baseCurrency,
-                    color = Green,
-                    icon = "cash",
-                    balance = 0.0
-                ),
-                CreateAccountData(
-                    name = "Bank",
-                    currency = baseCurrency,
-                    color = Ivy,
-                    icon = "bank",
-                    balance = 0.0
-                ),
-                CreateAccountData(
-                    name = "Revolut",
-                    currency = baseCurrency,
-                    color = Color(0xFF4DCAFF),
-                    icon = "revolut",
-                    balance = 0.0
-                ),
+                CreateAccountData("Cash", baseCurrency, Green, "cash", 0.0),
+                CreateAccountData("Bank", baseCurrency, Ivy, "bank", 0.0),
+                CreateAccountData("Revolut", baseCurrency, Color(0xFF4DCAFF), "revolut", 0.0),
             ),
             accounts = listOf(
                 AccountBalance(
-                    account = Account(
-                        name = "Cash",
-                        color = Green.toArgb(),
-                        icon = "cash"
-                    ),
-                    balance = 0.0
-                )
-            )
-        )
-    }
-}
-
-@ExperimentalFoundationApi
-@Preview
-@Composable
-private fun Preview_Premium() {
-    IvyWalletPreview {
-        val baseCurrency = "BGN"
-        OnboardingAccounts(
-            baseCurrency = baseCurrency,
-            suggestions = listOf(
-                CreateAccountData(
-                    name = "Cash",
-                    currency = baseCurrency,
-                    color = Green,
-                    icon = "cash",
-                    balance = 0.0
-                ),
-                CreateAccountData(
-                    name = "Bank",
-                    currency = baseCurrency,
-                    color = Ivy,
-                    icon = "bank",
-                    balance = 0.0
-                ),
-                CreateAccountData(
-                    name = "Revolut",
-                    currency = baseCurrency,
-                    color = Color(0xFF4DCAFF),
-                    icon = "revolut",
-                    balance = 0.0
-                ),
-            ),
-            accounts = listOf(
-                AccountBalance(
-                    account = Account(
-                        name = "Cash",
-                        color = Green.toArgb(),
-                        icon = "cash"
-                    ),
+                    account = Account(name = "Cash", color = Green.toArgb(), icon = "cash"),
                     balance = 0.0
                 ),
                 AccountBalance(
-                    account = Account(
-                        name = "Revolut",
-                        color = IvyDark.toArgb(),
-                        icon = "cash"
-                    ),
-                    balance = 0.0
-                ),
-                AccountBalance(
-                    account = Account(
-                        name = "Revolut",
-                        color = Color(0xFF4DCAFF).toArgb(),
-                        icon = "revolut"
-                    ),
+                    account = Account(name = "Revolut", color = IvyDark.toArgb(), icon = "cash"),
                     balance = 0.0
                 ),
             )

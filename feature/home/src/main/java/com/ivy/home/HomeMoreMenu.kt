@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,8 +75,6 @@ import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Blue
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.BufferBattery
 import com.ivy.wallet.ui.theme.components.CircleButtonFilled
 import com.ivy.wallet.ui.theme.components.IvyIcon
@@ -127,7 +126,7 @@ fun BoxWithConstraintsScope.MoreMenu(
     )
 
     // Background
-    val colorMedium = UI.colors.medium
+    val colorMedium = MaterialTheme.colorScheme.surfaceContainer
     if (percentExpanded > 0.01f) {
         Canvas(
             modifier = modifier
@@ -215,7 +214,12 @@ fun BoxWithConstraintsScope.MoreMenu(
                 zIndex(520f)
             }
             .testTag("home_more_menu_arrow"),
-        backgroundColor = colorLerp(UI.colors.medium, UI.colors.pure, percentExpanded),
+        backgroundColor = colorLerp(
+            MaterialTheme.colorScheme.surfaceContainer,
+            MaterialTheme.colorScheme.surfaceContainerHighest,
+            percentExpanded
+        ),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
         icon = R.drawable.ic_expandarrow
     ) {
         setExpanded(!expanded)
@@ -274,8 +278,8 @@ private fun SearchButton(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(UI.shapes.rFull)
-            .background(UI.colors.pure)
-            .border(1.dp, Gray, UI.shapes.rFull)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest, UI.shapes.rFull)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, UI.shapes.rFull)
             .clickable {
                 onClick()
             },
@@ -283,7 +287,10 @@ private fun SearchButton(
     ) {
         Spacer(Modifier.width(12.dp))
 
-        IvyIcon(icon = R.drawable.ic_search)
+        IvyIcon(
+            icon = R.drawable.ic_search,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Spacer(Modifier.width(12.dp))
 
@@ -294,7 +301,7 @@ private fun SearchButton(
             text = stringResource(R.string.search_transactions),
             style = UI.typo.b2.style(
                 fontWeight = FontWeight.SemiBold,
-                color = UI.colors.pureInverse
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
 
@@ -310,7 +317,7 @@ private fun ColumnScope.OpenSource() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(UI.shapes.r4)
-            .background(UI.colors.pure)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, UI.shapes.r4)
             .clickable {
                 openUrl(
                     uriHandler = uriHandler,
@@ -323,7 +330,8 @@ private fun ColumnScope.OpenSource() {
         Spacer(Modifier.width(16.dp))
 
         IvyIcon(
-            icon = R.drawable.github_logo
+            icon = R.drawable.github_logo,
+            tint = MaterialTheme.colorScheme.onSurface
         )
 
         Column(
@@ -334,7 +342,8 @@ private fun ColumnScope.OpenSource() {
             Text(
                 text = stringResource(R.string.ivy_wallet_open_source),
                 style = UI.typo.b2.style(
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
 
@@ -344,7 +353,7 @@ private fun ColumnScope.OpenSource() {
                 text = Constants.URL_IVY_WALLET_REPO,
                 style = UI.typo.c.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = Blue
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -372,7 +381,7 @@ private fun ColumnScope.Buffer(
         Text(
             text = stringResource(R.string.savings_goal),
             style = UI.typo.b1.style(
-                color = UI.colors.pureInverse,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.ExtraBold
             )
         )
@@ -411,7 +420,9 @@ private fun QuickAccess(
         Text(
             modifier = Modifier.padding(start = 24.dp),
             text = stringResource(R.string.quick_access),
-            style = UI.typo.b2.style()
+            style = UI.typo.b2.style(
+                color = MaterialTheme.colorScheme.onSurface
+            )
         )
 
         Spacer(Modifier.height(16.dp))
@@ -453,19 +464,8 @@ private fun QuickAccess(
                     Theme.DARK -> stringResource(R.string.dark_mode)
                     Theme.AMOLED_DARK -> stringResource(R.string.amoled_mode)
                     Theme.AUTO -> stringResource(R.string.auto_mode)
-                },
-                backgroundColor = when (theme) {
-                    Theme.LIGHT -> UI.colors.pure
-                    Theme.DARK -> UI.colors.pureInverse
-                    Theme.AMOLED_DARK -> UI.colors.pureInverse
-                    Theme.AUTO -> UI.colors.pure
-                },
-                tint = when (theme) {
-                    Theme.LIGHT -> UI.colors.pureInverse
-                    Theme.DARK -> UI.colors.pure
-                    Theme.AMOLED_DARK -> UI.colors.pure
-                    Theme.AUTO -> UI.colors.pureInverse
                 }
+                // Uses the same neutral surface as every other Quick-access tile (consistency).
             ) {
                 onSwitchTheme()
             }
@@ -545,8 +545,8 @@ private fun MoreMenuButton(
     @DrawableRes icon: Int,
     label: String,
 
-    backgroundColor: Color = UI.colors.pure,
-    tint: Color = UI.colors.pureInverse,
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
     expandPadding: Dp = 14.dp,
 
     onClick: () -> Unit
@@ -572,7 +572,7 @@ private fun MoreMenuButton(
                 },
             text = label,
             style = UI.typo.c.style(
-                color = UI.colors.pureInverse,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center
             )

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -51,12 +52,10 @@ import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.domain.pure.data.IncomeExpensePair
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GreenDark
 import com.ivy.wallet.ui.theme.GreenLight
 import com.ivy.wallet.ui.theme.IvyDark
-import com.ivy.wallet.ui.theme.Orange
 import com.ivy.wallet.ui.theme.Purple1Dark
 import com.ivy.wallet.ui.theme.Red3Light
 import com.ivy.wallet.ui.theme.components.BackButtonType
@@ -113,7 +112,7 @@ private fun BoxWithConstraintsScope.UI(
                 text = stringResource(R.string.generating_report),
                 style = UI.typo.b1.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = Orange
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -156,7 +155,7 @@ private fun BoxWithConstraintsScope.UI(
             BalanceRow(
                 modifier = Modifier
                     .padding(start = 32.dp),
-                textColor = UI.colors.pureInverse,
+                textColor = MaterialTheme.colorScheme.onSurface,
                 currency = state.baseCurrency,
                 balance = state.balance,
                 balanceAmountPrefix = when {
@@ -173,7 +172,7 @@ private fun BoxWithConstraintsScope.UI(
                 income = state.income,
                 expenses = state.expenses,
                 hasAddButtons = false,
-                itemColor = UI.colors.pure,
+                itemColor = MaterialTheme.colorScheme.surface,
                 incomeHeaderCardClicked = {
                     if (state.transactions.isNotEmpty()) {
                         nav.navigateTo(
@@ -323,7 +322,7 @@ private fun NoFilterEmptyState(
 
         IvyIcon(
             icon = R.drawable.ic_filter_l,
-            tint = Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(8.dp))
@@ -331,7 +330,7 @@ private fun NoFilterEmptyState(
         Text(
             text = stringResource(R.string.no_filter),
             style = UI.typo.b1.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.ExtraBold
             )
         )
@@ -342,7 +341,7 @@ private fun NoFilterEmptyState(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.invalid_filter_warning),
             style = UI.typo.b2.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
@@ -378,8 +377,8 @@ private fun Toolbar(
         // Export CSV
         IvyOutlinedButton(
             text = stringResource(R.string.export),
-            iconTint = Green,
-            textColor = Green,
+            iconTint = MaterialTheme.colorScheme.tertiary,
+            textColor = MaterialTheme.colorScheme.tertiary,
             solidBackground = true,
             padding = 8.dp,
             iconStart = R.drawable.ic_export_csv

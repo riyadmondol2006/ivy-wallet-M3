@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,8 +41,6 @@ import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.utils.toLowerCaseLocal
 import com.ivy.navigation.navigation
@@ -48,18 +49,14 @@ import com.ivy.onboarding.components.OnboardingToolbar
 import com.ivy.onboarding.components.Suggestions
 import com.ivy.ui.R
 import com.ivy.wallet.domain.deprecated.logic.model.CreateCategoryData
-import com.ivy.wallet.ui.theme.GradientIvy
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.Ivy
-import com.ivy.wallet.ui.theme.IvyDark
 import com.ivy.wallet.ui.theme.Orange
 import com.ivy.wallet.ui.theme.OrangeLight
 import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.RedLight
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.GradientCutBottom
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
-import com.ivy.wallet.ui.theme.components.OnboardingButton
 import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.edit.CategoryModal
 import com.ivy.wallet.ui.theme.modal.edit.CategoryModalData
@@ -102,9 +99,8 @@ fun BoxWithConstraintsScope.OnboardingCategories(
                 Text(
                     modifier = Modifier.padding(horizontal = 32.dp),
                     text = stringResource(R.string.add_categories),
-                    style = UI.typo.h2.style(
-                        fontWeight = FontWeight.Black
-                    )
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
 //                PremiumInfo(
@@ -126,7 +122,6 @@ fun BoxWithConstraintsScope.OnboardingCategories(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                         selectedStep = 3,
                         stepsCount = 4,
-                        selectedColor = IvyDark
                     )
 
                     Spacer(Modifier.height(48.dp))
@@ -150,9 +145,8 @@ fun BoxWithConstraintsScope.OnboardingCategories(
                 Text(
                     modifier = Modifier.padding(horizontal = 32.dp),
                     text = stringResource(R.string.suggestions),
-                    style = UI.typo.b1.style(
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -182,21 +176,20 @@ fun BoxWithConstraintsScope.OnboardingCategories(
     )
 
     if (categories.isNotEmpty()) {
-        OnboardingButton(
-            Modifier
+        Button(
+            onClick = onDoneClick,
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 20.dp),
-
-            text = stringResource(R.string.finish),
-            textColor = White,
-            backgroundGradient = GradientIvy,
-            hasNext = false,
-            enabled = true
+                .padding(bottom = 20.dp)
+                .height(56.dp),
         ) {
-            onDoneClick()
+            Text(
+                text = stringResource(R.string.finish),
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
     }
 
@@ -232,13 +225,14 @@ private fun CategoryCard(
     onClick: () -> Unit
 ) {
     val categoryColor = category.color.value.toComposeColor()
+    val shape = RoundedCornerShape(20.dp)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(UI.shapes.r3)
-            .background(UI.colors.medium, UI.shapes.r3)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer, shape)
             .clickable {
                 onClick()
             },
@@ -261,9 +255,9 @@ private fun CategoryCard(
                 .padding(start = 16.dp, end = 24.dp)
                 .padding(vertical = 24.dp),
             text = category.name.value,
-            style = UI.typo.b2.style(
-                fontWeight = FontWeight.Bold
-            )
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(Modifier.width(24.dp))

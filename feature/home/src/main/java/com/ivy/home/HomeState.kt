@@ -13,6 +13,7 @@ import kotlinx.collections.immutable.ImmutableList
 import java.math.BigDecimal
 
 @Immutable
+@Suppress("DataClassDefaultValues")
 data class HomeState(
     val theme: Theme,
     val name: String,
@@ -34,5 +35,24 @@ data class HomeState(
     val hideBalance: Boolean,
     val hideIncome: Boolean,
     val expanded: Boolean,
-    val shouldShowAccountSpecificColorInTransactions: Boolean
+    val shouldShowAccountSpecificColorInTransactions: Boolean,
+    val creditCardsEnabled: Boolean = false,
+    val creditSummary: CreditCardsSummary = CreditCardsSummary.None,
 )
+
+@Immutable
+data class CreditCardsSummary(
+    val cardCount: Int,
+    val totalOwed: Double,
+    val totalLimit: Double,
+    val totalLimitLeft: Double,
+) {
+    companion object {
+        val None = CreditCardsSummary(
+            cardCount = 0,
+            totalOwed = 0.0,
+            totalLimit = 0.0,
+            totalLimitLeft = 0.0,
+        )
+    }
+}

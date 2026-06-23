@@ -11,21 +11,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ivy.budgets.model.DisplayBudget
 import com.ivy.design.api.LocalTimeFormatter
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.legacy.ui.theme.components.BudgetBattery
 import com.ivy.legacy.utils.clickableNoIndication
 import com.ivy.legacy.utils.format
@@ -34,8 +36,6 @@ import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.components.ReorderButton
 import com.ivy.wallet.ui.theme.components.ReorderModalSingleType
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
@@ -145,10 +145,9 @@ private fun BoxWithConstraintsScope.UI(
                 .padding(end = 24.dp)
                 .padding(vertical = 8.dp),
             text = item.budget.name,
-            style = UI.typo.b1.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.Bold
-            )
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 
@@ -183,10 +182,8 @@ private fun Toolbar(
         ) {
             Text(
                 text = stringResource(R.string.budgets),
-                style = UI.typo.h2.style(
-                    color = UI.colors.pureInverse,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (timeRange != null) {
@@ -194,10 +191,8 @@ private fun Toolbar(
 
                 Text(
                     text = timeRange.toDisplay(LocalTimeFormatter.current),
-                    style = UI.typo.b2.style(
-                        color = UI.colors.pureInverse,
-                        fontWeight = FontWeight.Medium
-                    )
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -237,19 +232,15 @@ private fun Toolbar(
                     } else {
                         stringResource(R.string.budget_info, categoryBudgetText, appBudgetMaxText)
                     },
-                    style = UI.typo.nC.style(
-                        color = Gray,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 if (totalRemainingBudgetText != null) {
                     Text(
                         text = totalRemainingBudgetText,
-                        style = UI.typo.nC.style(
-                            color = Gray,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -285,19 +276,17 @@ private fun BudgetItem(
         ) {
             Text(
                 text = displayBudget.budget.name,
-                style = UI.typo.b1.style(
-                    color = UI.colors.pureInverse,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(Modifier.height(2.dp))
 
             Text(
                 text = determineBudgetType(displayBudget.budget.parseCategoryIds().size),
-                style = UI.typo.c.style(
-                    color = Gray
-                )
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -317,7 +306,7 @@ private fun BudgetItem(
         currency = baseCurrency,
         expenses = displayBudget.spentAmount,
         budget = displayBudget.budget.amount,
-        backgroundNotFilled = UI.colors.medium
+        backgroundNotFilled = MaterialTheme.colorScheme.surfaceContainerHighest
     ) {
         onClick()
     }
@@ -335,19 +324,20 @@ private fun NoBudgetsEmptyState(
     ) {
         Spacer(Modifier.height(32.dp))
 
-        IvyIcon(
-            icon = R.drawable.ic_budget_xl,
-            tint = Gray
+        Icon(
+            modifier = Modifier.size(64.dp),
+            painter = painterResource(R.drawable.ic_budget_xl),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(24.dp))
 
         Text(
             text = emptyStateTitle,
-            style = UI.typo.b1.style(
-                color = Gray,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(Modifier.height(8.dp))
@@ -355,11 +345,9 @@ private fun NoBudgetsEmptyState(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = emptyStateText,
-            style = UI.typo.b2.style(
-                color = Gray,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
-            )
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
 
         Spacer(Modifier.height(96.dp))

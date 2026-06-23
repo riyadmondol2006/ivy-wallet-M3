@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,11 +28,6 @@ import com.ivy.design.l0_system.style
 import com.ivy.design.utils.thenIf
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Green
-import com.ivy.wallet.ui.theme.Ivy
-import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.Red
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB2Row
 import kotlin.math.abs
 
@@ -42,7 +38,7 @@ fun BufferBattery(
     buffer: Double,
     balance: Double,
     currency: String,
-    backgroundNotFilled: Color = UI.colors.pure,
+    backgroundNotFilled: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     onClick: (() -> Unit)? = null,
 ) {
     val bufferExceeded = balance < buffer
@@ -54,17 +50,13 @@ fun BufferBattery(
         1.0
     }
 
-    val textColor = when {
-        bufferExceededPercent <= 0.25 -> {
-            UI.colors.pureInverse
-        }
-        bufferExceededPercent <= 0.50 -> {
-            White
-        }
-        bufferExceededPercent <= 0.75 -> {
-            White
-        }
-        else -> White
+    // M3 tonal fill that follows Material You: low spend -> tertiary, exceeded -> error.
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val fillColor = when {
+        bufferExceededPercent <= 0.25 -> MaterialTheme.colorScheme.tertiary
+        bufferExceededPercent <= 0.50 -> MaterialTheme.colorScheme.primary
+        bufferExceededPercent <= 0.75 -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.error
     }
 
     Row(
@@ -74,21 +66,7 @@ fun BufferBattery(
             .background(backgroundNotFilled)
             .drawBehind {
                 drawRect(
-                    color = when {
-                        bufferExceededPercent <= 0.25 -> {
-                            Green
-                        }
-
-                        bufferExceededPercent <= 0.50 -> {
-                            Ivy
-                        }
-
-                        bufferExceededPercent <= 0.75 -> {
-                            Orange
-                        }
-
-                        else -> Red
-                    },
+                    color = fillColor,
                     size = size.copy(
                         width = (size.width * bufferExceededPercent).toFloat()
                     )

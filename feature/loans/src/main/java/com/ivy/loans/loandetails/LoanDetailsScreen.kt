@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -49,7 +50,6 @@ import com.ivy.legacy.humanReadableType
 import com.ivy.legacy.ui.component.ItemStatisticToolbar
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.clickableNoIndication
-import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.formatNicely
 import com.ivy.legacy.utils.isNotNullOrBlank
@@ -122,7 +122,7 @@ private fun BoxWithConstraintsScope.UI(
                 .statusBarsPadding()
                 .padding(top = 16.dp)
                 .clip(UI.shapes.r1Top)
-                .background(UI.colors.pure),
+                .background(MaterialTheme.colorScheme.surface),
             state = listState,
         ) {
             item {
@@ -162,7 +162,7 @@ private fun BoxWithConstraintsScope.UI(
                         .height(32.dp)
                         .fillMaxWidth()
                         .background(itemColor) // itemColor is displayed below the clip
-                        .background(UI.colors.pure, UI.shapes.r1Top)
+                        .background(MaterialTheme.colorScheme.surface, UI.shapes.r1Top)
                 )
             }
 
@@ -415,10 +415,6 @@ private fun LoanInfoCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .drawColoredShadow(
-                color = backgroundColor,
-                alpha = 0.1f
-            )
             .background(backgroundColor, UI.shapes.r2),
     ) {
         Row(
@@ -526,7 +522,7 @@ private fun LoanInfoCard(
                 .fillMaxWidth()
                 .height(24.dp)
                 .padding(horizontal = 24.dp),
-            notFilledColor = UI.colors.pure,
+            notFilledColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             percent = percentPaid
         )
 
@@ -588,7 +584,7 @@ private fun LoanInfoCard(
                     .fillMaxWidth()
                     .height(24.dp)
                     .padding(horizontal = 24.dp),
-                notFilledColor = UI.colors.pure,
+                notFilledColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 percent = loanPercentPaid
             )
         }
@@ -654,23 +650,23 @@ private fun LoanRecordItem(
             .clickable {
                 onClick()
             }
-            .background(UI.colors.medium, UI.shapes.r4)
+            .background(MaterialTheme.colorScheme.surfaceContainer, UI.shapes.r4)
             .testTag("loan_record_item")
     ) {
         if (account != null || loanRecord.interest) {
             Row(Modifier.padding(16.dp)) {
                 if (account != null) {
                     IvyButton(
-                        backgroundGradient = Gradient.solid(UI.colors.pure),
+                        backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
                         hasGlow = false,
-                        iconTint = UI.colors.pureInverse,
+                        iconTint = MaterialTheme.colorScheme.onSurface,
                         text = account.name,
                         iconStart = getCustomIconIdS(
                             iconName = account.icon,
                             defaultIcon = R.drawable.ic_custom_account_s
                         ),
                         textStyle = UI.typo.c.style(
-                            color = UI.colors.pureInverse,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.ExtraBold
                         ),
                         padding = 8.dp,
@@ -735,7 +731,7 @@ private fun LoanRecordItem(
                 text = loanRecord.note!!,
                 style = UI.typo.b1.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -791,20 +787,20 @@ private fun InitialRecordItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(UI.shapes.r4)
-            .background(UI.colors.medium, UI.shapes.r4)
+            .background(MaterialTheme.colorScheme.surfaceContainer, UI.shapes.r4)
             .testTag("loan_record_item")
     ) {
         IvyButton(
             modifier = Modifier.padding(16.dp),
-            backgroundGradient = Gradient.solid(UI.colors.pure),
+            backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
             text = stringResource(id = R.string.initial_loan_record),
-            iconTint = UI.colors.pureInverse,
+            iconTint = MaterialTheme.colorScheme.onSurface,
             iconStart = getCustomIconIdS(
                 iconName = loan.icon,
                 defaultIcon = R.drawable.ic_custom_loan_s
             ),
             textStyle = UI.typo.c.style(
-                color = UI.colors.pureInverse,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.ExtraBold
             ),
             padding = 8.dp,
@@ -833,7 +829,7 @@ private fun InitialRecordItem(
                 text = loan.note!!,
                 style = UI.typo.b1.style(
                     fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
         }

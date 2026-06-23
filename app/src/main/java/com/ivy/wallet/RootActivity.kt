@@ -10,6 +10,7 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
@@ -96,6 +97,17 @@ class RootActivity : AppCompatActivity(), RootScreen {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setupApp()
+        // Predictive-back-aware back handling via the dispatcher (replaces the deprecated
+        // onBackPressed() override). In-app screens/modals pop first; when nothing is left to
+        // pop we hand back to the system so it can run its exit / cross-task predictive preview.
+        onBackPressedDispatcher.addCallback(this) {
+            if (!viewModel.isAppLocked() && navigation.onBackPressed()) {
+                return@addCallback
+            }
+            isEnabled = false
+            onBackPressedDispatcher.onBackPressed()
+            isEnabled = true
+        }
         setContent {
             val viewModel: RootViewModel = viewModel()
             val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -348,16 +360,6 @@ class RootActivity : AppCompatActivity(), RootScreen {
         biometricPrompt.authenticate(promptInfo)
     }
 
-    override fun onBackPressed() {
-        if (viewModel.isAppLocked()) {
-            super.onBackPressed()
-        } else {
-            if (!navigation.onBackPressed()) {
-                super.onBackPressed()
-            }
-        }
-    }
-
     @Suppress("TooGenericExceptionCaught", "PrintStackTrace")
     override fun openUrlInBrowser(url: String) {
         try {
@@ -379,7 +381,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         val share = Intent.createChooser(
             Intent().apply {
                 action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, Constants.URL_IVY_WALLET_GOOGLE_PLAY)
+                putExtra(Intent.EXTRA_TEXT, Constants.URL_IVY_WALLET_REPO)
                 type = "text/plain"
             },
             null

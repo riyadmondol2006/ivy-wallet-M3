@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -54,10 +55,6 @@ import com.ivy.legacy.utils.onScreenStart
 import com.ivy.legacy.utils.toLowerCaseLocal
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
-import com.ivy.wallet.ui.theme.GradientGreen
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.Ivy
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.modal.DURATION_MODAL_ANIM
 import java.util.Locale
 
@@ -149,7 +146,7 @@ private fun SearchInput(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(UI.shapes.rFull)
-            .border(2.dp, UI.colors.mediumInverse, UI.shapes.rFull)
+            .border(2.dp, MaterialTheme.colorScheme.outline, UI.shapes.rFull)
             .clickable {
                 inputFocus.requestFocus()
             },
@@ -193,7 +190,7 @@ private fun SearchInput(
                     textAlign = TextAlign.Start
                 ),
                 singleLine = true,
-                cursorBrush = SolidColor(UI.colors.pureInverse),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardActions = KeyboardActions(
                     onDone = {
                         hideKeyboard(view)
@@ -214,13 +211,15 @@ private fun SelectedCurrencyCard(
     currency: IvyCurrency,
     preselected: Boolean,
 ) {
+    val container = MaterialTheme.colorScheme.primaryContainer
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(UI.shapes.r3)
             .background(
-                brush = (if (preselected) GradientGreen else GradientIvy).asHorizontalBrush(),
+                color = container,
                 shape = UI.shapes.r3
             )
             .padding(vertical = 20.dp),
@@ -232,7 +231,7 @@ private fun SelectedCurrencyCard(
             Text(
                 text = currency.name,
                 style = UI.typo.b2.style(
-                    color = White,
+                    color = onContainer,
                     fontWeight = FontWeight.SemiBold
                 )
             )
@@ -242,7 +241,7 @@ private fun SelectedCurrencyCard(
             Text(
                 text = currency.code,
                 style = UI.typo.b1.style(
-                    color = White,
+                    color = onContainer,
                     fontWeight = FontWeight.ExtraBold
                 )
             )
@@ -252,13 +251,13 @@ private fun SelectedCurrencyCard(
 
         IvyIcon(
             icon = R.drawable.ic_check,
-            tint = White
+            tint = onContainer
         )
 
         Text(
             text = if (preselected) stringResource(R.string.pre_selected) else stringResource(R.string.selected_text),
             style = UI.typo.b2.style(
-                color = White,
+                color = onContainer,
                 fontWeight = FontWeight.SemiBold
             )
         )
@@ -347,13 +346,23 @@ private fun CurrencyItemCard(
 ) {
     Spacer(Modifier.height(12.dp))
 
+    val itemBackground = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val itemTextColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(UI.shapes.r4)
             .background(
-                color = if (selected) Ivy else UI.colors.medium,
+                color = itemBackground,
                 shape = UI.shapes.r4
             )
             .clickable {
@@ -367,7 +376,7 @@ private fun CurrencyItemCard(
         Text(
             text = currency.code,
             style = UI.typo.b1.style(
-                color = if (selected) White else UI.colors.pureInverse,
+                color = itemTextColor,
                 fontWeight = FontWeight.ExtraBold
             )
         )
@@ -377,7 +386,7 @@ private fun CurrencyItemCard(
         Text(
             text = currency.name.take(20),
             style = UI.typo.b2.style(
-                color = if (selected) White else UI.colors.pureInverse,
+                color = itemTextColor,
                 fontWeight = FontWeight.SemiBold
             )
         )
@@ -399,7 +408,7 @@ private fun LetterDividerItem(
         modifier = Modifier.padding(start = 32.dp),
         text = letterDivider.letter,
         style = UI.typo.c.style(
-            color = UI.colors.pureInverse,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold
         )
     )

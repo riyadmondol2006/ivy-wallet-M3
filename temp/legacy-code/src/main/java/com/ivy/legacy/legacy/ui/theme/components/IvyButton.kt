@@ -1,22 +1,21 @@
 package com.ivy.wallet.ui.theme.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -26,15 +25,20 @@ import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletComponentPreview
-import com.ivy.legacy.utils.drawColoredShadow
-import com.ivy.design.utils.thenIf
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientIvy
 import com.ivy.wallet.ui.theme.Ivy
 import com.ivy.wallet.ui.theme.White
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
+/**
+ * Native Material 3 filled button. The legacy gradient/glow look is dropped in favor of a clean
+ * M3 pill: the caller's [backgroundGradient] start color becomes the solid M3 container color.
+ *
+ * Several legacy-only knobs ([shadowAlpha], [wrapContentMode], [hasGlow], [iconEdgePadding]) are
+ * retained for source compatibility but are no-ops under the M3 [Button].
+ */
+@Suppress("UNUSED_PARAMETER", "LongParameterList")
 @Composable
 fun IvyButton(
     modifier: Modifier = Modifier,
@@ -56,128 +60,39 @@ fun IvyButton(
     iconTextPadding: Dp = 4.dp,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = modifier
-            .thenIf(enabled && hasGlow) {
-                drawColoredShadow(
-                    color = backgroundGradient.startColor,
-                    borderRadius = 0.dp,
-                    shadowRadius = 16.dp,
-                    alpha = shadowAlpha,
-                    offsetX = 0.dp,
-                    offsetY = 8.dp
-                )
-            }
-            .clip(UI.shapes.rFull)
-            .background(
-                brush = if (enabled) {
-                    backgroundGradient.asHorizontalBrush()
-                } else {
-                    SolidColor(UI.colors.gray)
-                },
-                shape = UI.shapes.rFull
-            )
-            .clickable(onClick = onClick, enabled = enabled),
-        verticalAlignment = Alignment.CenterVertically
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = RoundedCornerShape(percent = 50),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundGradient.startColor,
+            contentColor = iconTint,
+        ),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = padding),
     ) {
-        when {
-            iconStart != null -> {
-                IconStart(
-                    icon = iconStart,
-                    tint = iconTint,
-                    iconEdgePadding = iconEdgePadding,
-                    iconTextPadding = iconTextPadding
-                )
-            }
-            iconEnd != null && !wrapContentMode -> {
-                IconEnd(
-                    icon = iconEnd,
-                    tint = Color.Transparent,
-                    iconEdgePadding = iconEdgePadding,
-                    iconTextPadding = iconTextPadding
-                )
-            }
-            else -> {
-                Spacer(modifier = Modifier.width(24.dp))
-            }
+        if (iconStart != null) {
+            Icon(
+                painter = painterResource(id = iconStart),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                tint = iconTint,
+            )
+            Spacer(Modifier.width(iconTextPadding))
         }
 
-        if (!wrapContentMode) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
+        Text(text = text, style = textStyle)
 
-        Text(
-            modifier = Modifier.padding(
-                vertical = padding,
-            ),
-            text = text,
-            style = textStyle
-        )
-
-        if (!wrapContentMode) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
-
-        when {
-            iconStart != null && !wrapContentMode -> {
-                IconStart(
-                    icon = iconStart,
-                    tint = Color.Transparent,
-                    iconEdgePadding = iconEdgePadding,
-                    iconTextPadding = iconTextPadding
-                )
-            }
-            iconEnd != null -> {
-                IconEnd(
-                    icon = iconEnd,
-                    tint = iconTint,
-                    iconEdgePadding = iconEdgePadding,
-                    iconTextPadding = iconTextPadding
-                )
-            }
-            else -> {
-                Spacer(modifier = Modifier.width(24.dp))
-            }
+        if (iconEnd != null) {
+            Spacer(Modifier.width(iconTextPadding))
+            Icon(
+                painter = painterResource(id = iconEnd),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                tint = iconTint,
+            )
         }
     }
-}
-
-@Composable
-private fun IconStart(
-    iconEdgePadding: Dp,
-    iconTextPadding: Dp,
-    icon: Int,
-    tint: Color,
-) {
-    Spacer(modifier = Modifier.width(iconEdgePadding))
-
-    Icon(
-        modifier = Modifier,
-        painter = painterResource(id = icon),
-        contentDescription = "icon",
-        tint = tint,
-    )
-
-    Spacer(modifier = Modifier.width(iconTextPadding))
-}
-
-@Composable
-private fun IconEnd(
-    iconEdgePadding: Dp,
-    iconTextPadding: Dp,
-    icon: Int,
-    tint: Color,
-) {
-    Spacer(modifier = Modifier.width(iconTextPadding))
-
-    Icon(
-        modifier = Modifier,
-        painter = painterResource(id = icon),
-        contentDescription = "icon",
-        tint = tint,
-    )
-
-    Spacer(modifier = Modifier.width(iconEdgePadding))
 }
 
 @Preview
@@ -198,40 +113,7 @@ private fun PreviewIvyButtonWrapContentWithIconStart() {
 
 @Preview
 @Composable
-private fun PreviewIvyButtonFillMaxWidthWithIconStart() {
-    IvyWalletComponentPreview {
-        IvyButton(
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth(),
-            iconStart = R.drawable.ic_plus,
-            text = "Add new",
-            wrapContentMode = false
-        ) {
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun PreviewIvyButtonWrapContentWithIconEnd() {
-    IvyWalletComponentPreview {
-        IvyButton(
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .wrapContentSize(),
-            backgroundGradient = Gradient(Ivy, Ivy),
-            iconEnd = R.drawable.ic_onboarding_next_arrow,
-            text = "Category 1",
-            wrapContentMode = true
-        ) {
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun PreviewIvyButtonFillMaxWidthWithIconEnd() {
+private fun PreviewIvyButtonFillMaxWidth() {
     IvyWalletComponentPreview {
         IvyButton(
             modifier = Modifier

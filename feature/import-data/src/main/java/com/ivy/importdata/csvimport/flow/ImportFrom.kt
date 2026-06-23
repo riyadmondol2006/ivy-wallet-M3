@@ -1,8 +1,6 @@
 package com.ivy.importdata.csvimport.flow
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,24 +15,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.domain.deprecated.logic.csv.model.ImportType
 import com.ivy.navigation.CSVScreen
 import com.ivy.navigation.navigation
 import com.ivy.onboarding.components.OnboardingToolbar
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.components.GradientCutBottom
 import com.ivy.wallet.ui.theme.components.IvyIcon
 
 @ExperimentalFoundationApi
@@ -70,7 +66,7 @@ fun BoxWithConstraintsScope.ImportFrom(
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
+                    .height(56.dp)
                     .padding(horizontal = 16.dp),
                 onClick = {
                     nav.navigateTo(CSVScreen(launchedFromOnboarding))
@@ -78,10 +74,8 @@ fun BoxWithConstraintsScope.ImportFrom(
             ) {
                 Text(
                     text = stringResource(id = R.string.manual_csv_import),
-                    style = UI.typo.b2.style(
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
             Spacer(Modifier.height(16.dp))
@@ -93,9 +87,9 @@ fun BoxWithConstraintsScope.ImportFrom(
             Text(
                 modifier = Modifier.padding(start = 32.dp),
                 text = stringResource(R.string.import_from),
-                style = UI.typo.h2.style(
-                    fontWeight = FontWeight.Black
-                )
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(Modifier.height(24.dp))
@@ -110,13 +104,9 @@ fun BoxWithConstraintsScope.ImportFrom(
 
         item {
             // last spacer
-            Spacer(Modifier.height(96.dp))
+            Spacer(Modifier.height(24.dp))
         }
     }
-
-    GradientCutBottom(
-        height = 96.dp
-    )
 }
 
 @Composable
@@ -124,34 +114,34 @@ private fun ImportOption(
     importType: ImportType,
     onImportFrom: (ImportType) -> Unit,
 ) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(UI.shapes.r3)
-            .background(UI.colors.medium, UI.shapes.r3)
-            .clickable {
-                onImportFrom(importType)
-            }
-            .padding(vertical = 24.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp),
+        onClick = { onImportFrom(importType) }
     ) {
-        Spacer(Modifier.width(20.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(Modifier.width(20.dp))
 
-        IvyIcon(
-            modifier = Modifier.size(32.dp),
-            icon = importType.logo(),
-            tint = Color.Unspecified
-        )
-
-        Text(
-            modifier = Modifier.padding(start = 16.dp, end = 32.dp),
-            text = importType.listName(),
-            style = UI.typo.b2.style(
-                fontWeight = FontWeight.Bold,
-                color = UI.colors.pureInverse
+            IvyIcon(
+                modifier = Modifier.size(32.dp),
+                icon = importType.logo(),
+                tint = Color.Unspecified
             )
-        )
+
+            Text(
+                modifier = Modifier.padding(start = 16.dp, end = 32.dp),
+                text = importType.listName(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 
     Spacer(Modifier.height(8.dp))

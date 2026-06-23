@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,8 +21,6 @@ import com.ivy.legacy.utils.navigationBarInset
 import com.ivy.legacy.utils.toDensityDp
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.GradientGreen
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.ActionsRow
 import com.ivy.wallet.ui.theme.components.CloseButton
 import com.ivy.wallet.ui.theme.components.IvyButton
@@ -51,6 +50,16 @@ fun BoxWithConstraintsScope.PieChartStatisticBottomBar(
         Spacer(Modifier.weight(1f))
 
         val isIncome = type == TransactionType.INCOME
+        val containerColor = if (isIncome) {
+            MaterialTheme.colorScheme.tertiary
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+        val onContainerColor = if (isIncome) {
+            MaterialTheme.colorScheme.onTertiary
+        } else {
+            MaterialTheme.colorScheme.onPrimary
+        }
         IvyButton(
             iconStart = R.drawable.ic_plus,
             text = if (isIncome) {
@@ -60,12 +69,12 @@ fun BoxWithConstraintsScope.PieChartStatisticBottomBar(
             } else {
                 stringResource(id = R.string.add_expense)
             },
-            backgroundGradient = if (isIncome) GradientGreen else Gradient.solid(UI.colors.pureInverse),
+            backgroundGradient = Gradient.solid(containerColor),
             textStyle = UI.typo.b2.style(
-                color = if (isIncome) White else UI.colors.pure,
+                color = onContainerColor,
                 fontWeight = FontWeight.ExtraBold
             ),
-            iconTint = if (isIncome) White else UI.colors.pure
+            iconTint = onContainerColor
         ) {
             onAdd(type)
         }
