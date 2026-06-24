@@ -1,0 +1,127 @@
+name: Release
+
+# One-click release. Pick a semantic version (or leave "auto" to patch-bump the latest tag) and
+# this single run does everything: bump the version, commit + tag it on main, build the signed
+# APK, and publish a GitHub Release with an auto-generated changelog. No cron, no bot PR.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semantic version e.g. 2.1.0 — or "auto" to bump the patch of the latest tag'
+        required: true
+        default: 'auto'
+      prerelease:
+        description: 'Mark this GitHub Release as a pre-release'
+        type: boolean
+        required: false
+        default: false
+
+# Never cancel a release in flight, and never run two at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history + tags for "auto" resolution and changelog
+
+      - name: Resolve version name & code
+        id: ver
+        run: |
+          set -euo pipefail
+          INPUT="${{ github.event.inputs.version }}"
+
+          if [ "$INPUT" = "auto" ]; then
+            LATEST=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+            if [ -z "$LATEST" ]; then
+              NAME="1.0.0"
+            else
+              BASE="${LATEST#v}"
+              MAJOR=$(echo "$BASE" | cut -d. -f1)
+              MINOR=$(echo "$BASE" | cut -d. -f2)
+              PATCH=$(echo "$BASE" | cut -d. -f3)
+              NAME="${MAJOR}.${MINOR}.$((PATCH + 1))"
+            fi
+          else
+            NAME="$INPUT"
+          fi
+
+          if ! echo "$NAME" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version '$NAME' is not semantic (expected X.Y.Z)"
+            exit 1
+          fi
+          if git rev-parse "v$NAME" >/dev/null 2>&1; then
+            echo "::error::Tag v$NAME already exists"
+            exit 1
+          fi
+
+          CUR_CODE=$(grep 'version-code =' gradle/libs.versions.toml | awk -F'"' '{print $2}')
+          NEW_CODE=$((CUR_CODE + 1))
+
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$NEW_CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$NAME (build $NEW_CODE)"
+
+      - name: Bump version in libs.versions.toml
+        run: |
+          sed -i "s/version-name = \".*\"/version-name = \"${{ steps.ver.outputs.name }}\"/" gradle/libs.versions.toml
+          sed -i "s/version-code = \".*\"/version-code = \"${{ steps.ver.outputs.code }}\"/" gradle/libs.versions.toml
+          grep -E 'version-name|version-code' gradle/libs.versions.toml
+
+      - name: Commit & tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # [skip ci] so the push-triggered CI workflows don't re-run on a version-only bump —
+          # the signed assembleRelease below is the real validation.
+          git commit -am "Release ${{ steps.ver.outputs.tag }} (${{ steps.ver.outputs.code }}) [skip ci]"
+          git tag "${{ steps.ver.outputs.tag }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.ver.outputs.tag }}"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      # Decode the base64-encoded keystore stored in the SIGNING_KEYSTORE secret.
+      # To encode your keystore: base64 -i sign.jks | pbcopy  (macOS)
+      - name: Decode signing keystore
+        run: echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > sign.jks
+
+      - name: Build signed release APK
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-configuration-cache
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "Ivy Wallet M3 ${{ steps.ver.outputs.tag }}"
+          generate_release_notes: true
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: app/build/outputs/apk/release/app-release.apk
+          draft: false
+          body: |
+            **Version:** ${{ steps.ver.outputs.name }} (build ${{ steps.ver.outputs.code }})
+
+            ### Install
+            Download **app-release.apk** below and install it on your Android device (API 28+).
+
+            > Signed with a private key. Not distributed via Google Play.
