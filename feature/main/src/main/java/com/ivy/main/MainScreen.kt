@@ -47,7 +47,8 @@ fun BoxWithConstraintsScope.MainScreen(screen: MainScreen) {
         tab = ivyContext.mainTab,
         baseCurrency = currency,
         selectTab = viewModel::selectTab,
-        onCreateAccount = viewModel::createAccount
+        onCreateAccount = viewModel::createAccount,
+        onEditAccount = viewModel::editAccount,
     )
 }
 
@@ -62,8 +63,15 @@ private fun BoxWithConstraintsScope.UI(
 
     selectTab: (MainTab) -> Unit,
     onCreateAccount: (CreateAccountData) -> Unit,
+    onEditAccount: (com.ivy.legacy.datamodel.Account, Double) -> Unit,
 ) {
     val boxScope = this
+
+    // Hosted here (above the bottom bar) rather than inside AccountsTab so the modal's bottom
+    // action row — and the amount keypad's "Enter" — aren't occluded by the BottomBar. Used for
+    // both the FAB "add account" and the Accounts tab "add / edit credit card" flows.
+    var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
+
     AnimatedContent(
         targetState = tab,
         transitionSpec = {
@@ -76,12 +84,12 @@ private fun BoxWithConstraintsScope.UI(
         with(boxScope) {
             when (currentTab) {
                 MainTab.HOME -> HomeTab()
-                MainTab.ACCOUNTS -> AccountsTab()
+                MainTab.ACCOUNTS -> AccountsTab(
+                    openCreditCardModal = { accountModalData = it }
+                )
             }
         }
     }
-
-    var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
 
     val nav = navigation()
     BottomBar(
@@ -133,7 +141,7 @@ private fun BoxWithConstraintsScope.UI(
     AccountModal(
         modal = accountModalData,
         onCreateAccount = onCreateAccount,
-        onEditAccount = { _, _ -> },
+        onEditAccount = onEditAccount,
         dismiss = {
             accountModalData = null
         }
@@ -151,7 +159,8 @@ private fun PreviewMainScreen() {
             tab = MainTab.HOME,
             baseCurrency = "BGN",
             selectTab = {},
-            onCreateAccount = { }
+            onCreateAccount = { },
+            onEditAccount = { _, _ -> }
         )
     }
 }

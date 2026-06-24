@@ -65,7 +65,6 @@ import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.ReorderButton
 import com.ivy.wallet.ui.theme.components.ReorderModalSingleType
 import com.ivy.wallet.ui.theme.findContrastTextColor
-import com.ivy.wallet.ui.theme.modal.edit.AccountModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.persistentListOf
@@ -74,13 +73,16 @@ import java.util.UUID
 import com.ivy.legacy.datamodel.Account as LegacyAccount
 
 @Composable
-fun BoxWithConstraintsScope.AccountsTab() {
+fun BoxWithConstraintsScope.AccountsTab(
+    openCreditCardModal: (AccountModalData) -> Unit = {}
+) {
     val viewModel: AccountsViewModel = screenScopedViewModel()
     val uiState = viewModel.uiState()
 
     UI(
         state = uiState,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        openCreditCardModal = openCreditCardModal
     )
 }
 
@@ -88,7 +90,8 @@ fun BoxWithConstraintsScope.AccountsTab() {
 @Composable
 private fun BoxWithConstraintsScope.UI(
     state: AccountsState,
-    onEvent: (AccountsEvent) -> Unit = {}
+    onEvent: (AccountsEvent) -> Unit = {},
+    openCreditCardModal: (AccountModalData) -> Unit = {},
 ) {
     val nav = navigation()
     val ivyContext = com.ivy.legacy.ivyWalletCtx()
@@ -100,7 +103,6 @@ private fun BoxWithConstraintsScope.UI(
         state.accountsData.filter { it.account.creditLimit == null }.toImmutableList()
     }
 
-    var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
     var markPaidCard: AccountData? by remember { mutableStateOf(null) }
 
     var listState = rememberLazyListState()
@@ -136,11 +138,13 @@ private fun BoxWithConstraintsScope.UI(
                     cards = creditCards,
                     onCardClick = { markPaidCard = it },
                     onAddCard = {
-                        accountModalData = AccountModalData(
-                            account = null,
-                            baseCurrency = state.baseCurrency,
-                            balance = 0.0,
-                            creditCardMode = true
+                        openCreditCardModal(
+                            AccountModalData(
+                                account = null,
+                                baseCurrency = state.baseCurrency,
+                                balance = 0.0,
+                                creditCardMode = true
+                            )
                         )
                     }
                 )
@@ -251,15 +255,6 @@ private fun BoxWithConstraintsScope.UI(
         )
     }
 
-    AccountModal(
-        modal = accountModalData,
-        onCreateAccount = { onEvent(AccountsEvent.OnCreateAccount(it)) },
-        onEditAccount = { account, balance ->
-            onEvent(AccountsEvent.OnEditAccount(account, balance))
-        },
-        dismiss = { accountModalData = null }
-    )
-
     markPaidCard?.let { card ->
         MarkPaidSheet(
             card = card,
@@ -273,11 +268,13 @@ private fun BoxWithConstraintsScope.UI(
                 markPaidCard = null
             },
             onEdit = {
-                accountModalData = AccountModalData(
-                    account = card.toLegacyAccount(),
-                    baseCurrency = state.baseCurrency,
-                    balance = card.balance,
-                    creditCardMode = true
+                openCreditCardModal(
+                    AccountModalData(
+                        account = card.toLegacyAccount(),
+                        baseCurrency = state.baseCurrency,
+                        balance = card.balance,
+                        creditCardMode = true
+                    )
                 )
                 markPaidCard = null
             },

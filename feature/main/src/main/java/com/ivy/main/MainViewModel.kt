@@ -9,6 +9,7 @@ import com.ivy.domain.usecase.exchange.SyncExchangeRatesUseCase
 import com.ivy.frp.test.TestIdlingResource
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.MainTab
+import com.ivy.legacy.datamodel.Account as LegacyAccount
 import com.ivy.legacy.domain.deprecated.logic.AccountCreator
 import com.ivy.legacy.utils.asLiveData
 import com.ivy.legacy.utils.ioThread
@@ -70,6 +71,16 @@ class MainViewModel @Inject constructor(
             TestIdlingResource.increment()
 
             accountCreator.createAccount(data) {}
+
+            TestIdlingResource.decrement()
+        }
+    }
+
+    fun editAccount(account: LegacyAccount, newBalance: Double) {
+        viewModelScope.launch {
+            TestIdlingResource.increment()
+
+            accountCreator.editAccount(account, newBalance) {}
 
             TestIdlingResource.decrement()
         }
