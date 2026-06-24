@@ -84,7 +84,15 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 
 ## CI / Auto-Release (GitHub Actions)
 
-Workflows run on every push to `main` and on pull requests. A signed release APK is built and published to GitHub Releases automatically whenever the weekly version-bump PR is merged. You can also trigger a release manually via **Actions → Release → Run workflow**.
+Workflows run on every push to `main` and on pull requests. All jobs use **Temurin Java 17** (matching the build's JVM target), and each CI workflow cancels superseded runs on the same branch/PR (`concurrency` + `cancel-in-progress`) for faster feedback and fewer wasted minutes.
+
+### Release flow
+
+1. **Weekly bump** — every Sunday `automatic_release.yml` opens a PR that bumps `version-name`/`version-code` in `gradle/libs.versions.toml`.
+2. **Merge** — merging that PR pushes an "Automatic release" commit to `main`.
+3. **Publish** — `internal_release.yml` detects that commit, decodes your signing keystore, builds `assembleRelease`, tags `v<version>-<code>`, and attaches the signed APK to a new GitHub Release.
+
+To cut a release **on demand** (without waiting for the weekly cron), bump the version in `libs.versions.toml` and run **Actions → Release → Run workflow** — it builds and publishes whatever version is currently committed. Releases are serialized (`concurrency: release`) so two never run at once.
 
 ### Required GitHub Secrets
 
@@ -131,6 +139,8 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@17 ANDROID_HOME=~/Library/Android/sdk \
 ```
 
 For a production-signed release, place your `sign.jks` in the project root and provide `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, and `SIGNING_KEY_PASSWORD` as environment variables, then run `:app:assembleRelease`.
+
+> **Build speed:** the Gradle build cache and parallel execution are enabled by default (`org.gradle.caching`, `org.gradle.parallel` in `gradle.properties`), so warm builds are substantially faster than a clean build. `--no-configuration-cache` is still required because the root `module.graph.assertion` plugin is not configuration-cache compatible — the cache + parallel flags deliver the speedup without it.
 
 ---
 

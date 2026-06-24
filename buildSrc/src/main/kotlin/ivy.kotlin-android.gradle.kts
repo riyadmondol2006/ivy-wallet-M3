@@ -21,6 +21,16 @@ android {
     defaultConfig {
         minSdk = catalog.version("min-sdk").toInt()
     }
+
+    lint {
+        // The Slack compose-lint ParameterOrderDetector crashes (NPE in getText()) on some legacy
+        // files, surfacing as fatal `LintError`. RestrictedApi fires ~2k false positives on Room
+        // 2.7's generated DAO code (calls to @RestrictTo androidx.room.util.performSuspending).
+        // Both are tooling issues with no source to fix — disable project-wide so every module's
+        // lint report (and the app's checkDependencies aggregate) stays clean.
+        disable += "ComposeParameterOrder"
+        disable += "RestrictedApi"
+    }
 }
 
 gradle.projectsEvaluated {

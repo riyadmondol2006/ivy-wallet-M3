@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import com.ivy.base.legacy.Theme
@@ -34,7 +35,7 @@ fun rootView(): View = LocalView.current
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
-fun rootActivity(): AppCompatActivity = LocalContext.current as AppCompatActivity
+fun rootActivity(): AppCompatActivity = LocalActivity.current as AppCompatActivity
 
 @Composable
 fun rootScreen(): RootScreen = LocalContext.current as RootScreen

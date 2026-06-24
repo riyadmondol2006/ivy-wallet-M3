@@ -110,6 +110,13 @@ android {
 
     lint {
         disable += "ComposeViewModelInjection"
+        // Room 2.7 generates DAO code that calls androidx.room.util.performSuspending, which is
+        // @RestrictTo(LIBRARY_GROUP). AGP lint flags every generated call site (~2k false positives
+        // in :shared:data:core). The reports are generated code, not our source — nothing to fix.
+        disable += "RestrictedApi"
+        // The Slack compose-lint ParameterOrderDetector crashes (NPE in getText()) on some files,
+        // surfacing as fatal `LintError` issues. Lint itself recommends disabling this check.
+        disable += "ComposeParameterOrder"
         checkDependencies = true
         abortOnError = false
         checkReleaseBuilds = false

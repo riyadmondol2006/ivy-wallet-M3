@@ -4,7 +4,14 @@ on:
   push:
     branches:
       - main
+  # Manual trigger: cuts a release on demand using the version currently in
+  # gradle/libs.versions.toml (no need to wait for the weekly automatic_release cron).
   workflow_dispatch:
+
+# Never cancel a release in flight, and never run two releases at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:

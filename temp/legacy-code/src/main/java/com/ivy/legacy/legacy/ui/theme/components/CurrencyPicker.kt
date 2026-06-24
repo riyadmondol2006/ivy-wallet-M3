@@ -139,7 +139,7 @@ private fun SearchInput(
     searchTextFieldValue: TextFieldValue,
     onSetSearchTextFieldValue: (TextFieldValue) -> Unit
 ) {
-    val inputFocus = FocusRequester()
+    val inputFocus = remember { FocusRequester() }
 
     Row(
         modifier = Modifier

@@ -6,6 +6,11 @@ on:
       - main
   pull_request:
 
+# Cancel superseded runs on the same branch/PR for faster feedback and fewer wasted minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,8 +21,8 @@ jobs:
       - name: Setup Java SDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
-          java-version: '18'
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4

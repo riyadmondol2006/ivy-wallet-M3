@@ -12,6 +12,15 @@ plugins {
 }
 
 subprojects {
+    // Pin the test JVM's timezone and locale so unit tests are deterministic across machines.
+    // CI runners use UTC; without this, timezone/locale-sensitive tests (e.g. time conversions,
+    // number/date formatting) pass on a developer's local zone but fail on CI, or vice-versa.
+    tasks.withType<Test>().configureEach {
+        systemProperty("user.timezone", "UTC")
+        systemProperty("user.language", "en")
+        systemProperty("user.country", "US")
+    }
+
     apply(plugin = "org.jetbrains.kotlinx.kover")
     kover {
         reports {

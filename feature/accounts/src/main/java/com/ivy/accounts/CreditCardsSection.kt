@@ -273,6 +273,7 @@ fun MarkPaidSheet(
     onEdit: () -> Unit,
     onViewTransactions: () -> Unit,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val currency = card.account.asset.code
@@ -280,6 +281,7 @@ fun MarkPaidSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        modifier = modifier,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
