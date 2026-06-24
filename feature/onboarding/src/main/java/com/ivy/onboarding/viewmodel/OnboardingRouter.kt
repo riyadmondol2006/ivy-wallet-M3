@@ -11,6 +11,7 @@ import com.ivy.data.repository.CategoryRepository
 import com.ivy.legacy.data.model.AccountBalance
 import com.ivy.legacy.utils.OpResult
 import com.ivy.legacy.utils.ioThread
+import com.ivy.navigation.CloudSyncScreen
 import com.ivy.navigation.ImportScreen
 import com.ivy.navigation.MainScreen
 import com.ivy.navigation.Navigation
@@ -155,6 +156,19 @@ class OnboardingRouter(
 
     fun startFresh() {
         state.value = OnboardingState.CURRENCY
+    }
+
+    fun startCloudRestore() {
+        nav.navigateTo(
+            CloudSyncScreen(
+                launchedFromOnboarding = true
+            )
+        )
+    }
+
+    /** Called by the Cloud Sync screen after a successful restore during onboarding. */
+    suspend fun cloudRestoreFinished() {
+        completeOnboarding(baseCurrency = null)
     }
     // ------------------------------------- Step 2 -------------------------------------------------
 

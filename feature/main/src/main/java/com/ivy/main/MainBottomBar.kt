@@ -1,7 +1,6 @@
 package com.ivy.main
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
@@ -25,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,10 +35,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ivy.legacy.data.model.MainTab
-import com.ivy.navigation.AddTransactionSharedKey
-import com.ivy.navigation.LocalNavAnimatedVisibilityScope
-import com.ivy.navigation.LocalSharedTransitionScope
 import com.ivy.ui.R
+import kotlinx.coroutines.launch
 
 val FAB_BUTTON_SIZE = 56.dp
 
@@ -48,7 +46,7 @@ val FAB_BUTTON_SIZE = 56.dp
  * Accounts it adds an account. The FAB keeps the shared-element [AddTransactionSharedKey]
  * container transform into the edit screen.
  */
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoxWithConstraintsScope.BottomBar(
     tab: MainTab,
@@ -94,20 +92,6 @@ fun BoxWithConstraintsScope.BottomBar(
         )
     }
 
-    // Container-transform shared element: this FAB morphs into EditTransactionScreen.
-    val sharedScope = LocalSharedTransitionScope.current
-    val animatedVisibilityScope = LocalNavAnimatedVisibilityScope.current
-    val sharedModifier = if (sharedScope != null && animatedVisibilityScope != null) {
-        with(sharedScope) {
-            Modifier.sharedBounds(
-                rememberSharedContentState(key = AddTransactionSharedKey),
-                animatedVisibilityScope = animatedVisibilityScope,
-            )
-        }
-    } else {
-        Modifier
-    }
-
     FloatingActionButton(
         onClick = {
             when (tab) {
@@ -119,7 +103,6 @@ fun BoxWithConstraintsScope.BottomBar(
             .align(Alignment.BottomEnd)
             .navigationBarsPadding()
             .padding(end = 16.dp, bottom = 88.dp)
-            .then(sharedModifier)
             .testTag("fab_add"),
         // Bold, high-contrast primary FAB (the default M3 primaryContainer reads too faint in
         // dynamic dark themes).
@@ -137,6 +120,17 @@ fun BoxWithConstraintsScope.BottomBar(
 
     if (showAddSheet) {
         val sheetState = rememberModalBottomSheetState()
+        val scope = rememberCoroutineScope()
+        // Animate the sheet fully closed, then navigate — so the sheet's exit doesn't overlap and
+        // fight the screen-enter transition (which looked janky when both ran at once).
+        val selectAndClose: (() -> Unit) -> Unit = { action ->
+            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                if (!sheetState.isVisible) {
+                    showAddSheet = false
+                    action()
+                }
+            }
+        }
         ModalBottomSheet(
             onDismissRequest = { showAddSheet = false },
             sheetState = sheetState,
@@ -152,34 +146,22 @@ fun BoxWithConstraintsScope.BottomBar(
                     icon = R.drawable.ic_income,
                     label = stringResource(R.string.add_income),
                     tint = MaterialTheme.colorScheme.tertiary,
-                ) {
-                    showAddSheet = false
-                    onAddIncome()
-                }
+                ) { selectAndClose(onAddIncome) }
                 AddOption(
                     icon = R.drawable.ic_expense,
                     label = stringResource(R.string.add_expense),
                     tint = MaterialTheme.colorScheme.error,
-                ) {
-                    showAddSheet = false
-                    onAddExpense()
-                }
+                ) { selectAndClose(onAddExpense) }
                 AddOption(
                     icon = R.drawable.ic_transfer,
                     label = stringResource(R.string.add_transfer),
                     tint = MaterialTheme.colorScheme.primary,
-                ) {
-                    showAddSheet = false
-                    onAddTransfer()
-                }
+                ) { selectAndClose(onAddTransfer) }
                 AddOption(
                     icon = R.drawable.ic_planned_payments,
                     label = stringResource(R.string.add_planned_payment),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                ) {
-                    showAddSheet = false
-                    onAddPlannedPayment()
-                }
+                ) { selectAndClose(onAddPlannedPayment) }
             }
         }
     }

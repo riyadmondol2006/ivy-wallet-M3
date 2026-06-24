@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +52,9 @@ import com.ivy.legacy.ui.component.transaction.transactions
 import com.ivy.legacy.utils.horizontalSwipeListener
 import com.ivy.legacy.utils.rememberSwipeListenerState
 import com.ivy.legacy.utils.verticalSwipeListener
+import com.ivy.navigation.CloudSyncScreen
 import com.ivy.navigation.IvyPreview
+import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
 import com.ivy.ui.rememberScrollPositionListState
@@ -64,6 +69,8 @@ import com.ivy.wallet.ui.theme.modal.DeleteModal
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import java.math.BigDecimal
+import java.text.DateFormat
+import java.util.Date
 
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
@@ -85,6 +92,7 @@ fun BoxWithConstraintsScope.HomeUi(
     modifier: Modifier = Modifier,
 ) {
     val ivyContext = ivyWalletCtx()
+    val nav = navigation()
 
     var bufferModalData: BufferModalData? by remember { mutableStateOf(null) }
     var currencyModalVisible by remember { mutableStateOf(false) }
@@ -154,6 +162,14 @@ fun BoxWithConstraintsScope.HomeUi(
             },
             onSelectPreviousMonth = {
                 onEvent(HomeEvent.SelectPreviousMonth)
+            },
+            manualSyncVisible = uiState.manualSyncVisible,
+            syncing = uiState.syncing,
+            onManualSync = {
+                onEvent(HomeEvent.ManualSync)
+            },
+            onOpenMoreMenu = {
+                setMoreMenuExpanded(true)
             }
         )
 
@@ -224,6 +240,8 @@ fun BoxWithConstraintsScope.HomeUi(
         balance = uiState.balance.toDouble(),
         currency = baseCurrency,
         buffer = uiState.buffer.amount.toDouble(),
+        manualSyncVisible = uiState.manualSyncVisible,
+        syncing = uiState.syncing,
         onSwitchTheme = {
             onEvent(HomeEvent.SwitchTheme)
         },
@@ -235,8 +253,11 @@ fun BoxWithConstraintsScope.HomeUi(
                 buffer = uiState.buffer.amount.toDouble()
             )
         },
-        onCurrencyClick = {
-            currencyModalVisible = true
+        onManualSync = {
+            onEvent(HomeEvent.ManualSync)
+        },
+        onSetUpSync = {
+            nav.navigateTo(CloudSyncScreen())
         }
     )
 
@@ -282,6 +303,28 @@ fun BoxWithConstraintsScope.HomeUi(
     ) {
         onEvent(HomeEvent.SkipAllPlanned(uiState.overdue.trns))
         skipAllModalVisible = false
+    }
+
+    if (uiState.remoteSyncPromptAtMillis > 0L) {
+        val updatedAt = remember(uiState.remoteSyncPromptAtMillis) {
+            DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                .format(Date(uiState.remoteSyncPromptAtMillis))
+        }
+        AlertDialog(
+            onDismissRequest = { onEvent(HomeEvent.DismissRemoteSync) },
+            title = { Text(stringResource(R.string.cloud_sync_pull_prompt_title)) },
+            text = { Text(stringResource(R.string.cloud_sync_pull_prompt_desc, updatedAt)) },
+            confirmButton = {
+                TextButton(onClick = { onEvent(HomeEvent.ConfirmRemoteSync) }) {
+                    Text(stringResource(R.string.cloud_sync_pull))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onEvent(HomeEvent.DismissRemoteSync) }) {
+                    Text(stringResource(R.string.cloud_sync_not_now))
+                }
+            },
+        )
     }
 }
 

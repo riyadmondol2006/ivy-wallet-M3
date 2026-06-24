@@ -77,7 +77,8 @@ private fun BoxWithConstraintsScope.UI(
         OnboardingState.CHOOSE_PATH -> {
             OnboardingType(
                 onStartImport = { onEvent(OnboardingEvent.StartImport) },
-                onStartFresh = { onEvent(OnboardingEvent.StartFresh) }
+                onStartFresh = { onEvent(OnboardingEvent.StartFresh) },
+                onStartCloudRestore = { onEvent(OnboardingEvent.StartCloudRestore) }
             )
         }
 

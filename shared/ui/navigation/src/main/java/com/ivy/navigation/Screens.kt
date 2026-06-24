@@ -102,6 +102,11 @@ data class ImportScreen(
         get() = true
 }
 
+@Suppress("DataClassDefaultValues")
+data class CloudSyncScreen(
+    val launchedFromOnboarding: Boolean = false
+) : Screen
+
 data object ReportScreen : Screen {
     override val isLegacy: Boolean
         get() = true

@@ -1,6 +1,7 @@
 package com.ivy.settings
 
 import com.ivy.base.legacy.Theme
+import com.ivy.data.sync.SyncMode
 
 data class SettingsState(
     val currencyCode: String,
@@ -14,5 +15,6 @@ data class SettingsState(
     val creditCardsEnabled: Boolean,
     val startDateOfMonth: String,
     val progressState: Boolean,
-    val languageOptionVisible: Boolean
+    val languageOptionVisible: Boolean,
+    val cloudSyncMode: SyncMode
 )

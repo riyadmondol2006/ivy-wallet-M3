@@ -2,6 +2,10 @@
 [![Latest Release](https://img.shields.io/github/v/release/riyadmondol2006/ivy-wallet-M3)](https://github.com/riyadmondol2006/ivy-wallet-M3/releases)
 [![Fork](https://img.shields.io/github/forks/riyadmondol2006/ivy-wallet-M3?logo=github&style=social)](https://github.com/riyadmondol2006/ivy-wallet-M3/fork)
 
+<p align="center">
+  <img src="branding/ivy-wallet-m3-logo.svg" alt="Ivy Wallet M3 logo" width="128" height="128"/>
+</p>
+
 # Ivy Wallet M3 — Personal Fork
 
 This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github.com/Ivy-Apps/ivy-wallet), actively developed and expanded over time. The original project was discontinued by its maintainers in November 2024. This fork picks up where it left off and builds on it with a full Material 3 redesign, new features, and modern Android motion.
@@ -37,14 +41,28 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 ### Motion System
 - **`IvyMotion`** — central motion spec object (`shared/ui/core`) with named spring constants, shared-axis enter/exit transitions, section expand/collapse specs, and `animateItem` / `animateContentSize` helpers. Single import for consistent physics-based motion across all modules
 - **Screen transitions** — shared-axis X: forward navigation slides in from the right, back slides from the left, driven by `Navigation.isBack`
-- **Predictive back gestures** — `android:enableOnBackInvokedCallback="true"` + `OnBackPressedDispatcher.addCallback` (replaces the deprecated `onBackPressed()` override). Works correctly with legacy modals and sheets
+- **Predictive back gestures** — real finger-following predictive back: `NavigationRoot` drives a `SeekableTransitionState` via Compose `PredictiveBackHandler`, so the back gesture *scrubs* the screen change. Gated to plain non-legacy screen pops so legacy modals/sheets keep their existing back handling
 - **Animated tab switch** — Home ↔ Accounts cross-slide instead of snapping
 - **Transaction list** — `animateItem` on all transaction rows; Upcoming/Overdue sections expand/collapse with `AnimatedVisibility` + chevron rotation
 - **Credit card surfaces** — `animateContentSize` on the credit section; number and progress bar tween when marked paid; Home summary card animates in/out with `expandVertically + fadeIn`
-- FAB → Edit Transaction **container transform** (shared element) preserved throughout
+- **Add-transaction flow** — the FAB → Edit Transaction container transform was removed in favour of a clean shared-axis slide; the add-options bottom sheet animates fully closed before navigating (no overlapping transitions)
+
+### Home "More" Menu Redesign
+- The old circular-reveal overlay (a `Canvas` circle growing out of the chevron, legacy `CircleButtonFilled` buttons + the deprecated `BufferBattery`) was **fully replaced** with a Material 3 slide-up panel
+- Top bar (Close · "More" · Sync), an M3 search field, a tonal **quick-access tile grid**, a prominent **Cloud Sync** card, a savings-goal card with an M3 `LinearProgressIndicator`, and the open-source fork card
+- The open-menu chevron moved into the header as a real `IconButton`, so it no longer overlaps the manual-sync icon
+
+### Cloud Sync (Upstash Redis)
+- Bring-your-own **Upstash Redis** backup + sync — paste your REST URL + token (HTTPS) or a `rediss://` endpoint (TCP); the full `BackupDataUseCase` JSON is stored in your own database
+- **Manual** or **Auto** modes; auto-sync debounces data changes and retries failures via WorkManager
+- Cross-device pull prompt on app open (only when another device wrote the latest cloud state), test-then-add connection gating, and an onboarding "Restore from Cloud" path
+- Easy access from **two** places: the Home header sync icon and the "Sync now" card in the More menu
 
 ### Repo & Build
-- Version bumped to **2026.06.24** (code 207)
+- App **renamed to "Ivy Wallet M3"** (launcher label across all build types)
+- **New adaptive launcher icon** — a white veined ivy leaf on a green gradient squircle, authored as Android vector drawables (foreground / background / monochrome themed-icon layers) with an SVG master in [`branding/`](branding/ivy-wallet-m3-logo.svg)
+- Version bumped to **2.0.0** (code 208)
+- Release/debug APKs signed with **all four signature schemes** (v1 JAR + v2/v3/v4 APK Signature Scheme)
 - Application ID: `com.ivym3.wallet`
 - Git remote updated to `https://github.com/riyadmondol2006/ivy-wallet-M3`
 - Cleaned up generated/junk files from the repo root
@@ -95,7 +113,7 @@ Releases are fully on-demand via a single `release.yml` workflow. There is **no 
 3. Click **Run**. That one run:
    - bumps `version-name` (semantic) and auto-increments `version-code` in `gradle/libs.versions.toml`;
    - commits `Release v<version> (<code>) [skip ci]` and tags `v<version>` on `main`;
-   - decodes your signing keystore and builds the signed `assembleRelease` APK;
+   - decodes your signing keystore and builds the signed `assembleRelease` APK (signed with the v1/v2/v3/v4 schemes);
    - publishes a GitHub Release titled `Ivy Wallet M3 v<version>` with an **auto-generated changelog** (commits since the previous tag) and the signed APK attached.
 
 To install: open the new Release and download **app-release.apk** onto your device (API 28+). Releases are serialized (`concurrency: release`) so two never run at once. The bump commit carries `[skip ci]` so it doesn't re-run the push CI jobs — the signed release build is the validation.
@@ -123,6 +141,29 @@ Just two workflows — lean and focused:
 | `release.yml` | Manual (`Run workflow`) | Builds the **signed APK first**, then bumps version, commits + tags, and publishes a GitHub Release with auto-changelog. |
 
 The old upstream community workflows (issue/stale bots, PR-description check, screenshot/emulator/compose-stability checks, wrapper-upgrade) and their `ci-actions/` helper modules have been removed. The legacy `fastlane/` directory is unused and can be ignored.
+
+---
+
+## Cloud Backup & Sync (optional)
+
+Ivy Wallet M3 can back up and sync your data to **your own** [Upstash Redis](https://upstash.com)
+database — no third-party server holds your data, and it's free on Upstash's tier. The whole
+backup is the same JSON the local export produces, stored under the `ivy_wallet_backup` key.
+
+**Set it up:**
+1. Create a free account at [upstash.com](https://console.upstash.com) and make a new Redis database.
+2. Open the database and copy either the **REST URL + token** (HTTPS) or the `rediss://` endpoint +
+   password (TCP).
+3. In the app, go to **Settings → Cloud Sync** (or the **Sync now** card in the Home "More" menu, or
+   the **Restore from Cloud** option during onboarding).
+4. Pick the connection type, paste your credentials, tap **Test connection**, then **Add database**.
+5. Choose a sync mode:
+   - **Manual** — data is pushed only when you tap the sync icon (Home header) or the Sync card.
+   - **Auto** — every change is pushed automatically (debounced; failed pushes retry via WorkManager).
+
+**Multi-device:** on app open, if your cloud backup was last written by *another* device, the app
+offers to pull those changes. The device that wrote the latest state is never prompted to pull its
+own data. Tokens are stored locally in DataStore; nothing is sent anywhere except your own database.
 
 ---
 

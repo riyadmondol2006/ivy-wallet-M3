@@ -17,6 +17,8 @@ import com.ivy.base.legacy.Theme
 import com.ivy.base.legacy.refreshWidget
 import com.ivy.data.backup.BackupDataUseCase
 import com.ivy.data.db.dao.read.SettingsDao
+import com.ivy.data.sync.SyncConfigDataSource
+import com.ivy.data.sync.SyncMode
 import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.domain.RootScreen
@@ -59,6 +61,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsWriter: WriteSettingsDao,
     private val exportCsvUseCase: ExportCsvUseCase,
     private val features: Features,
+    private val syncConfigDataSource: SyncConfigDataSource,
     @ApplicationContext private val context: Context
 ) : ComposeViewModel<SettingsState, SettingsEvent>() {
 
@@ -73,6 +76,7 @@ class SettingsViewModel @Inject constructor(
     private val creditCardsEnabled = mutableStateOf(false)
     private val startDateOfMonth = mutableIntStateOf(1)
     private val progressState = mutableStateOf(false)
+    private val cloudSyncMode = mutableStateOf(SyncMode.OFF)
 
     @Composable
     override fun uiState(): SettingsState {
@@ -92,7 +96,8 @@ class SettingsViewModel @Inject constructor(
             startDateOfMonth = getStartDateOfMonth(),
             progressState = getProgressState(),
             hideIncome = getHideIncome(),
-            languageOptionVisible = isLanguageOptionVisible()
+            languageOptionVisible = isLanguageOptionVisible(),
+            cloudSyncMode = cloudSyncMode.value
         )
     }
 
@@ -107,6 +112,11 @@ class SettingsViewModel @Inject constructor(
         initializeTransfersAsIncomeExpense()
         initializeCreditCardsEnabled()
         initializeStartDateOfMonth()
+        initializeCloudSyncMode()
+    }
+
+    private suspend fun initializeCloudSyncMode() {
+        cloudSyncMode.value = syncConfigDataSource.get().mode
     }
 
     private suspend fun initializeCreditCardsEnabled() {

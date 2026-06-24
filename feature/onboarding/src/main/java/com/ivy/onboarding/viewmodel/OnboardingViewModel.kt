@@ -153,6 +153,7 @@ class OnboardingViewModel @Inject constructor(
                 is OnboardingEvent.SetBaseCurrency -> setBaseCurrency(event.baseCurrency)
                 OnboardingEvent.StartFresh -> startFresh()
                 OnboardingEvent.StartImport -> startImport()
+                OnboardingEvent.StartCloudRestore -> startCloudRestore()
             }
         }
     }
@@ -177,6 +178,17 @@ class OnboardingViewModel @Inject constructor(
 
     private fun startFresh() {
         router.startFresh()
+    }
+
+    private fun startCloudRestore() {
+        router.startCloudRestore()
+    }
+
+    /** Called by the Cloud Sync screen after a successful restore during onboarding. */
+    fun cloudRestoreFinished() {
+        viewModelScope.launch {
+            router.cloudRestoreFinished()
+        }
     }
     // Step 2 ---------------------------------------------------------------------------------------
 

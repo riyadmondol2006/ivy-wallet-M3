@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,9 @@ import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.data.sync.SyncConfigDataSource
+import com.ivy.data.sync.SyncMode
+import com.ivy.data.sync.SyncRepository
 import com.ivy.domain.features.Features
 import com.ivy.domain.usecase.exchange.SyncExchangeRatesUseCase
 import com.ivy.frp.fixUnit
@@ -96,7 +100,9 @@ class HomeViewModel @Inject constructor(
     private val accountDataAct: AccountDataAct,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
-    private val features: Features
+    private val features: Features,
+    private val syncConfigDataSource: SyncConfigDataSource,
+    private val syncRepository: SyncRepository
 ) : ComposeViewModel<HomeState, HomeEvent>() {
     private var currentTheme by mutableStateOf(Theme.AUTO)
     private var name by mutableStateOf("")
@@ -137,6 +143,9 @@ class HomeViewModel @Inject constructor(
     private var hideIncome by mutableStateOf(false)
     private var expanded by mutableStateOf(true)
     private var creditSummary by mutableStateOf(CreditCardsSummary.None)
+    private var manualSyncVisible by mutableStateOf(false)
+    private var syncing by mutableStateOf(false)
+    private var remoteSyncPromptAt by mutableLongStateOf(0L)
 
     @Composable
     override fun uiState(): HomeState {
@@ -161,7 +170,10 @@ class HomeViewModel @Inject constructor(
             hideIncome = getHideIncome(),
             shouldShowAccountSpecificColorInTransactions = getShouldShowAccountSpecificColorInTransactions(),
             creditCardsEnabled = getCreditCardsEnabled(),
-            creditSummary = getCreditSummary()
+            creditSummary = getCreditSummary(),
+            manualSyncVisible = manualSyncVisible,
+            syncing = syncing,
+            remoteSyncPromptAtMillis = remoteSyncPromptAt
         )
     }
 
@@ -250,6 +262,7 @@ class HomeViewModel @Inject constructor(
         return hideIncome
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun onEvent(event: HomeEvent) {
         viewModelScope.launch {
             when (event) {
@@ -269,7 +282,43 @@ class HomeViewModel @Inject constructor(
                 HomeEvent.SwitchTheme -> switchTheme()
                 is HomeEvent.DismissCustomerJourneyCard -> dismissCustomerJourneyCard(event.card)
                 is HomeEvent.SetExpanded -> setExpanded(event.expanded)
+                HomeEvent.ManualSync -> manualSync()
+                HomeEvent.ConfirmRemoteSync -> confirmRemoteSync()
+                HomeEvent.DismissRemoteSync -> dismissRemoteSync()
             }
+        }
+    }
+
+    private suspend fun refreshSyncUi() {
+        val config = syncConfigDataSource.get()
+        // Show the manual sync button whenever a database is configured (any sync mode).
+        manualSyncVisible = config.isConfigured
+        remoteSyncPromptAt = if (config.mode != SyncMode.OFF && config.isConfigured) {
+            val status = syncRepository.checkRemote()
+            if (status.shouldPromptPull) status.meta?.updatedAt ?: 0L else 0L
+        } else {
+            0L
+        }
+    }
+
+    private suspend fun manualSync() {
+        syncing = true
+        syncRepository.push()
+        syncing = false
+    }
+
+    private suspend fun confirmRemoteSync() {
+        remoteSyncPromptAt = 0L
+        syncing = true
+        syncRepository.pull().onRight { reload() }
+        syncing = false
+    }
+
+    private suspend fun dismissRemoteSync() {
+        val seenAt = remoteSyncPromptAt
+        remoteSyncPromptAt = 0L
+        if (seenAt > 0L) {
+            syncRepository.markRemoteSeen(seenAt)
         }
     }
 
@@ -280,6 +329,8 @@ class HomeViewModel @Inject constructor(
                 startDayOfMonth = startDay
             )
         } thenInvokeAfter ::reload
+
+        refreshSyncUi()
     }
 
     // -----------------------------------------------------------------------------------

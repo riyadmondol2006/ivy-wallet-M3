@@ -38,6 +38,12 @@ data class HomeState(
     val shouldShowAccountSpecificColorInTransactions: Boolean,
     val creditCardsEnabled: Boolean = false,
     val creditSummary: CreditCardsSummary = CreditCardsSummary.None,
+    /** Show the minimal manual-sync button in the header (MANUAL mode + configured). */
+    val manualSyncVisible: Boolean = false,
+    /** A cloud sync (push or pull) is currently running. */
+    val syncing: Boolean = false,
+    /** When > 0, prompt to pull newer cloud changes from another device (the remote updatedAt). */
+    val remoteSyncPromptAtMillis: Long = 0L,
 )
 
 @Immutable

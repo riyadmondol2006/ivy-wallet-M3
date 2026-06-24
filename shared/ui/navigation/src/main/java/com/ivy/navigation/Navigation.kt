@@ -54,6 +54,17 @@ class Navigation @Inject constructor() {
 
   fun backStackEmpty() = backStack.empty()
 
+  /** The screen a back-navigation would return to, or null if the back stack is empty. */
+  fun peekBack(): Screen? = if (backStack.empty()) null else backStack.peek()
+
+  /** Whether the [currentScreen] has a custom back override registered in [onBackPressed]. */
+  @Suppress("DEPRECATION")
+  fun hasBackOverride(): Boolean = onBackPressed.containsKey(currentScreen)
+
+  /** Whether a legacy modal currently wants to intercept back. */
+  @Suppress("DEPRECATION")
+  fun hasModalBackHandler(): Boolean = modalBackHandling.isNotEmpty()
+
   private fun popBackStack() {
     backStack.pop()
   }

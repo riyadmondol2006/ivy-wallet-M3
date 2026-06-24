@@ -33,6 +33,12 @@ android {
             storePassword = "IVY7834!DEbug"
             keyAlias = "debug"
             keyPassword = "IVY7834!DEbug"
+
+            // Sign with every APK signature scheme: v1 (JAR) + v2/v3/v4 (APK Signature Scheme).
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
         }
 
         create("release") {
@@ -40,6 +46,12 @@ android {
             storePassword = System.getenv("SIGNING_STORE_PASSWORD")
             keyAlias = System.getenv("SIGNING_KEY_ALIAS")
             keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+
+            // Sign with every APK signature scheme: v1 (JAR) + v2/v3/v4 (APK Signature Scheme).
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
         }
     }
 
@@ -57,7 +69,7 @@ android {
 
             signingConfig = signingConfigs.getByName("release")
 
-            resValue("string", "app_name", "Ivy Wallet")
+            resValue("string", "app_name", "Ivy Wallet M3")
         }
 
         debug {
@@ -70,7 +82,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
 
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Ivy Wallet Debug")
+            resValue("string", "app_name", "Ivy Wallet M3 Debug")
         }
 
         create("demo") {
@@ -89,7 +101,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
 
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Ivy Wallet")
+            resValue("string", "app_name", "Ivy Wallet M3")
         }
     }
 

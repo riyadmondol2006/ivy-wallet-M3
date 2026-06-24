@@ -43,7 +43,9 @@ import com.ivy.design.l1_buildingBlocks.IvyIconScaled
 import com.ivy.design.utils.thenIf
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletPreview
+import com.ivy.data.sync.SyncMode
 import com.ivy.legacy.rootScreen
+import com.ivy.navigation.CloudSyncScreen
 import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
 import com.ivy.navigation.ImportScreen
@@ -88,6 +90,7 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         nameLocalAccount = uiState.name,
         startDateOfMonth = uiState.startDateOfMonth.toInt(),
         languageOptionVisible = uiState.languageOptionVisible,
+        cloudSyncMode = uiState.cloudSyncMode,
         onSetCurrency = {
             viewModel.onEvent(SettingsEvent.SetCurrency(it))
         },
@@ -144,6 +147,7 @@ private fun BoxWithConstraintsScope.UI(
     nameLocalAccount: String?,
     languageOptionVisible: Boolean,
     onSetCurrency: (String) -> Unit,
+    cloudSyncMode: SyncMode = SyncMode.OFF,
     startDateOfMonth: Int = 1,
     showNotifications: Boolean = true,
     hideCurrentBalance: Boolean = false,
@@ -229,6 +233,26 @@ private fun BoxWithConstraintsScope.UI(
 
 //            Spacer(Modifier.height(20.dp))
 //            Premium()
+        }
+
+        item {
+            SettingsSectionDivider(text = stringResource(R.string.cloud_sync))
+
+            Spacer(Modifier.height(16.dp))
+
+            val nav = navigation()
+            SettingsDefaultButton(
+                icon = R.drawable.ic_vue_security_shield,
+                text = stringResource(R.string.cloud_sync),
+                description = when (cloudSyncMode) {
+                    SyncMode.AUTO -> stringResource(R.string.cloud_sync_mode_auto)
+                    SyncMode.MANUAL -> stringResource(R.string.cloud_sync_mode_manual)
+                    SyncMode.OFF -> stringResource(R.string.cloud_sync_not_set_up)
+                },
+                iconPadding = 8.dp
+            ) {
+                nav.navigateTo(CloudSyncScreen(launchedFromOnboarding = false))
+            }
         }
 
         item {

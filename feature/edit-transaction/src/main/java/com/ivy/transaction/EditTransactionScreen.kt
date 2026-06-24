@@ -1,6 +1,5 @@
 package com.ivy.transaction
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
@@ -51,12 +50,9 @@ import com.ivy.legacy.ui.component.edit.core.Description
 import com.ivy.legacy.ui.component.tags.AddTagButton
 import com.ivy.legacy.ui.component.tags.ShowTagModal
 import com.ivy.legacy.utils.onScreenStart
-import com.ivy.navigation.AddTransactionSharedKey
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.IvyPreview
-import com.ivy.navigation.LocalNavAnimatedVisibilityScope
-import com.ivy.navigation.LocalSharedTransitionScope
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
@@ -192,7 +188,6 @@ fun BoxWithConstraintsScope.EditTransactionScreen(screen: EditTransactionScreen)
     )
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 @ExperimentalFoundationApi
 @Composable
@@ -281,24 +276,9 @@ private fun BoxWithConstraintsScope.UI(
         scrollState.animateScrollTo(scrollInt)
     }
 
-    // Matching half of the FAB container transform: this screen morphs out of the add FAB.
-    val sharedScope = LocalSharedTransitionScope.current
-    val animatedVisibilityScope = LocalNavAnimatedVisibilityScope.current
-    val containerTransformModifier = if (sharedScope != null && animatedVisibilityScope != null) {
-        with(sharedScope) {
-            Modifier.sharedBounds(
-                rememberSharedContentState(key = AddTransactionSharedKey),
-                animatedVisibilityScope = animatedVisibilityScope,
-            )
-        }
-    } else {
-        Modifier
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .then(containerTransformModifier)
             .statusBarsPadding()
             .navigationBarsPadding()
             .verticalScroll(scrollState)

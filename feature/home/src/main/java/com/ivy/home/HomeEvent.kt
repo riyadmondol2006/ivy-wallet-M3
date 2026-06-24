@@ -29,4 +29,8 @@ sealed interface HomeEvent {
 
     data object SelectNextMonth : HomeEvent
     data object SelectPreviousMonth : HomeEvent
+
+    data object ManualSync : HomeEvent
+    data object ConfirmRemoteSync : HomeEvent
+    data object DismissRemoteSync : HomeEvent
 }

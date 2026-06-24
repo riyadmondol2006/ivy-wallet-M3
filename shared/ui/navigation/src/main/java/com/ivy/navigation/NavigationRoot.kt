@@ -1,20 +1,29 @@
 package com.ivy.navigation
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.SeekableTransitionState
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import com.ivy.design.system.IvyMotion
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import kotlin.coroutines.cancellation.CancellationException
 
 @SuppressLint("ComposeCompositionLocalUsage")
 private val LocalNavigation = compositionLocalOf<Navigation> { error("No LocalNavigation") }
@@ -62,22 +71,71 @@ fun NavigationRoot(
             }
         }
 
-        // Wrap the screen switch in a SharedTransitionLayout + AnimatedContent so navigation
-        // becomes physics-based and shared elements (FAB -> EditTransactionScreen) can morph.
+        // Seekable transition state so a predictive-back gesture can *scrub* the screen change with
+        // the user's finger, instead of the change happening instantly on release.
+        val transitionState = remember {
+            SeekableTransitionState<Screen?>(navigation.currentScreen)
+        }
+        // Direction of the in-flight transition (true = back/pop). Mirrors the shared axis so a
+        // forward push slides in from the right and a pop slides in from the left.
+        var backwards by remember { mutableStateOf(false) }
+
+        // Normal (non-gesture) navigations: settle the seekable state onto the new current screen.
+        LaunchedEffect(navigation.currentScreen) {
+            if (transitionState.currentState != navigation.currentScreen) {
+                backwards = navigation.isBack
+                transitionState.animateTo(navigation.currentScreen)
+            }
+        }
+
+        // Predictive back — enabled only for a plain non-legacy screen pop with no modal or custom
+        // back override active, so the legacy back handling (RootActivity callback, modals, the
+        // onBackPressed map, per-screen overrides) keeps working exactly as before everywhere else.
+        val current = navigation.currentScreen
+        val canPredictiveBack = current != null &&
+            current.isLegacy == false &&
+            !navigation.backStackEmpty() &&
+            !navigation.hasBackOverride() &&
+            !navigation.hasModalBackHandler()
+        PredictiveBackHandler(enabled = canPredictiveBack) { progress ->
+            val target = navigation.peekBack()
+            if (target == null) {
+                // Nothing to pop to; let the gesture no-op.
+                try {
+                    progress.collect { }
+                } catch (_: CancellationException) {
+                    // ignored
+                }
+                return@PredictiveBackHandler
+            }
+            backwards = true
+            try {
+                progress.collect { backEvent ->
+                    transitionState.seekTo(backEvent.progress, targetState = target)
+                }
+                // Released past the threshold -> commit the pop; the LaunchedEffect above then
+                // finishes the in-flight seek onto the now-current screen.
+                navigation.back()
+            } catch (_: CancellationException) {
+                // Cancelled -> animate the partial seek back to the screen we started on.
+                transitionState.animateTo(navigation.currentScreen)
+                backwards = navigation.isBack
+            }
+        }
+
+        // Wrap the screen switch in a SharedTransitionLayout so shared elements can still morph.
         SharedTransitionLayout {
             CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-                AnimatedContent(
-                    targetState = navigation.currentScreen,
+                val transition = rememberTransition(transitionState, label = "ivy-screen-transition")
+                transition.AnimatedContent(
                     transitionSpec = {
-                        // Material-3 shared-axis X: forward slides in from the right, back from the
-                        // left (direction comes from whether this change was a back-navigation).
-                        val forward = !navigation.isBack
+                        // Material-3 shared-axis X, direction from [backwards].
+                        val forward = !backwards
                         IvyMotion.sharedAxisXEnter(forward) togetherWith
                             IvyMotion.sharedAxisXExit(forward)
                     },
                     // Animate only on genuine screen changes, not on in-screen state updates.
                     contentKey = { it?.let { screen -> screen::class.qualifiedName } ?: "null" },
-                    label = "ivy-screen-transition",
                 ) { screen ->
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
                         navGraph(screen)

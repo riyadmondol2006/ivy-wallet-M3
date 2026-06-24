@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.ivy.base.legacy.appContext
 import com.ivy.design.system.IvyThemeController
+import com.ivy.wallet.sync.AutoSyncManager
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import timber.log.Timber.DebugTree
@@ -17,6 +18,9 @@ import javax.inject.Inject
 class IvyAndroidApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var autoSyncManager: AutoSyncManager
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -32,5 +36,8 @@ class IvyAndroidApp : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(DebugTree())
         }
+
+        // Push backups to the user's Upstash Redis automatically when AUTO sync is enabled.
+        autoSyncManager.start()
     }
 }

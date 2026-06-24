@@ -14,8 +14,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -63,6 +70,7 @@ import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
+@Suppress("LongParameterList")
 @ExperimentalAnimationApi
 @Composable
 internal fun HomeHeader(
@@ -77,6 +85,10 @@ internal fun HomeHeader(
     hideBalance: Boolean,
     onHiddenBalanceClick: () -> Unit,
     onSelectPreviousMonth: () -> Unit,
+    manualSyncVisible: Boolean,
+    syncing: Boolean,
+    onManualSync: () -> Unit,
+    onOpenMoreMenu: () -> Unit,
 ) {
     Column {
         val percentExpanded by animateFloatAsState(
@@ -102,6 +114,10 @@ internal fun HomeHeader(
             onHiddenBalanceClick = onHiddenBalanceClick,
             onSelectNextMonth = onSelectNextMonth,
             onSelectPreviousMonth = onSelectPreviousMonth,
+            manualSyncVisible = manualSyncVisible,
+            syncing = syncing,
+            onManualSync = onManualSync,
+            onOpenMoreMenu = onOpenMoreMenu,
         )
 
         Spacer(Modifier.height(16.dp))
@@ -115,6 +131,7 @@ internal fun HomeHeader(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun HeaderStickyRow(
     percentExpanded: Float,
@@ -128,6 +145,10 @@ private fun HeaderStickyRow(
     hideBalance: Boolean,
     onHiddenBalanceClick: () -> Unit,
     onSelectPreviousMonth: () -> Unit,
+    manualSyncVisible: Boolean,
+    syncing: Boolean,
+    onManualSync: () -> Unit,
+    onOpenMoreMenu: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -203,9 +224,44 @@ private fun HeaderStickyRow(
             onShowMonthModal()
         }
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(8.dp))
 
-        Spacer(Modifier.width(40.dp)) // settings menu button spacer
+        if (manualSyncVisible) {
+            IconButton(
+                onClick = onManualSync,
+                enabled = !syncing,
+                modifier = Modifier
+                    .size(40.dp)
+                    .testTag("home_manual_sync"),
+            ) {
+                if (syncing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = stringResource(R.string.cloud_sync_now),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        // Opens the redesigned "More" panel (quick access, sync, savings goal, open-source).
+        IconButton(
+            onClick = onOpenMoreMenu,
+            modifier = Modifier
+                .size(40.dp)
+                .testTag("home_more_menu_arrow"),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.KeyboardArrowDown,
+                contentDescription = stringResource(R.string.more),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
