@@ -115,15 +115,14 @@ Once the secrets are in place, the **Release** workflow decodes your keystore, b
 
 ### Workflows at a glance
 
+Just two workflows — lean and focused:
+
 | Workflow | Triggers | What it does |
 |----------|----------|-------------|
-| `release.yml` | Manual (`Run workflow`) | Bumps version, commits + tags, builds **signed APK**, publishes GitHub Release with auto-changelog |
-| `apk.yml` | PR, push to main | Builds minified demo APK, uploads as artifact |
-| `detekt.yml` | PR, push to main | Runs detekt linter |
-| `test.yml` | PR, push to main | Runs unit tests |
-| `lint.yml` | PR, push to main | Runs Android lint |
+| `ci.yml` | PR, push to main | Parallel jobs: **detekt**, **unit tests**, **Android lint** (release), and **build** (demo APK artifact). Cancels superseded runs. |
+| `release.yml` | Manual (`Run workflow`) | Builds the **signed APK first**, then bumps version, commits + tags, and publishes a GitHub Release with auto-changelog. |
 
-> The legacy `fastlane/` directory (Play Store lanes from upstream) is **not used** by CI and can be ignored.
+The old upstream community workflows (issue/stale bots, PR-description check, screenshot/emulator/compose-stability checks, wrapper-upgrade) and their `ci-actions/` helper modules have been removed. The legacy `fastlane/` directory is unused and can be ignored.
 
 ---
 

@@ -71,22 +71,13 @@ jobs:
           echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
           echo "Releasing v$NAME (build $NEW_CODE)"
 
+      # Bump the working tree only — NOT committed yet. We build first; the version files are
+      # committed + tagged afterwards so a failed build can never leave an orphan tag/commit.
       - name: Bump version in libs.versions.toml
         run: |
           sed -i "s/version-name = \".*\"/version-name = \"${{ steps.ver.outputs.name }}\"/" gradle/libs.versions.toml
           sed -i "s/version-code = \".*\"/version-code = \"${{ steps.ver.outputs.code }}\"/" gradle/libs.versions.toml
           grep -E 'version-name|version-code' gradle/libs.versions.toml
-
-      - name: Commit & tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # [skip ci] so the push-triggered CI workflows don't re-run on a version-only bump —
-          # the signed assembleRelease below is the real validation.
-          git commit -am "Release ${{ steps.ver.outputs.tag }} (${{ steps.ver.outputs.code }}) [skip ci]"
-          git tag "${{ steps.ver.outputs.tag }}"
-          git push origin HEAD:main
-          git push origin "${{ steps.ver.outputs.tag }}"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -108,6 +99,18 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-configuration-cache
+
+      # Reached only if the build above succeeded — so tags/commits are never orphaned.
+      - name: Commit, tag & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # [skip ci] so the CI workflow doesn't re-run on a version-only bump — the signed
+          # assembleRelease above is the real validation.
+          git commit -am "Release ${{ steps.ver.outputs.tag }} (${{ steps.ver.outputs.code }}) [skip ci]"
+          git tag "${{ steps.ver.outputs.tag }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.ver.outputs.tag }}"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

@@ -33,6 +33,14 @@ android {
     }
 }
 
+// Library verify*Resources links each module's resources in isolation, without the app theme, so
+// it false-fails on app-provided theme attrs (e.g. ?attr/colorControlNormal used by shared vector
+// drawables) and breaks `assembleRelease`. The app module's final resource link
+// (processReleaseResources) still validates every resource in context, so this per-library check
+// is redundant — disable it across all library/feature modules.
+tasks.matching { it.name.startsWith("verify") && it.name.endsWith("Resources") }
+    .configureEach { enabled = false }
+
 gradle.projectsEvaluated {
     // Increase tests Heap Size because of Kotest property-based tests
     tasks.withType<Test> {

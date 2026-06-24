@@ -12,11 +12,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "IvyWallet"
 include(":app")
-include(":ci-actions:base")
-include(":ci-actions:compose-stability")
-include(":ci-actions:issue-assign")
-include(":ci-actions:issue-create-comment")
-include(":ci-actions:pr-description-check")
 include(":feature:accounts")
 include(":feature:attributions")
 include(":feature:balance")
