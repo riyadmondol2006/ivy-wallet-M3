@@ -46,6 +46,8 @@ data class IvyCsvRow(
             "Description",
             "Due Date",
             "ID",
+            "Account Credit Limit",
+            "To Account Credit Limit",
         )
     }
 }

@@ -12,12 +12,12 @@ class CSVMapper @Inject constructor() {
 
     @ExperimentalStdlibApi
     fun mapping(type: ImportType, headerRow: String?) = when (type) {
-        ImportType.IVY -> {
-            if (headerRow?.contains("Currency") == true) {
-                ivyMappingV2()
-            } else {
-                ivyMappingV1()
-            }
+        ImportType.IVY -> when {
+            // Newest format adds trailing credit-limit columns (header has both "Currency" and
+            // "Credit Limit", so check "Credit Limit" first).
+            headerRow?.contains("Credit Limit") == true -> ivyMappingV3()
+            headerRow?.contains("Currency") == true -> ivyMappingV2()
+            else -> ivyMappingV1()
         }
 
         ImportType.MONEY_MANAGER -> moneyManager()
@@ -74,6 +74,32 @@ class CSVMapper @Inject constructor() {
         toAccountColor = 19,
         toAccountOrderNum = 20,
         toAccountIcon = 23
+    )
+
+    // Same transaction columns as V2 (the export still writes 0..14), plus two trailing
+    // credit-limit columns so credit cards round-trip on an Ivy CSV. No account color/icon/order
+    // here — the current export doesn't write them, and credit limit lives at 15/16.
+    private fun ivyMappingV3(): RowMapping = RowMapping(
+        date = 0,
+        title = 1,
+        category = 2,
+        account = 3,
+        amount = 4,
+        accountCurrency = 5,
+        type = 6,
+        transferAmount = 7,
+        // Transfer Currency - 8
+        toAccount = 9,
+        toAmount = 10,
+        toAccountCurrency = 11,
+        // skip "Receive Currency"
+        description = 12,
+        dueDate = 13,
+
+        id = null, // 14 - Don't map because it fcks up the sync with Insufficient Permission error
+
+        accountCreditLimit = 15,
+        toAccountCreditLimit = 16
     )
 
     // Praseto - https://play.google.com/store/apps/details?id=com.realbyteapps.moneymanagerfree&hl=en&gl=US

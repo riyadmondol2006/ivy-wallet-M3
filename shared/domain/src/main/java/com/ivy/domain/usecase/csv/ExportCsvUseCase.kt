@@ -104,6 +104,11 @@ class ExportCsvUseCase @Inject constructor(
         csvAppend(dueData?.csvFormat(timeConverter))
         // ID
         csvAppend(id.value.toString())
+        // Account Credit Limit (non-null only for credit-card accounts; lets an Ivy CSV
+        // round-trip credit cards. Other wallets/older Ivy CSVs lack this column.)
+        csvAppend(accountsMap[account]?.creditLimit?.csvFormat())
+        // To Account Credit Limit
+        csvAppend(accountsMap[toAccountId]?.creditLimit?.csvFormat())
     }
 
     @OptIn(ExperimentalTypeInference::class)

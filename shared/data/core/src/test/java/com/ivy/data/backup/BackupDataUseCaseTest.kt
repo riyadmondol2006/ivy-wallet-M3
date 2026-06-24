@@ -13,6 +13,7 @@ import com.ivy.data.db.dao.fake.FakeSettingsDao
 import com.ivy.data.db.dao.fake.FakeTagAssociationDao
 import com.ivy.data.db.dao.fake.FakeTagDao
 import com.ivy.data.db.dao.fake.FakeTransactionDao
+import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CurrencyRepository
 import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
@@ -23,6 +24,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import java.util.UUID
 
 class BackupDataUseCaseTest {
     private fun newBackupDataUseCase(
@@ -114,5 +116,48 @@ class BackupDataUseCaseTest {
     @Test
     fun `backup compatibility with 450 (150)`() = runTest {
         backupTestCase("450-150")
+    }
+
+    @Test
+    fun `credit card creditLimit round-trips through a backup`() = runTest {
+        // given - a DB containing a credit-card account (Account with a non-null creditLimit)
+        val sourceAccountDao = FakeAccountDao()
+        sourceAccountDao.save(
+            AccountEntity(
+                name = "Visa",
+                currency = "USD",
+                color = 1,
+                includeInBalance = false,
+                creditLimit = 5000.0,
+                id = UUID.fromString("11111111-1111-1111-1111-111111111111"),
+            )
+        )
+        val source = newBackupDataUseCase(accountDao = sourceAccountDao)
+
+        // when - export, then import into a fresh DB
+        val exportedJson = source.generateJsonBackup()
+        val freshAccountDao = FakeAccountDao()
+        newBackupDataUseCase(accountDao = freshAccountDao)
+            .importJson(exportedJson, onProgress = {})
+
+        // then - the imported account is still a credit card
+        val imported = freshAccountDao.findAll().first { it.name == "Visa" }
+        imported.creditLimit shouldBe 5000.0
+    }
+
+    @Test
+    fun `old backup without creditLimit imports as a normal account`() = runTest {
+        // given - the 450-150 backup predates credit cards (no creditLimit field in its JSON)
+        val accountDao = FakeAccountDao()
+        val useCase = newBackupDataUseCase(accountDao = accountDao)
+        val oldJson = testResource("backups/450-150.json").readText(Charsets.UTF_16)
+
+        // when
+        useCase.importJson(oldJson, onProgress = {})
+
+        // then - every imported account is a normal account (null creditLimit), no crash
+        val accounts = accountDao.findAll()
+        accounts.size shouldBeGreaterThan 0
+        accounts.forEach { it.creditLimit shouldBe null }
     }
 }

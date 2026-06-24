@@ -3,6 +3,7 @@ package com.ivy.wallet.domain.deprecated.logic.csv.model
 import com.ivy.base.legacy.Transaction
 import com.ivy.data.model.Category
 
+@Suppress("DataClassDefaultValues")
 data class RowMapping(
     val type: Int? = null,
     val defaultTypeToExpense: Boolean = false,
@@ -13,6 +14,7 @@ data class RowMapping(
     val accountOrderNum: Int? = null,
     val accountColor: Int? = null,
     val accountIcon: Int? = null,
+    val accountCreditLimit: Int? = null,
 
     val date: Int,
     val dateOnlyFormat: String? = null,
@@ -27,6 +29,7 @@ data class RowMapping(
     val toAccountColor: Int? = null,
     val toAccountOrderNum: Int? = null,
     val toAccountIcon: Int? = null,
+    val toAccountCreditLimit: Int? = null,
 
     val category: Int?,
     val categoryOrderNum: Int? = null,

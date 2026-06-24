@@ -176,7 +176,8 @@ class CSVImporter @Inject constructor(
                 currencyRawString = row.extract(rowMapping.toAccountCurrency),
                 color = row.extract(rowMapping.toAccountColor)?.toIntOrNull(),
                 icon = row.extract(rowMapping.toAccountIcon),
-                orderNum = row.extract(rowMapping.toAccountOrderNum)?.toDoubleOrNull()
+                orderNum = row.extract(rowMapping.toAccountOrderNum)?.toDoubleOrNull(),
+                creditLimit = mapAmount(row.extract(rowMapping.toAccountCreditLimit))
             )
         } else {
             null
@@ -224,7 +225,8 @@ class CSVImporter @Inject constructor(
             currencyRawString = row.extract(rowMapping.accountCurrency),
             color = row.extract(rowMapping.accountColor)?.toIntOrNull(),
             icon = row.extract(rowMapping.accountIcon),
-            orderNum = row.extract(rowMapping.accountOrderNum)?.toDoubleOrNull()
+            orderNum = row.extract(rowMapping.accountOrderNum)?.toDoubleOrNull(),
+            creditLimit = mapAmount(row.extract(rowMapping.accountCreditLimit))
         ) ?: return null
 
         val category = mapCategory(
@@ -440,6 +442,7 @@ class CSVImporter @Inject constructor(
         icon: String?,
         orderNum: Double?,
         currencyRawString: String?,
+        creditLimit: Double? = null,
     ): LegacyAccount? {
         if (accountNameString == null || accountNameString.isBlank()) return null
 
@@ -474,7 +477,8 @@ class CSVImporter @Inject constructor(
             ),
             color = colorArgb,
             icon = icon,
-            orderNum = orderNum ?: accountDao.findMaxOrderNum().nextOrderNum()
+            orderNum = orderNum ?: accountDao.findMaxOrderNum().nextOrderNum(),
+            creditLimit = creditLimit,
         )
         val domainAccount = newAccount.toDomainAccount(currencyRepository).getOrNull()
             ?: return null

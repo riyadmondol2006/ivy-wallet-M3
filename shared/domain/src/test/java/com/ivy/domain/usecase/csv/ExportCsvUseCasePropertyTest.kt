@@ -86,4 +86,26 @@ class ExportCsvUseCasePropertyTest {
             }
         }
     }
+
+    @Test
+    fun `credit card account exports its credit limit column`() = runTest {
+        // given - a single transaction whose account(s) are credit cards (non-null creditLimit)
+        val trn = Arb.transaction().next()
+        val cards = listOfNotNull(trn.getFromAccount(), trn.getToAccount()).map {
+            Arb.account(accountId = Some(it)).next().copy(creditLimit = 500.0)
+        }
+        coEvery { accountRepository.findAll() } returns cards
+        coEvery { categoryRepository.findAll() } returns emptyList()
+
+        // when
+        val csv = useCase.exportCsv { listOf(trn) }
+
+        // then - the trailing "Account Credit Limit" column carries the limit
+        val rows = ReadCsvUseCase().readCsv(csv)
+        val header = rows.first()
+        val dataRow = rows[1]
+        val limitIdx = header.indexOf("Account Credit Limit")
+        limitIdx shouldBe IvyCsvRow.Columns.indexOf("Account Credit Limit")
+        dataRow[limitIdx].replace(",", "").toDouble() shouldBe 500.0
+    }
 }
