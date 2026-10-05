@@ -59,9 +59,9 @@ class CreditCardService @Inject constructor(
         if (dual) {
             require(input.secondaryCurrency != input.currency)
             require(input.secondaryLimit?.let { validMoney(it, input.secondaryCurrency!!) } == true)
-            if (input.sharedLimit) {
-                require(input.exchangeRate?.let { it.isFinite() && it > 0.0 } == true)
-            }
+            // The bank rate is optional with separate limits (it only drives the owed total) and
+            // mandatory with a shared limit (available credit cannot be estimated without it).
+            require(input.exchangeRate?.let { it.isFinite() && it > 0.0 } ?: !input.sharedLimit)
         }
         val primary = Account(
             id = primaryId,
@@ -74,7 +74,7 @@ class CreditCardService @Inject constructor(
             creditLimit = input.limit,
             creditCardGroupId = if (dual) primaryId else null,
             creditLimitShared = dual && input.sharedLimit,
-            creditExchangeRate = input.exchangeRate.takeIf { dual && input.sharedLimit },
+            creditExchangeRate = input.exchangeRate.takeIf { dual },
             creditStatementDay = input.statementDay,
             creditDueDay = input.dueDay,
         )

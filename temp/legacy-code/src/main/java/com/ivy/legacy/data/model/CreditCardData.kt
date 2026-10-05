@@ -60,6 +60,52 @@ data class CreditCardData(
     }
 }
 
+/**
+ * Everything a card (or all cards sharing a main currency) owes, expressed in [currency].
+ * Secondary-currency debt is converted at the bank rate the user entered, so it is an estimate.
+ */
+@Immutable
+data class CreditOwedTotal(
+    val currency: String,
+    val amount: Double,
+    /** Bank rates used for the conversion: second currency -> units of [currency] per one unit. */
+    val rates: Map<String, Double>,
+    /** Second currencies whose debt is not included because their card has no bank rate. */
+    val missingRateCurrencies: List<String>,
+) {
+    val estimated: Boolean get() = rates.isNotEmpty()
+}
+
+/** Owed in the main currency: primary debt plus the second currency's debt at the bank rate. */
+fun CreditCardData.totalOwed(): CreditOwedTotal {
+    val currency = primary.account.asset.code
+    val primaryOwed = (-primary.balance.toBigDecimal()).max(BigDecimal.ZERO)
+    val secondCurrency = secondary?.account?.asset?.code
+    val secondOwed = secondary?.let { (-it.balance.toBigDecimal()).max(BigDecimal.ZERO) } ?: BigDecimal.ZERO
+    val rate = primary.account.creditExchangeRate?.takeIf { it.isFinite() && it > 0.0 }
+    return when {
+        secondCurrency == null -> CreditOwedTotal(currency, primaryOwed.moneyDown(currency), emptyMap(), emptyList())
+        rate == null -> CreditOwedTotal(currency, primaryOwed.moneyDown(currency), emptyMap(), listOf(secondCurrency))
+        else -> CreditOwedTotal(
+            currency = currency,
+            amount = (primaryOwed + secondOwed * rate.toBigDecimal()).moneyDown(currency),
+            rates = if (secondOwed.signum() > 0) mapOf(secondCurrency to rate) else emptyMap(),
+            missingRateCurrencies = emptyList(),
+        )
+    }
+}
+
+/** One total per main currency across cards; second-currency debt is converted per card. */
+fun creditOwedTotals(cards: List<CreditCardData>): List<CreditOwedTotal> =
+    cards.map { it.totalOwed() }.groupBy { it.currency }.map { (currency, totals) ->
+        CreditOwedTotal(
+            currency = currency,
+            amount = totals.sumOf { it.amount.toBigDecimal() }.moneyDown(currency),
+            rates = totals.flatMap { it.rates.entries }.associate { it.key to it.value },
+            missingRateCurrencies = totals.flatMap { it.missingRateCurrencies }.distinct(),
+        )
+    }
+
 private fun BigDecimal.moneyDown(currency: String): Double =
     setScale(IvyCurrency.getDecimalPlaces(currency), RoundingMode.DOWN).toDouble()
 

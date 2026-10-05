@@ -7,6 +7,8 @@ import com.ivy.home.customerjourney.CustomerJourneyCardModel
 import com.ivy.legacy.data.AppBaseData
 import com.ivy.legacy.data.BufferInfo
 import com.ivy.legacy.data.LegacyDueSection
+import com.ivy.legacy.data.model.CreditCurrencyStats
+import com.ivy.legacy.data.model.CreditOwedTotal
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.ui.sync.SyncMessage
 import com.ivy.wallet.domain.pure.data.IncomeExpensePair
@@ -58,14 +60,31 @@ data class HomeState(
 @Immutable
 data class CreditCardsSummary(
     val cardCount: Int,
-    val currencies: ImmutableList<com.ivy.legacy.data.model.CreditCurrencyStats>,
+    /** One entry per physical card, in account order. */
+    val cards: ImmutableList<Card>,
+    /** Per-currency totals across all cards; unlike currencies are never added together. */
+    val currencies: ImmutableList<CreditCurrencyStats>,
+    /** One converted total per main currency across all cards. */
+    val totals: ImmutableList<CreditOwedTotal>,
     /** Earliest card payment date among cards that still owe money, if a billing cycle is set. */
     val nearestDueDate: java.time.LocalDate?,
 ) {
+    @Immutable
+    data class Card(
+        val name: String,
+        val color: Int,
+        val icon: String?,
+        val stats: ImmutableList<CreditCurrencyStats>,
+        /** Owed in the main currency with the second currency converted; null for single-currency cards. */
+        val total: CreditOwedTotal?,
+    )
+
     companion object {
         val None = CreditCardsSummary(
             cardCount = 0,
+            cards = persistentListOf(),
             currencies = persistentListOf(),
+            totals = persistentListOf(),
             nearestDueDate = null,
         )
     }

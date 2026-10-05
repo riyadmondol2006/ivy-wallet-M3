@@ -52,8 +52,10 @@ import com.ivy.legacy.data.model.AccountData
 import com.ivy.legacy.data.model.CreditCardData
 import com.ivy.legacy.data.model.CreditCardInput
 import com.ivy.legacy.data.model.CreditCardPaymentInput
+import com.ivy.legacy.data.model.totalOwed
 import com.ivy.legacy.domain.validMoney
 import com.ivy.legacy.ui.component.CreditCurrencySummary
+import com.ivy.legacy.ui.component.CreditOwedTotalRow
 import com.ivy.legacy.utils.format
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
@@ -103,11 +105,14 @@ internal fun CreditCardEditor(
     val limitValue = limit.number()
     val secondValue = secondLimit.number()
     val rateValue = rate.number()
+    // The rate is optional with separate limits (it only feeds the owed total) and required with a
+    // shared limit, where available credit cannot be estimated without it.
+    val rateValid = rateValue?.let { it.isFinite() && it > 0 } ?: (rate.isBlank() && !shared)
     val valid = cycleValid && name.isNotBlank() && limitValue?.let { validMoney(it, currency) } == true &&
         (
             !dual || (
                 currency != secondCurrency && secondValue?.let { validMoney(it, secondCurrency) } == true &&
-                    (!shared || rateValue?.let { it.isFinite() && it > 0 } == true)
+                    rateValid
                 )
             )
     ModalBottomSheet(
@@ -137,26 +142,6 @@ internal fun CreditCardEditor(
                 enabled = primary == null && !busy
             ) { currency = it }
             MoneyField(limit, { limit = it }, stringResource(R.string.credit_limit_in, currency), !busy)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DayOfMonthField(
-                    label = stringResource(R.string.credit_statement_day),
-                    value = statementDay,
-                    enabled = !busy,
-                    modifier = Modifier.weight(1f),
-                ) { statementDay = it }
-                DayOfMonthField(
-                    label = stringResource(R.string.credit_due_day),
-                    value = dueDay,
-                    enabled = !busy,
-                    modifier = Modifier.weight(1f),
-                ) { dueDay = it }
-            }
-            HelperText(stringResource(R.string.credit_cycle_help))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.include_account_in_balance), Modifier.weight(1f))
-                Switch(checked = includeInBalance, onCheckedChange = { includeInBalance = it }, enabled = !busy)
-            }
-            HelperText(stringResource(R.string.credit_include_in_balance_help))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.dual_currency_card), Modifier.weight(1f))
                 Switch(checked = dual, onCheckedChange = { dual = it }, enabled = secondary == null && !busy)
@@ -179,16 +164,40 @@ internal fun CreditCardEditor(
                     Switch(checked = shared, onCheckedChange = { shared = it }, enabled = !busy)
                 }
                 HelperText(stringResource(if (shared) R.string.shared_credit_help else R.string.separate_credit_help))
-                if (shared) {
-                    MoneyField(
-                        rate,
-                        { rate = it },
-                        stringResource(R.string.credit_rate_label, secondCurrency, currency),
-                        !busy
-                    )
-                    HelperText(stringResource(R.string.credit_rate_help))
-                }
+                MoneyField(
+                    rate,
+                    { rate = it },
+                    stringResource(R.string.credit_rate_label, secondCurrency, currency),
+                    !busy
+                )
+                HelperText(
+                    if (shared) {
+                        stringResource(R.string.credit_rate_help)
+                    } else {
+                        stringResource(R.string.credit_rate_optional_help, currency)
+                    }
+                )
             }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DayOfMonthField(
+                    label = stringResource(R.string.credit_statement_day),
+                    value = statementDay,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f),
+                ) { statementDay = it }
+                DayOfMonthField(
+                    label = stringResource(R.string.credit_due_day),
+                    value = dueDay,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f),
+                ) { dueDay = it }
+            }
+            HelperText(stringResource(R.string.credit_cycle_help))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.include_account_in_balance), Modifier.weight(1f))
+                Switch(checked = includeInBalance, onCheckedChange = { includeInBalance = it }, enabled = !busy)
+            }
+            HelperText(stringResource(R.string.credit_include_in_balance_help))
             Text(stringResource(R.string.credit_color), style = MaterialTheme.typography.labelLarge)
             val colorLabel = stringResource(R.string.credit_color)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -257,7 +266,7 @@ internal fun CreditCardEditor(
                             secondaryCurrency = secondCurrency.takeIf { dual },
                             secondaryLimit = secondValue.takeIf { dual },
                             sharedLimit = dual && shared,
-                            exchangeRate = rateValue.takeIf { dual && shared },
+                            exchangeRate = rateValue.takeIf { dual },
                             includeInBalance = includeInBalance,
                             statementDay = statementDay,
                             dueDay = dueDay,
@@ -321,6 +330,7 @@ internal fun CreditCardDetailsSheet(
                 TextButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.edit)) }
             }
             CreditCurrencySummary(card.stats().toImmutableList())
+            if (card.secondary != null) CreditOwedTotalRow(card.totalOwed())
             CreditDueStatusText(card = card, today = today)
             if (card.shared) HelperText(stringResource(R.string.credit_shared_note))
             if (card.secondary != null) {

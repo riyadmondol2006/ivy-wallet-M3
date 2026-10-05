@@ -648,7 +648,12 @@
     <string name="separate_credit_help">Each currency has its own independent credit limit.</string>
     <string name="credit_currency_locked">Currencies are kept fixed to protect transaction history. Adding a second currency starts it with a zero balance.</string>
     <string name="credit_rate_label">Bank rate: 1 %1$s in %2$s</string>
-    <string name="credit_rate_help">Use your bank’s rate and update it when needed. Available credit is an estimate; your bank’s statement is authoritative.</string>
+    <string name="credit_rate_help">Use your bank’s rate and update it when needed. Available credit and the total owed are estimates; your bank’s statement is authoritative.</string>
+    <string name="credit_rate_optional_help">Optional. Shows what you owe in total in %1$s. Update it when your bank’s rate changes.</string>
+    <string name="credit_total_owed">Total owed</string>
+    <string name="credit_total_owed_rate">1 %1$s = %2$s %3$s</string>
+    <string name="credit_total_owed_missing_rate">Add the card’s bank rate to include %1$s.</string>
+    <string name="credit_all_cards">All cards</string>
     <string name="credit_shared_note">Shared limit · Available amounts are alternatives, not extra credit.</string>
     <string name="credit_separate_note">Separate limits</string>
     <string name="credit_limit_in">Limit · %1$s</string>

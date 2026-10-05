@@ -9,14 +9,25 @@ existing credit card and choose Edit. Enable Dual-currency card, select its seco
 and enter its limit.
 
 - Shared overall limit (default for a new dual card): both balances consume the main limit.
-  The second limit is a spending cap, not additional credit. Enter the bank rate as main-currency
-  units per one second-currency unit. Approximate available amounts share the same overall
-  credit and must not be added together.
-- Separate limits: each currency's debt reduces only its own limit.
+  The second limit is a spending cap, not additional credit. The bank rate is required here.
+  Approximate available amounts share the same overall credit and must not be added together.
+- Separate limits: each currency's debt reduces only its own limit. The bank rate is optional.
+
+The bank rate is entered as main-currency units per one second-currency unit (for a BDT card with
+a USD ledger: how many BDT the bank charges for 1 USD). Update it when the bank's rate changes.
 
 Each currency has its own transaction account. Search/select the currency in the transaction
-account picker when recording spending. The Accounts and Home summaries never add unlike
-currencies together.
+account picker when recording spending.
+
+## What you owe
+
+The Accounts tab and the Home "Credit cards" card show, for every card, the amount to pay and the
+limit left in each currency; unlike currencies are never added together there. A dual-currency
+card additionally shows **Total owed** in its main currency: the main-currency debt plus the second
+currency's debt converted at the card's bank rate, marked with "≈" because it is an estimate at
+that rate. Without a rate the row shows the main-currency debt only and says which currency is
+left out. With more than one card, Home adds an "All cards" footer with the same per-currency
+totals and one converted total per main currency.
 
 To record a repayment, tap the card, choose the currency and paying account, then enter the
 amount credited to the card. For a different paying currency, also enter the actual amount
@@ -52,7 +63,8 @@ previous setting until edited.
 
 Conversion keeps the existing account ID and transactions and adds a zero-balance secondary
 account. Neither currency can be changed or removed after the dual card is saved. Name,
-color, icon, limits, limit mode, and bank rate remain editable. Deleting a dual card explicitly
+color, icon, limits, limit mode, and bank rate remain editable; the rate is kept in both limit
+modes. Deleting a dual card explicitly
 confirms deletion of both currency ledgers and their histories.
 
 Database migration 131 → 132 adds nullable group/rate fields and a false-by-default shared-limit

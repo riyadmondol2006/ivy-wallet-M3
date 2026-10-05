@@ -106,6 +106,53 @@ class CreditCardDataTest {
         assertEquals(200.0, totals[1].toPay, 0.0)
     }
 
+    @Test fun totalOwedConvertsSecondCurrencyDebtAtTheBankRate() {
+        val total = card().totalOwed()
+        assertEquals("BDT", total.currency)
+        assertEquals(32000.0, total.amount, 0.0)
+        assertEquals(mapOf("USD" to 120.0), total.rates)
+        assertTrue(total.missingRateCurrencies.isEmpty())
+        assertTrue(total.estimated)
+    }
+
+    @Test fun totalOwedWorksWithSeparateLimitsWhenARateIsEntered() {
+        assertEquals(32000.0, card(shared = false).totalOwed().amount, 0.0)
+    }
+
+    @Test fun totalOwedWithoutARateCountsOnlyTheMainCurrencyAndSaysWhatIsMissing() {
+        listOf(null, 0.0, Double.NaN).forEach { rate ->
+            val total = card(rate = rate).totalOwed()
+            assertEquals(20000.0, total.amount, 0.0)
+            assertEquals(listOf("USD"), total.missingRateCurrencies)
+            assertFalse(total.estimated)
+        }
+    }
+
+    @Test fun totalOwedIgnoresPositiveBalancesAndSingleCurrencyCardsNeedNoRate() {
+        val total = card(mainOwed = -500.0, foreignOwed = 50.0).totalOwed()
+        assertEquals(6000.0, total.amount, 0.0)
+        val paidOff = card(foreignOwed = 0.0).totalOwed()
+        assertEquals(20000.0, paidOff.amount, 0.0)
+        assertTrue(paidOff.rates.isEmpty())
+        val single = CreditCardData(ledger("BDT", 1000.0, 250.0)).totalOwed()
+        assertEquals(250.0, single.amount, 0.0)
+        assertTrue(single.missingRateCurrencies.isEmpty())
+    }
+
+    @Test fun owedTotalsGroupByMainCurrencyAndMergeRatesAndMissingOnes() {
+        val usdCard = CreditCardData(
+            ledger("USD", 5000.0, 300.0).let { it.copy(account = it.account.copy(id = AccountId(UUID(0, 3)))) },
+            ledger("EUR", 1000.0, 100.0, secondary = true),
+        )
+        val totals = creditOwedTotals(listOf(card(), card(rate = null), usdCard))
+        assertEquals(listOf("BDT", "USD"), totals.map { it.currency })
+        assertEquals(52000.0, totals[0].amount, 0.0)
+        assertEquals(mapOf("USD" to 120.0), totals[0].rates)
+        assertEquals(listOf("USD"), totals[0].missingRateCurrencies)
+        assertEquals(300.0, totals[1].amount, 0.0)
+        assertEquals(listOf("EUR"), totals[1].missingRateCurrencies)
+    }
+
     @Test fun paymentAmountsMustBePositiveFiniteAndCurrencyPrecision() {
         listOf(0.0, -1.0, Double.NaN, Double.POSITIVE_INFINITY, 1.001).forEach {
             assertFalse(validMoney(it, "BDT"))

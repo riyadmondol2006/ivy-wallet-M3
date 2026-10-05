@@ -37,6 +37,7 @@ import com.ivy.legacy.data.LegacyDueSection
 import com.ivy.legacy.data.model.MainTab
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.data.model.nearestDueDate
+import com.ivy.legacy.data.model.totalOwed
 import com.ivy.legacy.data.model.toUTCCloseTimeRange
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.Settings
@@ -452,8 +453,18 @@ class HomeViewModel @Inject constructor(
         val grouped = com.ivy.legacy.data.model.groupCreditCards(data)
         creditSummary = CreditCardsSummary(
             cardCount = grouped.size,
+            cards = grouped.map { card ->
+                CreditCardsSummary.Card(
+                    name = card.primary.account.name.value,
+                    color = card.primary.account.color.value,
+                    icon = card.primary.account.icon?.id,
+                    stats = card.stats().toImmutableList(),
+                    total = card.totalOwed().takeIf { card.secondary != null },
+                )
+            }.toImmutableList(),
             nearestDueDate = grouped.nearestDueDate(timeProvider.localDateNow()),
             currencies = com.ivy.legacy.data.model.creditCurrencyTotals(grouped).toImmutableList(),
+            totals = com.ivy.legacy.data.model.creditOwedTotals(grouped).toImmutableList(),
         )
     }
 

@@ -84,7 +84,7 @@ class CreditCardServiceTest {
         coVerify(exactly = 0) { transactions.save(any()) }
     }
 
-    @Test fun editingDualCardPreservesBothIdsAndIndependentModeClearsRate() = runTest {
+    @Test fun editingDualCardPreservesBothIdsAndIndependentModeKeepsOptionalRate() = runTest {
         val main = primary.copy(creditCardGroupId = primary.id)
         val second = primary.copy(
             id = AccountId(UUID.randomUUID()),
@@ -98,7 +98,23 @@ class CreditCardServiceTest {
         service.save(input().copy(sharedLimit = false))
         assertEquals(second.id, saved.captured[1].id)
         assertFalse(saved.captured[0].creditLimitShared)
+        assertEquals(120.0, saved.captured[0].creditExchangeRate!!, 0.0)
+        assertNull(saved.captured[1].creditExchangeRate)
+
+        service.save(input().copy(sharedLimit = false, exchangeRate = null))
         assertNull(saved.captured[0].creditExchangeRate)
+    }
+
+    @Test fun sharedLimitStillRequiresABankRate() = runTest {
+        coEvery { accounts.findById(primary.id) } returns primary
+        coEvery { accounts.findAll() } returns listOf(primary)
+        for (rate in listOf(null, 0.0, -1.0, Double.NaN)) {
+            try {
+                service.save(input().copy(sharedLimit = true, exchangeRate = rate))
+                fail("A shared limit cannot estimate available credit without a rate")
+            } catch (_: IllegalArgumentException) { }
+        }
+        coVerify(exactly = 0) { accounts.saveMany(any()) }
     }
 
     @Test fun existingSecondaryCurrencyCannotBeRemovedOrReinterpreted() = runTest {

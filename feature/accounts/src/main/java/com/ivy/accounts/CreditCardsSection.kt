@@ -19,7 +19,9 @@ import androidx.compose.ui.unit.dp
 import com.ivy.legacy.data.model.CreditCardData
 import com.ivy.legacy.data.model.CreditDueStatus
 import com.ivy.legacy.data.model.dueStatus
+import com.ivy.legacy.data.model.totalOwed
 import com.ivy.legacy.ui.component.CreditCurrencySummary
+import com.ivy.legacy.ui.component.CreditOwedTotalRow
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import kotlinx.collections.immutable.ImmutableList
@@ -62,6 +64,7 @@ fun CreditCardsSection(
                     CreditDueStatusText(card = card, today = today)
                     CreditCurrencySummary(card.stats().toImmutableList())
                     if (card.secondary != null) {
+                        CreditOwedTotalRow(card.totalOwed())
                         Text(
                             stringResource(
                                 if (card.shared) R.string.credit_shared_note else R.string.credit_separate_note

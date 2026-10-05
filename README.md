@@ -25,9 +25,9 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 ### Credit Cards Feature
 - Accounts now support an optional **credit limit** (`creditLimit: Double?`), turning any account into a credit card account
 - Room DB migrated to **v132** (`Migration130to131_AccountCreditLimit`, `Migration131to132_DualCurrencyCards`) — adds the credit limit and dual-currency card columns with safe defaults
-- **Credit Cards section** on the Accounts tab — shows each card's amount to pay and limit left per currency
+- **Credit Cards section** on the Accounts tab — shows each card's amount to pay and limit left per currency, plus the total owed in the main currency at the bank rate for dual-currency cards
 - **Pay** flow — records a transfer from a paying account to the card (partial and cross-currency payments supported); **Reset** clears a card's balance with a confirmed adjustment
-- **Home summary card** — when credit cards exist, the Home tab shows total balance and total credit exposure separately
+- **Home summary card** — when credit cards exist, the Home tab lists every card with its per-currency debt and converted total, and an "All cards" footer when there are several
 - **Billing cycle** — optional statement day and payment due day per card; cards show "Payment due in N days" / "Overdue since …", and a reminder fires when a payment is due within three days
 - **Include in balance** per card — card debt can count against the total balance and card spending appears in the income/expense statistics (default on)
 - Feature flag (`creditCardsEnabled`) enabled by default; turning it off keeps card accounts in the normal list
