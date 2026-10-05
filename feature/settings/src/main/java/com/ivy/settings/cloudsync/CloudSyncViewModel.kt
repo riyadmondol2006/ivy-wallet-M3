@@ -5,11 +5,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
+import com.ivy.data.sync.PushError
 import com.ivy.data.sync.SyncConfigDataSource
 import com.ivy.data.sync.SyncEndpointType
 import com.ivy.data.sync.SyncMode
 import com.ivy.data.sync.SyncRepository
 import com.ivy.ui.ComposeViewModel
+import com.ivy.ui.sync.SyncMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,7 +33,8 @@ class CloudSyncViewModel @Inject constructor(
     private val testStatus = mutableStateOf<TestStatus>(TestStatus.Idle)
     private val busy = mutableStateOf(false)
     private val remoteSummary = mutableStateOf<RemoteSummary?>(null)
-    private val message = mutableStateOf<String?>(null)
+    private val message = mutableStateOf<SyncMessage?>(null)
+    private val overwriteOffered = mutableStateOf(false)
     private val launchedFromOnboarding = mutableStateOf(false)
     private val onboardingRestore = mutableStateOf<OnboardingRestoreUi>(OnboardingRestoreUi.Hidden)
     private val completion = mutableStateOf(CompletionSignal.NONE)
@@ -65,6 +68,7 @@ class CloudSyncViewModel @Inject constructor(
             busy = busy.value,
             remoteSummary = remoteSummary.value,
             message = message.value,
+            overwriteOffered = overwriteOffered.value,
             launchedFromOnboarding = launchedFromOnboarding.value,
             onboardingRestore = onboardingRestore.value,
             completion = completion.value,
@@ -107,7 +111,8 @@ class CloudSyncViewModel @Inject constructor(
             CloudSyncEvent.TestConnection -> testConnection()
             CloudSyncEvent.Save -> save()
             is CloudSyncEvent.SetMode -> setMode(event.mode)
-            CloudSyncEvent.SyncNow -> syncNow()
+            CloudSyncEvent.SyncNow -> syncNow(force = false)
+            CloudSyncEvent.ForceSyncNow -> syncNow(force = true)
             CloudSyncEvent.RestoreNow -> restoreNow()
             CloudSyncEvent.RemoveConnection -> removeConnection()
             CloudSyncEvent.DismissMessage -> message.value = null
@@ -125,89 +130,101 @@ class CloudSyncViewModel @Inject constructor(
         }
     }
 
-    private fun testConnection() {
+    /** Runs [block] with the busy indicator on, resetting it even if the block throws. */
+    private fun launchBusy(block: suspend () -> Unit) {
         viewModelScope.launch {
             busy.value = true
-            testStatus.value = TestStatus.Testing
-            syncRepository.testConnection(endpointType.value, url.value, token.value).fold(
-                ifLeft = { testStatus.value = TestStatus.Error(it) },
-                ifRight = { testStatus.value = TestStatus.Success },
-            )
-            busy.value = false
+            try {
+                block()
+            } finally {
+                busy.value = false
+            }
         }
     }
 
-    private fun save() {
-        viewModelScope.launch {
-            val cleanUrl = url.value.trim().trimEnd('/')
-            val cleanToken = token.value.trim()
-            configDataSource.setConnection(cleanUrl, cleanToken, endpointType.value)
-            savedUrl.value = cleanUrl
-            savedToken.value = cleanToken
-            savedEndpointType.value = endpointType.value
-            if (mode.value == SyncMode.OFF) {
-                mode.value = SyncMode.MANUAL
-                configDataSource.setMode(SyncMode.MANUAL)
-            }
-            message.value = "Connection saved"
+    private fun testConnection(): Unit = launchBusy {
+        testStatus.value = TestStatus.Testing
+        syncRepository.testConnection(endpointType.value, url.value, token.value).fold(
+            ifLeft = { testStatus.value = TestStatus.Error(it) },
+            ifRight = { testStatus.value = TestStatus.Success },
+        )
+    }
 
-            if (launchedFromOnboarding.value) {
-                onboardingRestore.value = OnboardingRestoreUi.Checking
-                val status = syncRepository.checkRemote()
-                val meta = status.meta
-                onboardingRestore.value = if (status.exists && meta != null) {
-                    OnboardingRestoreUi.BackupFound(meta.accounts, meta.updatedAt)
-                } else {
-                    OnboardingRestoreUi.NoBackup
-                }
+    private fun save(): Unit = launchBusy {
+        val cleanUrl = url.value.trim().trimEnd('/')
+        val cleanToken = token.value.trim()
+        configDataSource.setConnection(cleanUrl, cleanToken, endpointType.value)
+        savedUrl.value = cleanUrl
+        savedToken.value = cleanToken
+        savedEndpointType.value = endpointType.value
+        if (mode.value == SyncMode.OFF) {
+            mode.value = SyncMode.MANUAL
+            configDataSource.setMode(SyncMode.MANUAL)
+        }
+        message.value = SyncMessage.ConnectionSaved
+
+        if (launchedFromOnboarding.value) {
+            onboardingRestore.value = OnboardingRestoreUi.Checking
+            val status = syncRepository.checkRemote()
+            val meta = status.meta
+            onboardingRestore.value = if (status.exists && meta != null) {
+                OnboardingRestoreUi.BackupFound(meta.accounts, meta.updatedAt)
             } else {
-                refreshRemoteSummary()
+                OnboardingRestoreUi.NoBackup
             }
+        } else {
+            refreshRemoteSummary()
         }
     }
 
     private fun setMode(newMode: SyncMode) {
+        val previous = mode.value
         mode.value = newMode
-        viewModelScope.launch { configDataSource.setMode(newMode) }
-    }
-
-    private fun syncNow() {
         viewModelScope.launch {
-            busy.value = true
-            syncRepository.push().fold(
-                ifLeft = { message.value = it },
-                ifRight = {
-                    message.value = "Backed up to cloud"
-                    refreshRemoteSummary()
-                },
-            )
-            busy.value = false
+            configDataSource.setMode(newMode)
+            // Switching to AUTO should get the cloud up to date right away, not on the next edit.
+            if (newMode == SyncMode.AUTO && previous != SyncMode.AUTO) {
+                syncNow(force = false)
+            }
         }
     }
 
-    private fun restoreNow() {
-        viewModelScope.launch {
-            busy.value = true
-            syncRepository.pull().fold(
-                ifLeft = { message.value = it },
-                ifRight = { result ->
-                    message.value = "Restored ${result.transactionsImported} transactions"
-                    refreshRemoteSummary()
-                },
-            )
-            busy.value = false
-        }
+    private fun syncNow(force: Boolean): Unit = launchBusy {
+        overwriteOffered.value = false
+        syncRepository.push(force = force).fold(
+            ifLeft = { error ->
+                when (error) {
+                    is PushError.RemoteNewer -> {
+                        message.value = SyncMessage.RemoteNewer
+                        overwriteOffered.value = true
+                    }
+
+                    is PushError.Failed -> message.value = SyncMessage.Failed(error.message)
+                }
+            },
+            ifRight = {
+                message.value = SyncMessage.BackedUp
+                refreshRemoteSummary()
+            },
+        )
     }
 
-    private fun onboardingRestore() {
-        viewModelScope.launch {
-            busy.value = true
-            syncRepository.pull().fold(
-                ifLeft = { message.value = it },
-                ifRight = { completion.value = CompletionSignal.FINISH_ONBOARDING },
-            )
-            busy.value = false
-        }
+    private fun restoreNow(): Unit = launchBusy {
+        overwriteOffered.value = false
+        syncRepository.pull().fold(
+            ifLeft = { message.value = SyncMessage.Failed(it) },
+            ifRight = { result ->
+                message.value = SyncMessage.Restored(result.transactionsImported)
+                refreshRemoteSummary()
+            },
+        )
+    }
+
+    private fun onboardingRestore(): Unit = launchBusy {
+        syncRepository.pull().fold(
+            ifLeft = { message.value = SyncMessage.Failed(it) },
+            ifRight = { completion.value = CompletionSignal.FINISH_ONBOARDING },
+        )
     }
 
     private fun removeConnection() {
@@ -222,7 +239,8 @@ class CloudSyncViewModel @Inject constructor(
             mode.value = SyncMode.OFF
             testStatus.value = TestStatus.Idle
             remoteSummary.value = null
-            message.value = "Connection removed"
+            overwriteOffered.value = false
+            message.value = SyncMessage.ConnectionRemoved
         }
     }
 

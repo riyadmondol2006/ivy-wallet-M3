@@ -8,8 +8,10 @@ import com.ivy.legacy.data.AppBaseData
 import com.ivy.legacy.data.BufferInfo
 import com.ivy.legacy.data.LegacyDueSection
 import com.ivy.legacy.data.model.TimePeriod
+import com.ivy.ui.sync.SyncMessage
 import com.ivy.wallet.domain.pure.data.IncomeExpensePair
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import java.math.BigDecimal
 
 @Immutable
@@ -44,17 +46,27 @@ data class HomeState(
     val syncing: Boolean = false,
     /** When > 0, prompt to pull newer cloud changes from another device (the remote updatedAt). */
     val remoteSyncPromptAtMillis: Long = 0L,
+    /**
+     * The prompt was raised because a manual "Sync now" was refused: besides pulling, the user may
+     * choose to overwrite the cloud with this device's data.
+     */
+    val remoteSyncConflict: Boolean = false,
+    /** One-shot result of the last sync action, shown as a toast and then dismissed. */
+    val syncMessage: SyncMessage? = null,
 )
 
 @Immutable
 data class CreditCardsSummary(
     val cardCount: Int,
-    val currencies: List<com.ivy.legacy.data.model.CreditCurrencyStats>,
+    val currencies: ImmutableList<com.ivy.legacy.data.model.CreditCurrencyStats>,
+    /** Earliest card payment date among cards that still owe money, if a billing cycle is set. */
+    val nearestDueDate: java.time.LocalDate?,
 ) {
     companion object {
         val None = CreditCardsSummary(
             cardCount = 0,
-            currencies = emptyList(),
+            currencies = persistentListOf(),
+            nearestDueDate = null,
         )
     }
 }

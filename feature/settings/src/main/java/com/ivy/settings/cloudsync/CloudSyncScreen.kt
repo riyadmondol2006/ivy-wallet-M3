@@ -19,7 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,11 +40,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.data.sync.SyncEndpointType
@@ -54,6 +61,9 @@ import com.ivy.navigation.screenScopedViewModel
 import com.ivy.onboarding.OnboardingEvent
 import com.ivy.onboarding.viewmodel.OnboardingViewModel
 import com.ivy.ui.R
+import com.ivy.ui.component.BackButton
+import com.ivy.ui.component.IvyConfirmDialog
+import com.ivy.ui.sync.text
 import java.text.DateFormat
 import java.util.Date
 
@@ -72,9 +82,10 @@ fun BoxWithConstraintsScope.CloudSyncScreen(screen: com.ivy.navigation.CloudSync
     val rootScreen = rootScreen()
     val context = LocalContext.current
 
+    val messageText = state.message?.text()
     LaunchedEffect(state.message) {
-        state.message?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        if (messageText != null) {
+            Toast.makeText(context, messageText, Toast.LENGTH_SHORT).show()
             viewModel.onEvent(CloudSyncEvent.DismissMessage)
         }
     }
@@ -124,9 +135,7 @@ private fun CloudSyncUi(
         Spacer(Modifier.height(8.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
+            BackButton(onClick = onBack)
             Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.cloud_sync_setup_title),
@@ -180,6 +189,7 @@ private fun CloudSyncUi(
         )
 
         Spacer(Modifier.height(12.dp))
+        var tokenVisible by rememberSaveable { mutableStateOf(false) }
         OutlinedTextField(
             value = state.token,
             onValueChange = { onEvent(CloudSyncEvent.TokenChanged(it)) },
@@ -195,6 +205,34 @@ private fun CloudSyncUi(
                 )
             },
             singleLine = true,
+            // The token is a secret: mask it on screen and keep it out of keyboard suggestions.
+            visualTransformation = if (tokenVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+            ),
+            trailingIcon = {
+                IconButton(onClick = { tokenVisible = !tokenVisible }) {
+                    Icon(
+                        imageVector = if (tokenVisible) {
+                            Icons.Outlined.VisibilityOff
+                        } else {
+                            Icons.Outlined.Visibility
+                        },
+                        contentDescription = stringResource(
+                            if (tokenVisible) {
+                                R.string.cloud_sync_hide_token
+                            } else {
+                                R.string.cloud_sync_show_token
+                            }
+                        ),
+                    )
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -337,6 +375,9 @@ private fun ColumnScope.ConfiguredSection(state: CloudSyncState, onEvent: (Cloud
     Spacer(Modifier.height(16.dp))
     RemoteSummaryText(summary = state.remoteSummary)
 
+    var confirmRestore by rememberSaveable { mutableStateOf(false) }
+    var confirmRemove by rememberSaveable { mutableStateOf(false) }
+
     Spacer(Modifier.height(16.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Button(
@@ -347,7 +388,7 @@ private fun ColumnScope.ConfiguredSection(state: CloudSyncState, onEvent: (Cloud
             Text(stringResource(R.string.cloud_sync_now))
         }
         OutlinedButton(
-            onClick = { onEvent(CloudSyncEvent.RestoreNow) },
+            onClick = { confirmRestore = true },
             enabled = !state.busy,
             modifier = Modifier.weight(1f),
         ) {
@@ -355,9 +396,27 @@ private fun ColumnScope.ConfiguredSection(state: CloudSyncState, onEvent: (Cloud
         }
     }
 
+    if (state.overwriteOffered) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.cloud_sync_remote_newer),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(
+            onClick = { onEvent(CloudSyncEvent.ForceSyncNow) },
+            enabled = !state.busy,
+        ) {
+            Text(
+                text = stringResource(R.string.cloud_sync_overwrite),
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+
     Spacer(Modifier.height(8.dp))
     TextButton(
-        onClick = { onEvent(CloudSyncEvent.RemoveConnection) },
+        onClick = { confirmRemove = true },
         enabled = !state.busy,
     ) {
         Text(
@@ -365,6 +424,30 @@ private fun ColumnScope.ConfiguredSection(state: CloudSyncState, onEvent: (Cloud
             color = MaterialTheme.colorScheme.error,
         )
     }
+
+    IvyConfirmDialog(
+        visible = confirmRestore,
+        title = stringResource(R.string.cloud_sync_restore_confirm_title),
+        text = stringResource(R.string.cloud_sync_restore_confirm_desc),
+        confirmText = stringResource(R.string.cloud_sync_restore),
+        onConfirm = {
+            confirmRestore = false
+            onEvent(CloudSyncEvent.RestoreNow)
+        },
+        onDismiss = { confirmRestore = false },
+    )
+    IvyConfirmDialog(
+        visible = confirmRemove,
+        title = stringResource(R.string.cloud_sync_remove_confirm_title),
+        text = stringResource(R.string.cloud_sync_remove_confirm_desc),
+        confirmText = stringResource(R.string.cloud_sync_remove),
+        destructive = true,
+        onConfirm = {
+            confirmRemove = false
+            onEvent(CloudSyncEvent.RemoveConnection)
+        },
+        onDismiss = { confirmRemove = false },
+    )
 }
 
 @Composable

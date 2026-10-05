@@ -13,10 +13,14 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -27,7 +31,7 @@ import javax.inject.Inject
  *
  * Upstash exposes Redis commands over HTTPS:
  *  - `GET  {url}/get/{key}`  -> `{"result": "<value>" | null}`
- *  - `POST {url}/set/{key}`  with the value in the request body -> `{"result": "OK"}`
+ *  - `POST {url}/multi-exec` with a JSON array of commands -> `[{"result": "OK"}, ...]`
  *  - `GET  {url}/ping`       -> `{"result": "PONG"}`
  *  - `POST {url}/del/{key}`  -> `{"result": <count>}`
  *
@@ -67,16 +71,22 @@ class RedisSyncDataSourceImpl @Inject constructor(
         backupJson: String,
         meta: RemoteSyncMeta,
     ): Either<String, Unit> = catch({
-        val backupResponse = ktorClient.get().post("$url/set/$BACKUP_KEY") {
+        // Both keys are written in one MULTI/EXEC transaction so the backup and its meta record
+        // can never disagree if the connection drops between them.
+        val commands = listOf(
+            listOf("SET", BACKUP_KEY, backupJson),
+            listOf("SET", META_KEY, json.encodeToString(RemoteSyncMeta.serializer(), meta)),
+        )
+        val response = ktorClient.get().post("$url/multi-exec") {
             bearer(token)
-            setBody(backupJson)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(commandsSerializer, commands))
         }
-        backupResponse.errorOrNull()?.left() ?: run {
-            val metaResponse = ktorClient.get().post("$url/set/$META_KEY") {
-                bearer(token)
-                setBody(json.encodeToString(RemoteSyncMeta.serializer(), meta))
-            }
-            metaResponse.toUnitOrError()
+        response.errorOrNull()?.left() ?: run {
+            val results = response.body<List<UpstashResult>>()
+            results.firstNotNullOfOrNull { it.error }
+                ?.let { "Upstash error: $it".left() }
+                ?: Unit.right()
         }
     }) { e -> networkError(e) }
 
@@ -120,5 +130,6 @@ class RedisSyncDataSourceImpl @Inject constructor(
     companion object {
         private const val BACKUP_KEY = "ivy_wallet_backup"
         private const val META_KEY = "ivy_wallet_meta"
+        private val commandsSerializer = ListSerializer(ListSerializer(String.serializer()))
     }
 }

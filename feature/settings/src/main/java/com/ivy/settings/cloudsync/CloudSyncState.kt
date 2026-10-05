@@ -2,6 +2,7 @@ package com.ivy.settings.cloudsync
 
 import com.ivy.data.sync.SyncEndpointType
 import com.ivy.data.sync.SyncMode
+import com.ivy.ui.sync.SyncMessage
 
 /**
  * UI state for the Cloud Sync setup screen.
@@ -19,8 +20,13 @@ data class CloudSyncState(
     /** A network operation (test/push/pull) is in progress. */
     val busy: Boolean,
     val remoteSummary: RemoteSummary?,
-    /** Transient message shown in a snackbar. */
-    val message: String?,
+    /** Transient message shown in a toast. */
+    val message: SyncMessage?,
+    /**
+     * The last "Back up now" was refused because another device wrote newer data; offer an explicit
+     * "overwrite" action.
+     */
+    val overwriteOffered: Boolean,
     val launchedFromOnboarding: Boolean,
     val onboardingRestore: OnboardingRestoreUi,
     val completion: CompletionSignal,

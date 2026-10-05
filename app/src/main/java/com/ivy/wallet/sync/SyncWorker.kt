@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
+import com.ivy.data.sync.PushError
 import com.ivy.data.sync.SyncConfigDataSource
 import com.ivy.data.sync.SyncMode
 import com.ivy.data.sync.SyncRepository
@@ -37,9 +38,19 @@ class SyncWorker @AssistedInject constructor(
             return Result.success()
         }
         return syncRepository.push().fold(
-            ifLeft = {
-                Timber.w("Cloud sync retry failed: $it")
-                Result.retry()
+            ifLeft = { error ->
+                when (error) {
+                    // Retrying can never resolve a conflict; the user has to pull first.
+                    is PushError.RemoteNewer -> {
+                        Timber.w("Cloud sync retry skipped: ${error.message}")
+                        Result.success()
+                    }
+
+                    is PushError.Failed -> {
+                        Timber.w("Cloud sync retry failed: ${error.message}")
+                        Result.retry()
+                    }
+                }
             },
             ifRight = { Result.success() },
         )

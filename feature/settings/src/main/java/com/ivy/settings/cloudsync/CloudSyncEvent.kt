@@ -13,8 +13,11 @@ sealed interface CloudSyncEvent {
     data object Save : CloudSyncEvent
     data class SetMode(val mode: SyncMode) : CloudSyncEvent
 
-    /** Push the local data to the cloud now. */
+    /** Push the local data to the cloud now (refused if another device wrote newer data). */
     data object SyncNow : CloudSyncEvent
+
+    /** Push even though the cloud holds newer data from another device. */
+    data object ForceSyncNow : CloudSyncEvent
 
     /** Pull the cloud backup and import it now. */
     data object RestoreNow : CloudSyncEvent

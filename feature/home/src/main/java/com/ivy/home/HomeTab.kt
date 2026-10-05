@@ -1,9 +1,11 @@
 package com.ivy.home
 
+import android.widget.Toast
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -11,18 +13,22 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,6 +64,7 @@ import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
 import com.ivy.ui.rememberScrollPositionListState
+import com.ivy.ui.sync.text
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.domain.pure.data.IncomeExpensePair
 import com.ivy.wallet.ui.theme.modal.BufferModal
@@ -305,23 +312,56 @@ fun BoxWithConstraintsScope.HomeUi(
         skipAllModalVisible = false
     }
 
+    val context = LocalContext.current
+    val syncMessageText = uiState.syncMessage?.text()
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(uiState.syncMessage) {
+        if (syncMessageText != null) {
+            Toast.makeText(context, syncMessageText, Toast.LENGTH_SHORT).show()
+            currentOnEvent(HomeEvent.DismissSyncMessage)
+        }
+    }
+
     if (uiState.remoteSyncPromptAtMillis > 0L) {
         val updatedAt = remember(uiState.remoteSyncPromptAtMillis) {
             DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
                 .format(Date(uiState.remoteSyncPromptAtMillis))
         }
         AlertDialog(
-            onDismissRequest = { onEvent(HomeEvent.DismissRemoteSync) },
+            // Tapping outside only hides the prompt; it returns on the next Home start. Only
+            // "Not now" marks the remote revision as seen.
+            onDismissRequest = { onEvent(HomeEvent.HideRemoteSync) },
             title = { Text(stringResource(R.string.cloud_sync_pull_prompt_title)) },
-            text = { Text(stringResource(R.string.cloud_sync_pull_prompt_desc, updatedAt)) },
+            text = {
+                Text(
+                    stringResource(
+                        if (uiState.remoteSyncConflict) {
+                            R.string.cloud_sync_conflict_desc
+                        } else {
+                            R.string.cloud_sync_pull_prompt_desc
+                        },
+                        updatedAt,
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { onEvent(HomeEvent.ConfirmRemoteSync) }) {
                     Text(stringResource(R.string.cloud_sync_pull))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onEvent(HomeEvent.DismissRemoteSync) }) {
-                    Text(stringResource(R.string.cloud_sync_not_now))
+                Row {
+                    if (uiState.remoteSyncConflict) {
+                        TextButton(onClick = { onEvent(HomeEvent.ForceSync) }) {
+                            Text(
+                                text = stringResource(R.string.cloud_sync_overwrite),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                    TextButton(onClick = { onEvent(HomeEvent.DismissRemoteSync) }) {
+                        Text(stringResource(R.string.cloud_sync_not_now))
+                    }
                 }
             },
         )

@@ -55,9 +55,13 @@ class RedisTcpSyncDataSourceImpl @Inject constructor(
         backupJson: String,
         meta: RemoteSyncMeta,
     ): Either<String, Unit> = withConnection(url, token) { conn ->
+        // Write both keys atomically so the backup and its meta record can never disagree.
+        conn.command("MULTI").asStatus()
         conn.command("SET", BACKUP_KEY, backupJson).asStatus()
         conn.command("SET", META_KEY, json.encodeToString(RemoteSyncMeta.serializer(), meta))
             .asStatus()
+        val results = conn.command("EXEC").asArray()
+        results.forEach { it.asStatus() }
         Unit
     }
 
@@ -170,6 +174,11 @@ private class RespConnection(
                 if (length < 0) RespReply.Bulk(null) else RespReply.Bulk(readBulk(length))
             }
 
+            '*' -> {
+                val count = line.toInt()
+                if (count < 0) RespReply.Array(emptyList()) else RespReply.Array(List(count) { readReply() })
+            }
+
             else -> error("Unexpected Redis reply: ${prefix.toChar()}$line")
         }
     }
@@ -210,9 +219,13 @@ private sealed interface RespReply {
     data class Status(val value: String) : RespReply
     data class Integer(val value: Long) : RespReply
     data class Bulk(val value: String?) : RespReply
+    data class Array(val items: List<RespReply>) : RespReply
 
     fun asStatus(): String = (this as? Status)?.value
         ?: error("Expected a Redis status reply but got $this")
+
+    fun asArray(): List<RespReply> = (this as? Array)?.items
+        ?: error("Expected a Redis array reply but got $this")
 
     fun asBulk(): String? = when (this) {
         is Bulk -> value

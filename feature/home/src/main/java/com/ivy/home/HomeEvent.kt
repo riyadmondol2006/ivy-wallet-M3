@@ -31,6 +31,18 @@ sealed interface HomeEvent {
     data object SelectPreviousMonth : HomeEvent
 
     data object ManualSync : HomeEvent
+
+    /** Overwrite the cloud with this device's data after a refused manual sync. */
+    data object ForceSync : HomeEvent
+
+    /** Pull the newer cloud revision into this device. */
     data object ConfirmRemoteSync : HomeEvent
+
+    /** "Not now": remember the remote revision so the prompt does not nag again for it. */
     data object DismissRemoteSync : HomeEvent
+
+    /** Close the prompt without a decision; it comes back on the next Home start. */
+    data object HideRemoteSync : HomeEvent
+
+    data object DismissSyncMessage : HomeEvent
 }

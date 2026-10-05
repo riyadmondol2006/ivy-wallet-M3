@@ -11,12 +11,15 @@ import androidx.lifecycle.viewModelScope
 import com.ivy.base.legacy.Theme
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
+import com.ivy.base.legacy.stringRes
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
+import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.data.sync.PushError
 import com.ivy.data.sync.SyncConfigDataSource
 import com.ivy.data.sync.SyncMode
 import com.ivy.data.sync.SyncRepository
@@ -33,9 +36,11 @@ import com.ivy.legacy.data.BufferInfo
 import com.ivy.legacy.data.LegacyDueSection
 import com.ivy.legacy.data.model.MainTab
 import com.ivy.legacy.data.model.TimePeriod
+import com.ivy.legacy.data.model.nearestDueDate
 import com.ivy.legacy.data.model.toUTCCloseTimeRange
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.Settings
+import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.action.settings.UpdateSettingsAct
 import com.ivy.legacy.domain.action.viewmodel.home.ShouldHideIncomeAct
@@ -45,12 +50,15 @@ import com.ivy.navigation.BalanceScreen
 import com.ivy.navigation.MainScreen
 import com.ivy.navigation.Navigation
 import com.ivy.ui.ComposeViewModel
+import com.ivy.ui.R
+import com.ivy.ui.sync.SyncMessage
+import com.ivy.ui.undo.UndoDeleteController
 import com.ivy.wallet.domain.action.account.AccountsAct
-import com.ivy.wallet.domain.action.viewmodel.account.AccountDataAct
 import com.ivy.wallet.domain.action.global.StartDayOfMonthAct
 import com.ivy.wallet.domain.action.settings.CalcBufferDiffAct
 import com.ivy.wallet.domain.action.settings.SettingsAct
 import com.ivy.wallet.domain.action.transaction.HistoryWithDateDivsAct
+import com.ivy.wallet.domain.action.viewmodel.account.AccountDataAct
 import com.ivy.wallet.domain.action.viewmodel.home.HasTrnsAct
 import com.ivy.wallet.domain.action.viewmodel.home.OverdueAct
 import com.ivy.wallet.domain.action.viewmodel.home.ShouldHideBalanceAct
@@ -102,7 +110,9 @@ class HomeViewModel @Inject constructor(
     private val timeConverter: TimeConverter,
     private val features: Features,
     private val syncConfigDataSource: SyncConfigDataSource,
-    private val syncRepository: SyncRepository
+    private val syncRepository: SyncRepository,
+    private val transactionRepository: TransactionRepository,
+    private val undoDelete: UndoDeleteController,
 ) : ComposeViewModel<HomeState, HomeEvent>() {
     private var currentTheme by mutableStateOf(Theme.AUTO)
     private var name by mutableStateOf("")
@@ -138,7 +148,7 @@ class HomeViewModel @Inject constructor(
         )
     )
     private var customerJourneyCards by
-    mutableStateOf<ImmutableList<CustomerJourneyCardModel>>(persistentListOf())
+        mutableStateOf<ImmutableList<CustomerJourneyCardModel>>(persistentListOf())
     private var hideBalance by mutableStateOf(false)
     private var hideIncome by mutableStateOf(false)
     private var expanded by mutableStateOf(true)
@@ -146,6 +156,8 @@ class HomeViewModel @Inject constructor(
     private var manualSyncVisible by mutableStateOf(false)
     private var syncing by mutableStateOf(false)
     private var remoteSyncPromptAt by mutableLongStateOf(0L)
+    private var remoteSyncConflict by mutableStateOf(false)
+    private var syncMessage by mutableStateOf<SyncMessage?>(null)
 
     @Composable
     override fun uiState(): HomeState {
@@ -173,7 +185,9 @@ class HomeViewModel @Inject constructor(
             creditSummary = getCreditSummary(),
             manualSyncVisible = manualSyncVisible,
             syncing = syncing,
-            remoteSyncPromptAtMillis = remoteSyncPromptAt
+            remoteSyncPromptAtMillis = remoteSyncPromptAt,
+            remoteSyncConflict = remoteSyncConflict,
+            syncMessage = syncMessage,
         )
     }
 
@@ -282,9 +296,12 @@ class HomeViewModel @Inject constructor(
                 HomeEvent.SwitchTheme -> switchTheme()
                 is HomeEvent.DismissCustomerJourneyCard -> dismissCustomerJourneyCard(event.card)
                 is HomeEvent.SetExpanded -> setExpanded(event.expanded)
-                HomeEvent.ManualSync -> manualSync()
+                HomeEvent.ManualSync -> manualSync(force = false)
+                HomeEvent.ForceSync -> manualSync(force = true)
                 HomeEvent.ConfirmRemoteSync -> confirmRemoteSync()
                 HomeEvent.DismissRemoteSync -> dismissRemoteSync()
+                HomeEvent.HideRemoteSync -> hideRemoteSync()
+                HomeEvent.DismissSyncMessage -> syncMessage = null
             }
         }
     }
@@ -301,25 +318,58 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun manualSync() {
+    private suspend fun manualSync(force: Boolean) {
+        remoteSyncPromptAt = 0L
+        remoteSyncConflict = false
         syncing = true
-        syncRepository.push()
-        syncing = false
+        try {
+            syncRepository.push(force = force).fold(
+                ifLeft = { error ->
+                    when (error) {
+                        is PushError.RemoteNewer -> {
+                            // Let the user decide: pull the other device's data or overwrite it.
+                            remoteSyncPromptAt = error.remote.updatedAt
+                            remoteSyncConflict = true
+                        }
+
+                        is PushError.Failed -> syncMessage = SyncMessage.Failed(error.message)
+                    }
+                },
+                ifRight = { syncMessage = SyncMessage.BackedUp },
+            )
+        } finally {
+            syncing = false
+        }
     }
 
     private suspend fun confirmRemoteSync() {
         remoteSyncPromptAt = 0L
+        remoteSyncConflict = false
         syncing = true
-        syncRepository.pull().onRight { reload() }
-        syncing = false
+        try {
+            syncRepository.pull().fold(
+                ifLeft = { syncMessage = SyncMessage.Failed(it) },
+                ifRight = { result ->
+                    reload()
+                    syncMessage = SyncMessage.Restored(result.transactionsImported)
+                },
+            )
+        } finally {
+            syncing = false
+        }
     }
 
     private suspend fun dismissRemoteSync() {
         val seenAt = remoteSyncPromptAt
-        remoteSyncPromptAt = 0L
+        hideRemoteSync()
         if (seenAt > 0L) {
             syncRepository.markRemoteSeen(seenAt)
         }
+    }
+
+    private fun hideRemoteSync() {
+        remoteSyncPromptAt = 0L
+        remoteSyncConflict = false
     }
 
     private suspend fun start() {
@@ -359,8 +409,8 @@ class HomeViewModel @Inject constructor(
             ).toUTCCloseTimeRange()
         )
     } then ::loadAppBaseData then ::loadIncomeExpenseBalance then
-            ::loadBuffer then ::loadTrnHistory then
-            ::loadDueTrns thenInvokeAfter ::loadCustomerJourney
+        ::loadBuffer then ::loadTrnHistory then
+        ::loadDueTrns thenInvokeAfter ::loadCustomerJourney
 
     private suspend fun loadAppBaseData(
         input: Pair<Settings, ClosedTimeRange>
@@ -402,7 +452,8 @@ class HomeViewModel @Inject constructor(
         val grouped = com.ivy.legacy.data.model.groupCreditCards(data)
         creditSummary = CreditCardsSummary(
             cardCount = grouped.size,
-            currencies = com.ivy.legacy.data.model.creditCurrencyTotals(grouped),
+            nearestDueDate = grouped.nearestDueDate(timeProvider.localDateNow()),
+            currencies = com.ivy.legacy.data.model.creditCurrencyTotals(grouped).toImmutableList(),
         )
     }
 
@@ -582,6 +633,7 @@ class HomeViewModel @Inject constructor(
             skipTransaction = true
         ) {
             reload()
+            offerUndoSkip(listOf(transaction))
         }
     }
 
@@ -590,6 +642,21 @@ class HomeViewModel @Inject constructor(
             transactions = transactions,
             skipTransaction = true
         ) {
+            reload()
+            offerUndoSkip(transactions)
+        }
+    }
+
+    /** Skipping deletes the planned instance; Undo writes the original rows back. */
+    private fun offerUndoSkip(skipped: List<Transaction>) {
+        if (skipped.isEmpty()) return
+        val message = if (skipped.size == 1) {
+            stringRes(R.string.planned_payment_skipped)
+        } else {
+            stringRes(R.string.planned_payments_skipped, skipped.size.toString())
+        }
+        undoDelete.offer(message) {
+            skipped.forEach { trn -> trn.toDomain(transactionMapper)?.let { transactionRepository.save(it) } }
             reload()
         }
     }
