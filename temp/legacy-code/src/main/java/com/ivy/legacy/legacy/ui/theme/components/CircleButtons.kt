@@ -17,19 +17,19 @@ import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.ui.R
+import com.ivy.ui.component.IvyCloseButton
 import com.ivy.wallet.ui.theme.Gradient
 
-/** Native Material 3 outlined circular icon button. */
+/** Legacy entry point; delegates to the shared [IvyCloseButton] so every close affordance matches. */
 @Composable
 fun CloseButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    CircleButton(
-        modifier = modifier,
-        icon = R.drawable.ic_dismiss,
-        contentDescription = "close",
+    IvyCloseButton(
         onClick = onClick,
+        modifier = modifier,
+        tonal = true,
     )
 }
 
@@ -110,16 +110,15 @@ fun CircleButtonFilledGradient(
     }
 }
 
+/** Legacy entry point; delegates to the shared M3 [com.ivy.ui.component.BackButton]. */
 @Composable
 fun BackButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    CircleButton(
-        modifier = modifier,
-        icon = R.drawable.ic_back,
-        contentDescription = "back",
+    com.ivy.ui.component.BackButton(
         onClick = onClick,
+        modifier = modifier,
     )
 }
 

@@ -1,8 +1,8 @@
 package com.ivy.wallet.ui.theme.modal
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,10 +15,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -40,7 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.ivy.design.l0_system.UI
+import com.ivy.design.system.IvyMotion
 import com.ivy.design.utils.rememberInteractionSource
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ivyWalletCtx
@@ -57,12 +64,8 @@ import com.ivy.navigation.navigation
 import com.ivy.wallet.ui.theme.components.ActionsRow
 import com.ivy.wallet.ui.theme.components.CloseButton
 import com.ivy.wallet.ui.theme.gradientCutBackgroundTop
-import com.ivy.wallet.ui.theme.mediumBlur
 import java.util.UUID
 import kotlin.math.roundToInt
-
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
-private const val DURATION_BACKGROUND_BLUR_ANIM = 400
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 const val DURATION_MODAL_ANIM = 200
@@ -89,26 +92,27 @@ fun BoxScope.IvyModal(
         }
     }
 
+    // Material 3 bottom-sheet motion: springs instead of fixed-duration tweens.
     val keyboardShownInsetDp by animateDpAsState(
         targetValue = densityScope {
             if (keyboardShown) keyboardOnlyWindowInsets().bottom.toDp() else 0.dp
         },
-        animationSpec = tween(DURATION_MODAL_ANIM)
+        animationSpec = IvyMotion.spatialSpring(Dp.VisibilityThreshold)
     )
     val navBarPadding by animateDpAsState(
         targetValue = densityScope {
             if (keyboardShown) 0.dp else navigationBarInsets().bottom.toDp()
         },
-        animationSpec = tween(DURATION_MODAL_ANIM)
+        animationSpec = IvyMotion.spatialSpring(Dp.VisibilityThreshold)
     )
     val blurAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(DURATION_BACKGROUND_BLUR_ANIM),
+        animationSpec = IvyMotion.effectsSpring(),
         visibilityThreshold = 0.01f
     )
     val modalPercentVisible by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(DURATION_MODAL_ANIM),
+        animationSpec = IvyMotion.spatialSpring(0.01f),
         visibilityThreshold = 0.01f
     )
 
@@ -117,7 +121,7 @@ fun BoxScope.IvyModal(
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(blurAlpha)
-                .background(mediumBlur())
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = ScrimAlpha))
                 .testTag("modal_outside_blur")
                 .clickable(
                     onClick = {
@@ -152,7 +156,7 @@ fun BoxScope.IvyModal(
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .padding(top = 24.dp)
-                .background(UI.colors.pure, UI.shapes.r2Top)
+                .background(modalContainerColor(), modalSheetShape())
                 .consumeClicks(rememberInteractionSource())
                 .thenIf(scrollState != null) {
                     verticalScroll(scrollState!!)
@@ -164,6 +168,8 @@ fun BoxScope.IvyModal(
                 visible = visible,
                 dismiss = dismiss
             )
+
+            ModalDragHandle(modifier = Modifier.align(Alignment.CenterHorizontally))
 
             Content()
 
@@ -194,6 +200,33 @@ fun BoxScope.IvyModal(
         )
     }
 }
+
+/** Sheet surface colour, matching Material 3's `ModalBottomSheet` default. */
+@Composable
+private fun modalContainerColor(): Color = MaterialTheme.colorScheme.surfaceContainerLow
+
+/** Sheet shape: the M3 `extraLarge` radius on the top corners only. */
+@Composable
+private fun modalSheetShape(): CornerBasedShape =
+    MaterialTheme.shapes.extraLarge.copy(bottomStart = ZeroCornerSize, bottomEnd = ZeroCornerSize)
+
+/** The small pill at the top of a Material 3 sheet that signals it can be dismissed. */
+@Composable
+private fun ModalDragHandle(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .padding(top = DragHandleTopPadding)
+            .size(width = DragHandleWidth, height = DragHandleHeight)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DragHandleAlpha))
+    )
+}
+
+private const val ScrimAlpha = 0.32f
+private const val DragHandleAlpha = 0.4f
+private val DragHandleTopPadding = 12.dp
+private val DragHandleWidth = 32.dp
+private val DragHandleHeight = 4.dp
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
@@ -293,15 +326,16 @@ fun ModalActionsRow(
                     }
                 }
                 .gradientCutBackgroundTop(
-                    pure = UI.colors.pure,
+                    pure = modalContainerColor(),
                     density = LocalDensity.current,
                     endY = 16.dp
                 )
                 .padding(top = 8.dp, bottom = 12.dp)
                 .padding(bottom = navBarPadding)
-                .zIndex(1100f)
+                .zIndex(1100f),
+            lineColor = Color.Transparent
         ) {
-            Spacer(Modifier.width(24.dp))
+            Spacer(Modifier.width(16.dp))
 
             CloseButton(
                 modifier = Modifier.testTag("modal_close_button"),
@@ -314,7 +348,7 @@ fun ModalActionsRow(
 
             PrimaryAction()
 
-            Spacer(Modifier.width(24.dp))
+            Spacer(Modifier.width(16.dp))
         }
     }
 }

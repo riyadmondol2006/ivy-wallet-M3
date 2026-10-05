@@ -49,10 +49,7 @@ fun IvyUI(
         LocalTimeProvider provides timeProvider,
         LocalTimeFormatter provides timeFormatter,
     ) {
-        IvyTheme(
-            theme = ivyContext.theme,
-            design = design
-        ) {
+        IvyTheme(theme = ivyContext.theme) {
             WrapWithSurface(includeSurface = includeSurface) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     ivyContext.screenWidth = with(LocalDensity.current) {

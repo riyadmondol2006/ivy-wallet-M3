@@ -5,19 +5,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
+import com.ivy.design.system.financialNumberStyle
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.shortenAmount
@@ -136,17 +137,7 @@ fun BalanceRow(
 
                 Text(
                     text = balanceCurrencyText,
-                    style = if (balanceFontSize == null) {
-                        UI.typo.nH1.style(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = textColor
-                        )
-                    } else {
-                        UI.typo.nH1.style(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = textColor
-                        ).copy(fontSize = balanceFontSize)
-                    }
+                    style = balanceStyle(fontSize = balanceFontSize, color = textColor)
                 )
             }
         }
@@ -162,17 +153,7 @@ fun BalanceRow(
                         balanceAmountPrefix != null -> "$balanceAmountPrefix$integerPartFormatted"
                         else -> integerPartFormatted
                     },
-                    style = if (balanceFontSize == null) {
-                        UI.typo.nH1.style(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = textColor
-                        )
-                    } else {
-                        UI.typo.nH1.style(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = textColor
-                        ).copy(fontSize = balanceFontSize)
-                    }
+                    style = balanceStyle(fontSize = balanceFontSize, color = textColor)
                 )
             }
         }
@@ -187,19 +168,25 @@ private fun Currency(
 ) {
     Text(
         text = currency,
-        style = if (currencyFontSize == null) {
-            UI.typo.h1.style(
-                fontWeight = FontWeight.Light,
-                color = textColor
-            )
-        } else {
-            UI.typo.h1.style(
-                fontWeight = FontWeight.Light,
-                color = textColor
-            ).copy(fontSize = currencyFontSize)
-        }
+        style = financialNumberStyle(
+            fontSize = currencyFontSize ?: MaterialTheme.typography.displaySmall.fontSize,
+            weight = CurrencyWeight,
+        ).copy(color = textColor)
     )
 }
+
+/**
+ * Big balance figures share the Home screen's expressive number style, so the line height always
+ * matches the requested size instead of inheriting a 40sp token's metrics.
+ */
+@Composable
+private fun balanceStyle(fontSize: TextUnit?, color: Color): TextStyle = financialNumberStyle(
+    fontSize = fontSize ?: MaterialTheme.typography.displaySmall.fontSize,
+    weight = BalanceWeight,
+).copy(color = color)
+
+private const val BalanceWeight = 800
+private const val CurrencyWeight = 300
 
 @Preview
 @Composable

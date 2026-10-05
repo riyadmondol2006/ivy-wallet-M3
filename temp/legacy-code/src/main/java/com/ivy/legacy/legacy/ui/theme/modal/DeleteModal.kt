@@ -79,7 +79,7 @@ fun BoxWithConstraintsScope.DeleteModal(
             },
             dismissButton = {
                 TextButton(onClick = dismiss) {
-                    Text(text = "Cancel")
+                    Text(text = stringResource(R.string.cancel))
                 }
             }
         )
