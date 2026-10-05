@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Theme
+import com.ivy.data.sync.SyncMode
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.IconScale
@@ -43,8 +44,9 @@ import com.ivy.design.l1_buildingBlocks.IvyIconScaled
 import com.ivy.design.utils.thenIf
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.data.sync.SyncMode
 import com.ivy.legacy.rootScreen
+import com.ivy.legacy.utils.rememberNotificationPermissionRequester
+import com.ivy.navigation.AttributionsScreen
 import com.ivy.navigation.CloudSyncScreen
 import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
@@ -55,10 +57,6 @@ import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.MediumBlack
-import com.ivy.wallet.ui.theme.Red
-import com.ivy.wallet.ui.theme.Red3
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.IvyToolbar
 import com.ivy.wallet.ui.theme.modal.ChooseStartDateOfMonthModal
 import com.ivy.wallet.ui.theme.modal.CurrencyModal
@@ -82,6 +80,7 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         },
         lockApp = uiState.lockApp,
         showNotifications = uiState.showNotifications,
+        plannedPaymentReminders = uiState.plannedPaymentReminders,
         hideCurrentBalance = uiState.hideCurrentBalance,
         hideIncome = uiState.hideIncome,
         progressState = uiState.progressState,
@@ -108,6 +107,9 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         },
         onSetShowNotifications = {
             viewModel.onEvent(SettingsEvent.SetShowNotifications(it))
+        },
+        onSetPlannedPaymentReminders = {
+            viewModel.onEvent(SettingsEvent.SetPlannedPaymentReminders(it))
         },
         onSetHideCurrentBalance = {
             viewModel.onEvent(SettingsEvent.SetHideCurrentBalance(it))
@@ -150,6 +152,7 @@ private fun BoxWithConstraintsScope.UI(
     cloudSyncMode: SyncMode = SyncMode.OFF,
     startDateOfMonth: Int = 1,
     showNotifications: Boolean = true,
+    plannedPaymentReminders: Boolean = true,
     hideCurrentBalance: Boolean = false,
     hideIncome: Boolean = false,
     progressState: Boolean = false,
@@ -160,6 +163,7 @@ private fun BoxWithConstraintsScope.UI(
     onExportToCSV: () -> Unit = {},
     onSetLockApp: (Boolean) -> Unit = {},
     onSetShowNotifications: (Boolean) -> Unit = {},
+    onSetPlannedPaymentReminders: (Boolean) -> Unit = {},
     onSetTreatTransfersAsIncExp: (Boolean) -> Unit = {},
     onSetCreditCards: (Boolean) -> Unit = {},
     onSetHideCurrentBalance: (Boolean) -> Unit = {},
@@ -211,9 +215,9 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                modifier = Modifier.padding(start = 32.dp),
+                modifier = Modifier.padding(start = 16.dp),
                 text = stringResource(R.string.settings),
-                style = MaterialTheme.typography.displaySmall,
+                style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -366,11 +370,27 @@ private fun BoxWithConstraintsScope.UI(
 
             Spacer(Modifier.height(12.dp))
 
+            val requestNotificationPermission = rememberNotificationPermissionRequester()
             AppSwitch(
                 lockApp = showNotifications,
-                onSetLockApp = onSetShowNotifications,
+                onSetLockApp = { enabled ->
+                    if (enabled) requestNotificationPermission()
+                    onSetShowNotifications(enabled)
+                },
                 text = stringResource(R.string.show_notifications),
                 icon = R.drawable.ic_notification_m
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            AppSwitch(
+                lockApp = plannedPaymentReminders,
+                onSetLockApp = { enabled ->
+                    if (enabled) requestNotificationPermission()
+                    onSetPlannedPaymentReminders(enabled)
+                },
+                text = stringResource(R.string.planned_payment_reminders),
+                icon = R.drawable.ic_planned_payments
             )
         }
 
@@ -452,7 +472,8 @@ private fun BoxWithConstraintsScope.UI(
             SettingsPrimaryButton(
                 icon = R.drawable.ic_custom_family_m,
                 text = stringResource(R.string.share_ivy_wallet),
-                backgroundGradient = Gradient.solid(Red3)
+                backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primaryContainer),
+                textColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
                 rootScreen.shareIvyWallet()
             }
@@ -463,16 +484,27 @@ private fun BoxWithConstraintsScope.UI(
                 icon = R.drawable.github_logo,
                 iconPadding = 10.dp,
                 text = stringResource(R.string.ivy_wallet_is_opensource),
-                backgroundGradient = Gradient.solid(MediumBlack)
+                backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHighest),
+                textColor = MaterialTheme.colorScheme.onSurface
             ) {
                 rootScreen.openUrlInBrowser(url = Constants.URL_IVY_WALLET_REPO)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Open-source licence notices must stay reachable from the app.
+            SettingsDefaultButton(
+                icon = R.drawable.ic_custom_document_m,
+                text = stringResource(R.string.attributions)
+            ) {
+                nav.navigateTo(AttributionsScreen)
             }
         }
 
         item {
             SettingsSectionDivider(
                 text = stringResource(R.string.danger_zone),
-                color = Red
+                color = MaterialTheme.colorScheme.error
             )
 
             Spacer(Modifier.height(16.dp))
@@ -480,9 +512,23 @@ private fun BoxWithConstraintsScope.UI(
             SettingsPrimaryButton(
                 icon = R.drawable.ic_delete,
                 text = stringResource(R.string.delete_all_user_data),
-                backgroundGradient = Gradient.solid(Red)
+                backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.errorContainer),
+                textColor = MaterialTheme.colorScheme.onErrorContainer
             ) {
                 deleteAllDataModalVisible = true
+            }
+
+            if (cloudSyncMode != SyncMode.OFF) {
+                Spacer(Modifier.height(12.dp))
+
+                SettingsPrimaryButton(
+                    icon = R.drawable.ic_delete,
+                    text = stringResource(R.string.delete_cloud_backup),
+                    backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.errorContainer),
+                    textColor = MaterialTheme.colorScheme.onErrorContainer
+                ) {
+                    deleteCloudDataModalVisible = true
+                }
             }
         }
 
@@ -793,8 +839,8 @@ private fun ExportCSV(
 private fun SettingsPrimaryButton(
     @DrawableRes icon: Int,
     text: String,
-    backgroundGradient: Gradient = Gradient.solid(UI.colors.medium),
-    textColor: Color = White,
+    backgroundGradient: Gradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainer),
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
     iconPadding: Dp = 0.dp,
     description: String? = null,
     onClick: () -> Unit
@@ -962,7 +1008,7 @@ private fun SettingsSectionDivider(
         Spacer(Modifier.height(28.dp))
 
         Text(
-            modifier = Modifier.padding(start = 32.dp),
+            modifier = Modifier.padding(start = 16.dp),
             text = text,
             style = MaterialTheme.typography.titleSmall,
             color = color

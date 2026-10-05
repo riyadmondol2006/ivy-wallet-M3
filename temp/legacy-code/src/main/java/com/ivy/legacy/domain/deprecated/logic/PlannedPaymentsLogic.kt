@@ -235,14 +235,11 @@ class PlannedPaymentsLogic @Inject constructor(
         skipTransaction: Boolean = false,
         onUpdateUI: suspend (paidTransactions: List<com.ivy.data.model.Transaction>) -> Unit
     ) {
+        // Only unsettled (planned) transactions can be paid; settling returns a new copy.
         val paidTransactions: List<com.ivy.data.model.Transaction> =
-            transactions.filter { it.settled }
+            transactions.filter { !it.settled }.map { it.settleNow() }
 
         if (paidTransactions.isEmpty()) return
-
-        paidTransactions.map {
-            it.settleNow()
-        }
 
         val plannedPaymentRules = ioThread {
             paidTransactions.map { transaction ->

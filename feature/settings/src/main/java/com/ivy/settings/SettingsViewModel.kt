@@ -12,15 +12,17 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
+import com.ivy.base.Toaster
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Theme
 import com.ivy.base.legacy.refreshWidget
 import com.ivy.data.backup.BackupDataUseCase
 import com.ivy.data.db.dao.read.SettingsDao
-import com.ivy.data.sync.SyncConfigDataSource
-import com.ivy.data.sync.SyncMode
 import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.model.primitive.AssetCode
+import com.ivy.data.sync.SyncConfigDataSource
+import com.ivy.data.sync.SyncMode
+import com.ivy.data.sync.SyncRepository
 import com.ivy.domain.RootScreen
 import com.ivy.domain.features.Features
 import com.ivy.domain.usecase.csv.ExportCsvUseCase
@@ -34,6 +36,8 @@ import com.ivy.legacy.utils.ioThread
 import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.legacy.utils.uiThread
 import com.ivy.ui.ComposeViewModel
+import com.ivy.ui.R
+import com.ivy.wallet.domain.deprecated.logic.notification.TransactionReminderLogic
 import com.ivy.wallet.domain.action.global.StartDayOfMonthAct
 import com.ivy.wallet.domain.action.global.UpdateStartDayOfMonthAct
 import com.ivy.wallet.domain.action.settings.SettingsAct
@@ -62,6 +66,9 @@ class SettingsViewModel @Inject constructor(
     private val exportCsvUseCase: ExportCsvUseCase,
     private val features: Features,
     private val syncConfigDataSource: SyncConfigDataSource,
+    private val syncRepository: SyncRepository,
+    private val transactionReminderLogic: TransactionReminderLogic,
+    private val toaster: Toaster,
     @ApplicationContext private val context: Context
 ) : ComposeViewModel<SettingsState, SettingsEvent>() {
 
@@ -70,6 +77,7 @@ class SettingsViewModel @Inject constructor(
     private val currentTheme = mutableStateOf<Theme>(Theme.AUTO)
     private val lockApp = mutableStateOf(false)
     private val showNotifications = mutableStateOf(true)
+    private val plannedPaymentReminders = mutableStateOf(true)
     private val hideCurrentBalance = mutableStateOf(false)
     private val hideIncome = mutableStateOf(false)
     private val treatTransfersAsIncomeExpense = mutableStateOf(false)
@@ -90,6 +98,7 @@ class SettingsViewModel @Inject constructor(
             currentTheme = getCurrentTheme(),
             lockApp = getLockApp(),
             showNotifications = getShowNotifications(),
+            plannedPaymentReminders = plannedPaymentReminders.value,
             hideCurrentBalance = getHideCurrentBalance(),
             treatTransfersAsIncomeExpense = getTreatTransfersAsIncomeExpense(),
             creditCardsEnabled = getCreditCardsEnabled(),
@@ -107,6 +116,7 @@ class SettingsViewModel @Inject constructor(
         initializeCurrentTheme()
         initializeLockApp()
         initializeShowNotifications()
+        initializePlannedPaymentReminders()
         initializeHideCurrentBalance()
         initializeHideIncome()
         initializeTransfersAsIncomeExpense()
@@ -145,6 +155,13 @@ class SettingsViewModel @Inject constructor(
 
     private fun initializeLockApp() {
         lockApp.value = sharedPrefs.getBoolean(SharedPrefs.APP_LOCK_ENABLED, false)
+    }
+
+    private fun initializePlannedPaymentReminders() {
+        plannedPaymentReminders.value = sharedPrefs.getBoolean(
+            SharedPrefs.PLANNED_PAYMENT_REMINDERS,
+            true
+        )
     }
 
     private fun initializeShowNotifications() {
@@ -240,6 +257,7 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.SwitchTheme -> switchTheme()
             is SettingsEvent.SetLockApp -> setLockApp(event.lockApp)
             is SettingsEvent.SetShowNotifications -> setShowNotifications(event.showNotifications)
+            is SettingsEvent.SetPlannedPaymentReminders -> setPlannedPaymentReminders(event.enabled)
             is SettingsEvent.SetHideCurrentBalance -> setHideCurrentBalance(
                 event.hideCurrentBalance
             )
@@ -353,6 +371,14 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private fun setPlannedPaymentReminders(enabled: Boolean) {
+        plannedPaymentReminders.value = enabled
+        viewModelScope.launch {
+            sharedPrefs.putBoolean(SharedPrefs.PLANNED_PAYMENT_REMINDERS, enabled)
+            if (enabled) transactionReminderLogic.scheduleReminder()
+        }
+    }
+
     private fun setShowNotifications(notificationsShow: Boolean) {
         showNotifications.value = notificationsShow
 
@@ -409,13 +435,15 @@ class SettingsViewModel @Inject constructor(
 
     private fun deleteCloudUserData() {
         viewModelScope.launch {
-            cloudLogout()
-        }
-    }
-
-    private fun cloudLogout() {
-        viewModelScope.launch {
-            logoutLogic.cloudLogout()
+            progressState.value = true
+            try {
+                syncRepository.deleteRemote().fold(
+                    ifLeft = { toaster.show(it) },
+                    ifRight = { toaster.show(R.string.cloud_sync_cloud_data_deleted) },
+                )
+            } finally {
+                progressState.value = false
+            }
         }
     }
 

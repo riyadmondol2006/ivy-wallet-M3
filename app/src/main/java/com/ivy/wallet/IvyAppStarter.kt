@@ -33,6 +33,12 @@ class IvyAppStarter @Inject constructor(
         )
     }
 
+    override fun openPlannedPaymentsIntent(): Intent =
+        getRootIntent().apply {
+            putExtra(AppStarter.EXTRA_OPEN_SCREEN, AppStarter.SCREEN_PLANNED_PAYMENTS)
+            applyWidgetStartFlags()
+        }
+
     private fun Intent.applyWidgetStartFlags() {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
     }

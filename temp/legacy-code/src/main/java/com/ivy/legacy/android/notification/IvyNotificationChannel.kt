@@ -20,6 +20,14 @@ enum class IvyNotificationChannel(
         description = "Reminding you to record your transactions on a daily basis.",
         importance = NotificationManager.IMPORTANCE_HIGH,
         bypassDnd = false
+    ),
+
+    PLANNED_PAYMENT_DUE(
+        channelId = "planned_payment_due",
+        channelName = "Planned payments",
+        description = "Reminders for planned payments that are due today or overdue.",
+        importance = NotificationManager.IMPORTANCE_DEFAULT,
+        bypassDnd = false
     );
 
     @SuppressLint("WrongConstant")

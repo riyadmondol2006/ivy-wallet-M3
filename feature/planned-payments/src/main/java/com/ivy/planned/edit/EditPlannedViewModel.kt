@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
+import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
 import com.ivy.base.time.TimeConverter
 import com.ivy.data.db.dao.read.AccountDao
@@ -26,11 +27,14 @@ import com.ivy.legacy.utils.ioThread
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.Navigation
 import com.ivy.ui.ComposeViewModel
+import com.ivy.ui.R
+import com.ivy.ui.undo.UndoDeleteController
 import com.ivy.wallet.domain.action.account.AccountsAct
 import com.ivy.wallet.domain.deprecated.logic.CategoryCreator
 import com.ivy.wallet.domain.deprecated.logic.PlannedPaymentsGenerator
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.domain.deprecated.logic.model.CreateCategoryData
+import com.ivy.wallet.domain.deprecated.logic.notification.TransactionReminderLogic
 import com.ivy.wallet.ui.theme.modal.RecurringRuleModalData
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 import com.ivy.wallet.ui.theme.modal.edit.CategoryModalData
@@ -57,6 +61,8 @@ class EditPlannedViewModel @Inject constructor(
     private val plannedPaymentRuleWriter: WritePlannedPaymentRuleDao,
     private val transactionRepository: TransactionRepository,
     private val timeConverter: TimeConverter,
+    private val transactionReminderLogic: TransactionReminderLogic,
+    private val undoDelete: UndoDeleteController,
 ) : ComposeViewModel<EditPlannedScreenState, EditPlannedScreenEvent>() {
 
     private var transactionType by mutableStateOf(TransactionType.INCOME)
@@ -435,6 +441,8 @@ class EditPlannedViewModel @Inject constructor(
 
                     plannedPaymentRuleWriter.save(loadedRule().toEntity())
                     plannedPaymentsGenerator.generate(loadedRule())
+                    // Announce a payment that is already due instead of waiting for tomorrow's run.
+                    transactionReminderLogic.checkPlannedPaymentsNow()
                 }
 
                 if (closeScreen) {
@@ -473,11 +481,15 @@ class EditPlannedViewModel @Inject constructor(
         viewModelScope.launch {
             deleteTransactionModalVisible = false
             ioThread {
-                loadedRule?.let {
-                    plannedPaymentRuleWriter.deleteById(it.id)
+                loadedRule?.let { rule ->
+                    plannedPaymentRuleWriter.deleteById(rule.id)
                     transactionRepository.deletedByRecurringRuleIdAndNoDateTime(
-                        recurringRuleId = it.id
+                        recurringRuleId = rule.id
                     )
+                    undoDelete.offer(stringRes(R.string.planned_payment_deleted)) {
+                        plannedPaymentRuleWriter.save(rule.toEntity())
+                        plannedPaymentsGenerator.generate(rule)
+                    }
                 }
                 nav.back()
             }

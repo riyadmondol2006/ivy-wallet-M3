@@ -15,8 +15,10 @@ import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.utils.ioThread
 import com.ivy.legacy.utils.readOnly
 import com.ivy.navigation.DisclaimerScreen
+import com.ivy.domain.AppStarter
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.MainScreen
+import com.ivy.navigation.PlannedPaymentsScreen
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.OnboardingScreen
 import com.ivy.ui.R
@@ -56,13 +58,13 @@ class RootViewModel @Inject constructor(
     private val _appLocked = MutableStateFlow<Boolean?>(null)
     val appLocked = _appLocked.readOnly()
 
-    fun start(systemDarkMode: Boolean, intent: Intent) {
+    fun start(intent: Intent) {
         viewModelScope.launch {
             TestIdlingResource.increment()
 
             ioThread {
-                val theme = settingsDao.findAll().firstOrNull()?.theme
-                    ?: if (systemDarkMode) Theme.DARK else Theme.LIGHT
+                // Follow the system until the user picks a theme explicitly.
+                val theme = settingsDao.findAll().firstOrNull()?.theme ?: Theme.AUTO
                 ivyContext.switchTheme(theme)
 
                 ivyContext.initStartDayOfMonthInMemory(sharedPrefs = sharedPrefs)
@@ -98,33 +100,50 @@ class RootViewModel @Inject constructor(
     }
 
     private fun navigateOnboardedUser(intent: Intent) {
-        if (!handleSpecialStart(intent)) {
+        if (!handleSpecialStart(intent, coldStart = true)) {
             nav.navigateTo(MainScreen)
-            transactionReminderLogic.scheduleReminder()
+        }
+        transactionReminderLogic.scheduleReminder()
+    }
+
+    /** A notification or shortcut was tapped while the app was already running. */
+    fun onNewIntent(intent: Intent) {
+        handleSpecialStart(intent, coldStart = false)
+    }
+
+    private fun handleSpecialStart(intent: Intent, coldStart: Boolean): Boolean {
+        val addTrnType = intent.addTransactionTypeExtra()
+        val openPlanned =
+            intent.getStringExtra(AppStarter.EXTRA_OPEN_SCREEN) == AppStarter.SCREEN_PLANNED_PAYMENTS
+
+        return when {
+            addTrnType != null -> {
+                nav.navigateTo(
+                    EditTransactionScreen(
+                        initialTransactionId = null,
+                        type = addTrnType
+                    )
+                )
+                true
+            }
+
+            openPlanned -> {
+                // Keep Home underneath so "back" from the list returns to the app, not the launcher.
+                if (coldStart) nav.navigateTo(MainScreen)
+                nav.navigateTo(PlannedPaymentsScreen)
+                true
+            }
+
+            else -> false
         }
     }
 
     @Suppress("SwallowedException")
-    private fun handleSpecialStart(intent: Intent): Boolean {
-        val addTrnType: TransactionType? = try {
-            intent.getSerializableExtra(EXTRA_ADD_TRANSACTION_TYPE) as? TransactionType
-                ?: TransactionType.valueOf(intent.getStringExtra(EXTRA_ADD_TRANSACTION_TYPE) ?: "")
-        } catch (e: IllegalArgumentException) {
-            null
-        }
-
-        if (addTrnType != null) {
-            nav.navigateTo(
-                EditTransactionScreen(
-                    initialTransactionId = null,
-                    type = addTrnType
-                )
-            )
-
-            return true
-        }
-
-        return false
+    private fun Intent.addTransactionTypeExtra(): TransactionType? = try {
+        getSerializableExtra(EXTRA_ADD_TRANSACTION_TYPE) as? TransactionType
+            ?: TransactionType.valueOf(getStringExtra(EXTRA_ADD_TRANSACTION_TYPE) ?: "")
+    } catch (e: IllegalArgumentException) {
+        null
     }
 
     @Suppress("EmptyFunctionBlock")
