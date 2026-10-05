@@ -2,8 +2,6 @@ package com.ivy.planned.list
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -48,6 +45,7 @@ import com.ivy.legacy.utils.uppercaseLocal
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
+import com.ivy.ui.component.IvyListCard
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.Green
@@ -74,18 +72,13 @@ fun LazyItemScope.PlannedPaymentCard(
 ) {
     Spacer(Modifier.height(12.dp))
 
-    Column(
+    val accountExists = accounts.any { it.id == plannedPayment.accountId }
+    IvyListCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(UI.shapes.r4)
-            .clickable {
-                if (accounts.find { it.id == plannedPayment.accountId } != null) {
-                    onClick(plannedPayment)
-                }
-            }
-            .background(MaterialTheme.colorScheme.surfaceContainer, UI.shapes.r4)
-            .testTag("planned_payment_card")
+            .testTag("planned_payment_card"),
+        onClick = if (accountExists) ({ onClick(plannedPayment) }) else null,
     ) {
         val currency = accounts.find { it.id == plannedPayment.accountId }?.currency ?: baseCurrency
 

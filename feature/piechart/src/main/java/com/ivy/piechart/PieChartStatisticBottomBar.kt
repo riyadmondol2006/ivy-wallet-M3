@@ -2,29 +2,26 @@ package com.ivy.piechart
 
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.base.model.TransactionType
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
-import com.ivy.legacy.utils.navigationBarInset
-import com.ivy.legacy.utils.toDensityDp
+import com.ivy.design.system.income
+import com.ivy.design.system.onIncome
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.components.ActionsRow
-import com.ivy.wallet.ui.theme.components.CloseButton
-import com.ivy.wallet.ui.theme.components.IvyButton
-import com.ivy.wallet.ui.theme.gradientCutBackgroundTop
+import com.ivy.ui.component.IvyBottomActionBar
 
 @Composable
 fun BoxWithConstraintsScope.PieChartStatisticBottomBar(
@@ -32,54 +29,38 @@ fun BoxWithConstraintsScope.PieChartStatisticBottomBar(
     onClose: () -> Unit,
     onAdd: (TransactionType) -> Unit,
     modifier: Modifier = Modifier,
-    bottomInset: Dp = navigationBarInset().toDensityDp()
 ) {
-    ActionsRow(
-        modifier = modifier
-            .align(Alignment.BottomCenter)
-            .gradientCutBackgroundTop(UI.colors.pure, LocalDensity.current)
-            .padding(bottom = bottomInset)
-            .padding(bottom = 16.dp)
+    IvyBottomActionBar(
+        onNavigateBack = onClose,
+        modifier = modifier,
+        navigationIcon = Icons.Rounded.Close,
+        navigationContentDescription = stringResource(R.string.close),
     ) {
-        Spacer(Modifier.width(20.dp))
-
-        CloseButton {
-            onClose()
-        }
-
-        Spacer(Modifier.weight(1f))
-
         val isIncome = type == TransactionType.INCOME
-        val containerColor = if (isIncome) {
-            MaterialTheme.colorScheme.tertiary
-        } else {
-            MaterialTheme.colorScheme.primary
-        }
-        val onContainerColor = if (isIncome) {
-            MaterialTheme.colorScheme.onTertiary
-        } else {
-            MaterialTheme.colorScheme.onPrimary
-        }
-        IvyButton(
-            iconStart = R.drawable.ic_plus,
-            text = if (isIncome) {
-                stringResource(
-                    id = R.string.add_income
+        Button(
+            onClick = { onAdd(type) },
+            modifier = Modifier.weight(1f),
+            colors = if (isIncome) {
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.income,
+                    contentColor = MaterialTheme.colorScheme.onIncome,
                 )
             } else {
-                stringResource(id = R.string.add_expense)
+                ButtonDefaults.buttonColors()
             },
-            backgroundGradient = Gradient.solid(containerColor),
-            textStyle = UI.typo.b2.style(
-                color = onContainerColor,
-                fontWeight = FontWeight.ExtraBold
-            ),
-            iconTint = onContainerColor
         ) {
-            onAdd(type)
+            Icon(
+                painter = painterResource(R.drawable.ic_plus),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(
+                    if (isIncome) R.string.add_income else R.string.add_expense
+                )
+            )
         }
-
-        Spacer(Modifier.width(20.dp))
     }
 }
 
@@ -89,7 +70,6 @@ private fun PreviewBottomBar() {
     com.ivy.legacy.IvyWalletPreview {
         PieChartStatisticBottomBar(
             type = TransactionType.INCOME,
-            bottomInset = 16.dp,
             onAdd = {},
             onClose = {}
         )

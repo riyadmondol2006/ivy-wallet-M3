@@ -2,14 +2,15 @@ package com.ivy.widget.balance
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -26,9 +27,15 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import com.ivy.ui.R
 
+private val WidgetCornerRadius = 16.dp
+private val PillCornerRadius = 12.dp
+
+/**
+ * Wallet balance widget body. Colours come from [GlanceTheme] (Material You on Android 12+, the
+ * Material 3 baseline below), so the widget follows the wallpaper and dark mode like the app.
+ */
 @Composable
 fun WalletBalanceWidgetContent(
     appLocked: Boolean,
@@ -44,7 +51,8 @@ fun WalletBalanceWidgetContent(
     val resources = LocalContext.current.resources
     Box(
         GlanceModifier
-            .background(ImageProvider(R.drawable.shape_widget_background))
+            .background(GlanceTheme.colors.surface)
+            .cornerRadius(WidgetCornerRadius)
             .clickable(onWidgetClick),
         contentAlignment = Alignment.Center
     ) {
@@ -59,7 +67,7 @@ fun WalletBalanceWidgetContent(
                     text = resources.getString(R.string.app_locked),
                     style = TextStyle(
                         fontSize = 25.sp,
-                        color = ColorProvider(Color.White),
+                        color = GlanceTheme.colors.onSurface,
                         textAlign = TextAlign.Center
                     )
                 )
@@ -104,7 +112,7 @@ fun BalanceSection(
             text = currency,
             style = TextStyle(
                 fontSize = 30.sp,
-                color = ColorProvider(Color.White)
+                color = GlanceTheme.colors.onSurfaceVariant
             )
         )
         Spacer(GlanceModifier.width(10.dp))
@@ -113,7 +121,7 @@ fun BalanceSection(
             style = TextStyle(
                 fontSize = 34.sp,
                 fontWeight = FontWeight.Bold,
-                color = ColorProvider(Color.White)
+                color = GlanceTheme.colors.onSurface
             )
         )
     }
@@ -133,39 +141,44 @@ fun IncomeExpenseSection(
         val resources = LocalContext.current.resources
         Row(
             GlanceModifier
-                .padding(10.dp)
                 .defaultWeight()
-                .background(ImageProvider(R.drawable.income_shape_widget_background)),
+                .background(GlanceTheme.colors.tertiaryContainer)
+                .cornerRadius(PillCornerRadius)
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(ImageProvider(R.drawable.ic_income_white), resources.getString((R.string.income)))
+            Image(
+                provider = ImageProvider(R.drawable.ic_income_white),
+                contentDescription = resources.getString(R.string.income),
+            )
             Text(
                 text = "$income $currency",
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = ColorProvider(Color.White)
+                    color = GlanceTheme.colors.onTertiaryContainer
                 )
             )
         }
         Spacer(GlanceModifier.width(8.dp))
         Row(
             GlanceModifier
-                .padding(10.dp)
                 .defaultWeight()
-                .background(ImageProvider(R.drawable.expense_shape_widget_background)),
+                .background(GlanceTheme.colors.errorContainer)
+                .cornerRadius(PillCornerRadius)
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Image(
-                ImageProvider(R.drawable.ic_expense),
-                resources.getString(R.string.expense)
+                provider = ImageProvider(R.drawable.ic_expense),
+                contentDescription = resources.getString(R.string.expense),
             )
             Text(
                 text = "$expense $currency",
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = ColorProvider(Color.Black)
+                    color = GlanceTheme.colors.onErrorContainer
                 )
             )
         }

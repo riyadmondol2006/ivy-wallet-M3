@@ -11,21 +11,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import com.ivy.design.system.IvyMaterial3Theme
 import com.ivy.legacy.datamodel.Account
-import org.junit.Rule
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import java.util.UUID
 
@@ -112,9 +113,11 @@ class AccountPickerPaparazziTest {
         val view = ComposeView(paparazzi.context).apply {
             setContent {
                 // Keep static header content when layoutlib redraws a pre-scrolled list.
-                Box(Modifier.graphicsLayer {
-                    compositingStrategy = CompositingStrategy.Offscreen
-                }) { content() }
+                Box(
+                    Modifier.graphicsLayer {
+                        compositingStrategy = CompositingStrategy.Offscreen
+                    }
+                ) { content() }
             }
         }
         try {
@@ -149,14 +152,14 @@ class AccountPickerPaparazziTest {
                         ) {
                             AccountPickerContent(
                                 title = "Choose account",
-                                accounts = accounts.take(count),
+                                accounts = accounts.take(count).toImmutableList(),
                                 selectedAccount = accounts.take(count).getOrNull(
                                     selectedIndex.coerceAtMost(count - 1)
                                 ),
                                 baseCurrency = "BDT",
                                 query = query,
                                 onQueryChange = {},
-                                onSelected = {},
+                                onSelect = {},
                                 onAddAccount = {},
                                 onClose = {},
                                 modifier = Modifier.fillMaxSize().padding(top = 24.dp),

@@ -30,7 +30,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ivy.ui.R
 
 /**
  * Self-contained Material 3 "Appearance" control: a system-color (Material You) switch plus an
@@ -56,7 +58,7 @@ fun AppearanceCard(
             .padding(20.dp),
     ) {
         Text(
-            text = "Appearance",
+            text = stringResource(R.string.appearance),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -66,12 +68,12 @@ fun AppearanceCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Use system color",
+                        text = stringResource(R.string.use_system_color),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "Material You from your wallpaper",
+                        text = stringResource(R.string.material_you_from_wallpaper),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -87,7 +89,7 @@ fun AppearanceCard(
             Column {
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Accent color",
+                    text = stringResource(R.string.accent_color),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -138,7 +140,7 @@ private fun AccentSwatch(
         if (selected) {
             Icon(
                 imageVector = Icons.Rounded.Check,
-                contentDescription = "selected",
+                contentDescription = stringResource(R.string.selected),
                 tint = if (color.luminance() > 0.5f) Color.Black else Color.White,
             )
         }

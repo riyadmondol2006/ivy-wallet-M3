@@ -62,23 +62,25 @@ import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.navigation
+import com.ivy.design.system.expense
+import com.ivy.design.system.income
+import com.ivy.design.system.onExpense
+import com.ivy.design.system.onIncome
 import com.ivy.ui.R
+import com.ivy.ui.component.IvyListCard
 import com.ivy.ui.time.TimeFormatter
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.GradientGreen
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GreenDark
 import com.ivy.wallet.ui.theme.IvyDark
 import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.findContrastTextColor
-import com.ivy.wallet.ui.theme.gradientExpenses
 import com.ivy.wallet.ui.theme.toComposeColor
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
 import kotlinx.collections.immutable.ImmutableList
@@ -99,19 +101,15 @@ fun TransactionCard(
     onSkipTransaction: (Transaction) -> Unit = {},
     onClick: (Transaction) -> Unit,
 ) {
-    Column(
+    val accountExists = baseData.accounts.any { it.id == transaction.accountId }
+    IvyListCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(top = 12.dp)
-            .clip(UI.shapes.r4)
-            .clickable {
-                if (baseData.accounts.find { it.id == transaction.accountId } != null) {
-                    onClick(transaction)
-                }
-            }
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh, UI.shapes.r4)
-            .testTag("transaction_card")
+            .testTag("transaction_card"),
+        onClick = if (accountExists) ({ onClick(transaction) }) else null,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         // TODO: Optimize this
         val transactionCurrency =
@@ -246,11 +244,26 @@ fun TransactionCard(
                         .padding(end = 24.dp),
                     text = if (isExpense) stringResource(R.string.pay) else stringResource(R.string.get),
                     wrapContentMode = false,
-                    backgroundGradient = if (isExpense) gradientExpenses() else GradientGreen,
+                    backgroundGradient = Gradient.solid(
+                        if (isExpense) {
+                            MaterialTheme.colorScheme.expense
+                        } else {
+                            MaterialTheme.colorScheme.income
+                        }
+                    ),
                     textStyle = UI.typo.b2.style(
-                        color = if (isExpense) UI.colors.pure else White,
+                        color = if (isExpense) {
+                            MaterialTheme.colorScheme.onExpense
+                        } else {
+                            MaterialTheme.colorScheme.onIncome
+                        },
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    iconTint = if (isExpense) {
+                        MaterialTheme.colorScheme.onExpense
+                    } else {
+                        MaterialTheme.colorScheme.onIncome
+                    }
                 ) {
                     onPayOrGet(transaction)
                 }

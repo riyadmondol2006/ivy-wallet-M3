@@ -38,10 +38,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ivy.legacy.datamodel.Account
+import com.ivy.base.model.TransactionType
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
+import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.utils.addKeyboardListener
 import com.ivy.legacy.utils.clickableNoIndication
@@ -53,11 +54,10 @@ import com.ivy.legacy.utils.keyboardOnlyWindowInsets
 import com.ivy.legacy.utils.lerp
 import com.ivy.legacy.utils.navigationBarInsets
 import com.ivy.legacy.utils.onScreenStart
-import com.ivy.legacy.utils.springBounce
-import com.ivy.legacy.utils.verticalSwipeListener
-import com.ivy.base.model.TransactionType
 import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.legacy.utils.rememberSwipeListenerState
+import com.ivy.legacy.utils.springBounce
+import com.ivy.legacy.utils.verticalSwipeListener
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Gradient
@@ -77,6 +77,7 @@ import com.ivy.wallet.ui.theme.modal.ModalSave
 import com.ivy.wallet.ui.theme.modal.ModalSet
 import com.ivy.wallet.ui.theme.modal.edit.AmountModal
 import com.ivy.wallet.ui.theme.toComposeColor
+import kotlinx.collections.immutable.toImmutableList
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToInt
@@ -86,7 +87,7 @@ const val SWIPE_UP_EXPANDED_THRESHOLD = 200
 
 private enum class AccountPickerTarget { Source, Destination }
 
-@Suppress("LongMethod", "LongParameterList", "UnusedParameter", "ParameterNaming")
+@Suppress("LongMethod", "LongParameterList", "UnusedParameter", "ParameterNaming", "CyclomaticComplexMethod")
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun BoxWithConstraintsScope.EditBottomSheet(
@@ -313,10 +314,10 @@ fun BoxWithConstraintsScope.EditBottomSheet(
                     else -> R.string.choose_account
                 }
             ),
-            accounts = accounts,
+            accounts = accounts.toImmutableList(),
             selectedAccount = if (target == AccountPickerTarget.Source) selectedAccount else toAccount,
             baseCurrency = accountBaseCurrency,
-            onSelected = if (target == AccountPickerTarget.Source) {
+            onSelect = if (target == AccountPickerTarget.Source) {
                 onSelectedAccountChanged
             } else {
                 onToAccountChanged

@@ -67,7 +67,6 @@ import com.ivy.ui.R
 import com.ivy.ui.time.TimeFormatter
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.MediumBlack
 import com.ivy.wallet.ui.theme.MediumWhite
 import com.ivy.wallet.ui.theme.components.BalanceRow
@@ -107,7 +106,7 @@ private fun BoxWithConstraintsScope.UI(
     state: LoanDetailsScreenState,
     onEventHandler: (LoanDetailsScreenEvent) -> Unit = {}
 ) {
-    val itemColor = state.loan?.color?.toComposeColor() ?: Gray
+    val itemColor = state.loan?.color?.toComposeColor() ?: MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = Modifier
@@ -509,7 +508,7 @@ private fun LoanInfoCard(
                     baseCurrency
                 ),
                 style = UI.typo.nB2.style(
-                    color = Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.ExtraBold
                 )
             )
@@ -571,7 +570,7 @@ private fun LoanInfoCard(
                         baseCurrency
                     ),
                     style = UI.typo.nB2.style(
-                        color = Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.ExtraBold
                     )
                 )
@@ -720,7 +719,7 @@ private fun LoanRecordItem(
                 ).uppercase()
             },
             style = UI.typo.nC.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold
             )
         )
@@ -766,7 +765,7 @@ private fun LoanRecordItem(
                 modifier = Modifier.padding(start = 68.dp),
                 text = loanRecord.convertedAmount!!.format(baseCurrency) + " $loanBaseCurrency",
                 style = UI.typo.nB2.style(
-                    color = Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Normal
                 )
             )
@@ -817,7 +816,7 @@ private fun InitialRecordItem(
                     ).uppercase()
                 },
                 style = UI.typo.nC.style(
-                    color = Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold
                 )
             )
@@ -858,7 +857,7 @@ private fun NoLoanRecordsEmptyState() {
 
         IvyIcon(
             icon = R.drawable.ic_notransactions,
-            tint = Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(24.dp))
@@ -866,7 +865,7 @@ private fun NoLoanRecordsEmptyState() {
         Text(
             text = stringResource(R.string.no_records),
             style = UI.typo.b1.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.ExtraBold
             )
         )
@@ -877,7 +876,7 @@ private fun NoLoanRecordsEmptyState() {
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.no_records_for_the_loan),
             style = UI.typo.b2.style(
-                color = Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )

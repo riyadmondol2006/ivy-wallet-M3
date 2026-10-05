@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
+import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -63,6 +64,15 @@ class WalletBalanceWidget(
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            GlanceTheme {
+                WidgetBody()
+            }
+        }
+    }
+
+    @Composable
+    private fun WidgetBody() {
+        run {
             val prefs = currentState<Preferences>()
             val appLocked = prefs[booleanPreferencesKey(PrefsKey.APP_LOCKED)] ?: false
             val balance = prefs[doublePreferencesKey(PrefsKey.BALANCE)] ?: 0.00

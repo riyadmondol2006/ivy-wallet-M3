@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -51,10 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.ivy.base.legacy.Theme
 import com.ivy.design.system.IvyExpressiveShapes
-import com.ivy.legacy.Constants
 import com.ivy.legacy.rootScreen
 import com.ivy.legacy.utils.format
-import com.ivy.legacy.utils.openUrl
 import com.ivy.legacy.utils.rememberSwipeListenerState
 import com.ivy.legacy.utils.springBounce
 import com.ivy.legacy.utils.verticalSwipeListener
@@ -68,6 +65,7 @@ import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
+import com.ivy.ui.component.OpenSourceCard
 import com.ivy.wallet.ui.theme.modal.AddModalBackHandling
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
 import java.util.UUID
@@ -175,7 +173,7 @@ fun BoxWithConstraintsScope.MoreMenu(
 
             Spacer(Modifier.height(12.dp))
 
-            OpenSourceCard()
+            OpenSourceCard(modifier = Modifier.padding(horizontal = 16.dp))
         }
     }
 }
@@ -523,53 +521,6 @@ private fun SavingsGoalCard(
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun OpenSourceCard() {
-    val uriHandler = LocalUriHandler.current
-    Surface(
-        onClick = {
-            openUrl(
-                uriHandler = uriHandler,
-                url = Constants.URL_IVY_WALLET_REPO
-            )
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = IvyExpressiveShapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.github_logo),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.ivy_wallet_open_source),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                Spacer(Modifier.height(2.dp))
-
-                Text(
-                    text = Constants.URL_IVY_WALLET_REPO,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
         }
     }
 }

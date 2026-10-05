@@ -178,7 +178,7 @@ private fun Toolbar(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 24.dp, end = 16.dp)
+                .padding(start = 16.dp, end = 16.dp)
         ) {
             Text(
                 text = stringResource(R.string.budgets),

@@ -134,7 +134,7 @@ private fun BoxWithConstraintsScope.UI(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(Modifier.width(24.dp))
+                Spacer(Modifier.width(16.dp))
 
                 Text(
                     text = stringResource(R.string.categories),
@@ -864,7 +864,7 @@ private fun SearchField(
 
     SearchInput(
         searchQueryTextFieldValue = searchQueryTextFieldValue,
-        hint = "Search categories",
+        hint = stringResource(R.string.search_categories),
         focus = false,
         showClearIcon = searchQueryTextFieldValue.text.isNotEmpty(),
         onSetSearchQueryTextField = {

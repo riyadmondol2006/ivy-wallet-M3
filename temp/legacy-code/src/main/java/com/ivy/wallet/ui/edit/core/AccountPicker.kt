@@ -64,7 +64,11 @@ import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.toComposeColor
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
+
+/** The picker sheet covers most of the screen so long account lists get room to scroll. */
+private const val SheetHeightFraction = 0.85f
 
 @Composable
 internal fun AccountSelector(
@@ -110,10 +114,10 @@ internal fun AccountSelector(
 @Composable
 internal fun AccountPickerSheet(
     title: String,
-    accounts: List<Account>,
+    accounts: ImmutableList<Account>,
     selectedAccount: Account?,
     baseCurrency: String,
-    onSelected: (Account) -> Unit,
+    onSelect: (Account) -> Unit,
     onAddAccount: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -147,11 +151,11 @@ internal fun AccountPickerSheet(
             baseCurrency = baseCurrency,
             query = query,
             onQueryChange = { query = it },
-            onSelected = { account -> finish { onSelected(account) } },
+            onSelect = { account -> finish { onSelect(account) } },
             onAddAccount = { finish(onAddAccount) },
             onClose = { finish {} },
             enabled = !closing,
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(SheetHeightFraction),
         )
     }
 }
@@ -173,12 +177,12 @@ internal fun filterPickerAccounts(
 @Composable
 internal fun AccountPickerContent(
     title: String,
-    accounts: List<Account>,
+    accounts: ImmutableList<Account>,
     selectedAccount: Account?,
     baseCurrency: String,
     query: String,
     onQueryChange: (String) -> Unit,
-    onSelected: (Account) -> Unit,
+    onSelect: (Account) -> Unit,
     onAddAccount: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
@@ -253,8 +257,11 @@ internal fun AccountPickerContent(
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(
-                        if (accounts.none { !it.isDeleted }) R.string.no_accounts_to_choose
-                        else R.string.no_matching_accounts
+                        if (accounts.none { !it.isDeleted }) {
+                            R.string.no_accounts_to_choose
+                        } else {
+                            R.string.no_matching_accounts
+                        }
                     ),
                     modifier = Modifier.padding(vertical = 24.dp),
                     style = MaterialTheme.typography.bodyLarge,
@@ -275,7 +282,7 @@ internal fun AccountPickerContent(
                         currency = account.currency ?: baseCurrency,
                         selected = account.id == selectedAccount?.id,
                         enabled = enabled,
-                        onClick = { onSelected(account) },
+                        onClick = { onSelect(account) },
                     )
                 }
             }
@@ -307,8 +314,11 @@ private fun AccountPickerRow(
         modifier = Modifier.fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
             .background(
-                if (selected) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.surfaceContainerLow
+                if (selected) {
+                    MaterialTheme.colorScheme.secondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                }
             )
             .selectable(
                 selected = selected,
@@ -326,16 +336,22 @@ private fun AccountPickerRow(
             Text(
                 text = account.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
-                else MaterialTheme.colorScheme.onSurface,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = currency,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
         }
         if (selected) {

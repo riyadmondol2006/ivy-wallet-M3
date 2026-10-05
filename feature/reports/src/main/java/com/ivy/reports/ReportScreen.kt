@@ -141,20 +141,17 @@ private fun BoxWithConstraintsScope.UI(
 
         item {
             Text(
-                modifier = Modifier.padding(
-                    start = 32.dp
-                ),
+                modifier = Modifier.padding(start = 16.dp),
                 text = stringResource(R.string.reports),
-                style = UI.typo.h2.style(
-                    fontWeight = FontWeight.ExtraBold
-                )
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(Modifier.height(8.dp))
 
             BalanceRow(
                 modifier = Modifier
-                    .padding(start = 32.dp),
+                    .padding(start = 16.dp),
                 textColor = MaterialTheme.colorScheme.onSurface,
                 currency = state.baseCurrency,
                 balance = state.balance,

@@ -1,8 +1,6 @@
 package com.ivy.loans.loan
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
@@ -49,6 +46,7 @@ import com.ivy.navigation.LoanDetailsScreen
 import com.ivy.navigation.LoansScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
+import com.ivy.ui.component.IvyListCard
 import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.components.BalanceRow
@@ -226,14 +224,12 @@ private fun Toolbar(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 24.dp, end = 16.dp)
+                .padding(start = 16.dp, end = 16.dp)
         ) {
             Text(
                 text = stringResource(R.string.loans),
-                style = UI.typo.h2.style(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             if (totalOweAmount.isNotEmpty()) {
                 Text(
@@ -277,16 +273,12 @@ private fun LoanItem(
     val loan = displayLoan.loan
     val contrastColor = findContrastTextColor(loan.color.toComposeColor())
 
-    Column(
+    IvyListCard(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(UI.shapes.r4)
-            .border(2.dp, MaterialTheme.colorScheme.surfaceContainerHighest, UI.shapes.r4)
-            .testTag("loan_item")
-            .clickable(
-                onClick = onClick
-            )
+            .testTag("loan_item"),
+        onClick = onClick,
     ) {
         LoanHeader(
             displayLoan = displayLoan,
@@ -313,7 +305,7 @@ private fun LoanHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(loan.color.toComposeColor(), UI.shapes.r4Top)
+            .background(loan.color.toComposeColor())
     ) {
         Spacer(Modifier.height(16.dp))
 

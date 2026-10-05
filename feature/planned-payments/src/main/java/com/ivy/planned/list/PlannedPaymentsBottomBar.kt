@@ -2,56 +2,45 @@ package com.ivy.planned.list
 
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.legacy.utils.navigationBarInset
-import com.ivy.legacy.utils.toDensityDp
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.components.ActionsRow
-import com.ivy.wallet.ui.theme.components.CloseButton
-import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
-import com.ivy.wallet.ui.theme.gradientCutBackgroundTop
+import com.ivy.ui.component.IvyBottomActionBar
 
 @Composable
 fun BoxWithConstraintsScope.PlannedPaymentsBottomBar(
-    bottomInset: Dp = navigationBarInset().toDensityDp(),
     onClose: () -> Unit,
     onAdd: () -> Unit
 ) {
-    ActionsRow(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .gradientCutBackgroundTop(MaterialTheme.colorScheme.surface, LocalDensity.current)
-            .padding(bottom = bottomInset)
-            .padding(bottom = 24.dp)
+    IvyBottomActionBar(
+        onNavigateBack = onClose,
+        navigationIcon = Icons.Rounded.Close,
+        navigationContentDescription = stringResource(R.string.close),
     ) {
-        Spacer(Modifier.width(20.dp))
-
-        CloseButton {
-            onClose()
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        IvyOutlinedButton(
-            iconStart = R.drawable.ic_planned_payments,
-            text = stringResource(R.string.add_payment),
-            solidBackground = true
+        Button(
+            onClick = onAdd,
+            modifier = Modifier.weight(1f)
         ) {
-            onAdd()
+            Icon(
+                painter = painterResource(R.drawable.ic_planned_payments),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = stringResource(R.string.add_payment))
         }
-
-        Spacer(Modifier.width(20.dp))
     }
 }
 
@@ -60,7 +49,6 @@ fun BoxWithConstraintsScope.PlannedPaymentsBottomBar(
 private fun PreviewBottomBar() {
     IvyWalletPreview {
         PlannedPaymentsBottomBar(
-            bottomInset = 16.dp,
             onAdd = {},
             onClose = {}
         )

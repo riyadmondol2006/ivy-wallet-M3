@@ -21,12 +21,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ivy.ui.R
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneOffset
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,8 +54,15 @@ class AndroidDateTimePicker @Inject constructor(
         viewState: DatePickerViewState,
         modifier: Modifier = Modifier
     ) {
+        // The Material 3 date picker works in UTC-midnight millis. Convert the initial instant to
+        // the user's local calendar date first, and read the selection back as a UTC date, so the
+        // chosen day never shifts in time zones west of UTC.
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = viewState.initialDate?.toEpochMilli(),
+            initialSelectedDateMillis = viewState.initialDate
+                ?.let { with(timeConverter) { it.toLocalDate() } }
+                ?.atStartOfDay(ZoneOffset.UTC)
+                ?.toInstant()
+                ?.toEpochMilli(),
         )
         DatePickerDialog(
             modifier = modifier,
@@ -60,10 +70,9 @@ class AndroidDateTimePicker @Inject constructor(
             confirmButton = {
                 ConfirmButton(onClick = {
                     datePickerViewState = null
-                    pickerState.selectedDateMillis?.let(Instant::ofEpochMilli)
-                        ?.let {
-                            with(timeConverter) { it.toLocalDate() }
-                    }?.let(viewState.onDatePicked)
+                    pickerState.selectedDateMillis
+                        ?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                        ?.let(viewState.onDatePicked)
                 })
             },
             colors = DatePickerDefaults.colors(
@@ -133,7 +142,7 @@ class AndroidDateTimePicker @Inject constructor(
             modifier = modifier,
             onClick = onClick
         ) {
-            Text(text = "Select")
+            Text(text = stringResource(R.string.select))
         }
     }
 
