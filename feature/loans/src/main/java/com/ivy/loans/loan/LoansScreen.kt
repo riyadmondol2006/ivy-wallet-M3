@@ -55,6 +55,7 @@ import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.components.ProgressBar
 import com.ivy.wallet.ui.theme.components.ReorderButton
+import com.ivy.wallet.ui.theme.components.ReorderItemLabel
 import com.ivy.wallet.ui.theme.components.ReorderModalSingleType
 import com.ivy.wallet.ui.theme.dynamicContrast
 import com.ivy.wallet.ui.theme.findContrastTextColor
@@ -172,16 +173,11 @@ private fun BoxWithConstraintsScope.UI(
             onEventHandler.invoke(LoanScreenEvent.OnReordered(reorderedList = it))
         }
     ) { _, item ->
-        Text(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 24.dp)
-                .padding(vertical = 8.dp),
+        ReorderItemLabel(
             text = item.loan.name,
-            style = UI.typo.b1.style(
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )
+            accentColor = item.loan.color.toComposeColor(),
+            iconName = item.loan.icon,
+            defaultIcon = R.drawable.ic_custom_loan_s,
         )
     }
 

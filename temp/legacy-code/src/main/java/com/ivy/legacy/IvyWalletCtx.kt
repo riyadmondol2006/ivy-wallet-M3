@@ -3,6 +3,7 @@ package com.ivy.legacy
 import android.net.Uri
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ivy.design.IvyContext
@@ -102,6 +103,22 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
     @Deprecated("Legacy code. Don't use it, please.")
     fun setMoreMenuExpanded(expanded: Boolean) {
         moreMenuExpanded = expanded
+    }
+
+    /**
+     * Number of legacy sheets ([com.ivy.wallet.ui.theme.modal.IvyModal]) currently on screen. The
+     * main screen lifts the tab content above its bottom bar while this is positive, so a sheet
+     * opened from a tab is never covered by the bar.
+     */
+    var openModalCount by mutableIntStateOf(0)
+        private set
+
+    fun onModalShown() {
+        openModalCount += 1
+    }
+
+    fun onModalHidden() {
+        openModalCount = (openModalCount - 1).coerceAtLeast(0)
     }
     // ------------------------------------------ State ---------------------------------------------
 

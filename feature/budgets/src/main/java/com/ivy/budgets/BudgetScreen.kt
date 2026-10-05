@@ -37,6 +37,7 @@ import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.components.ReorderButton
+import com.ivy.wallet.ui.theme.components.ReorderItemLabel
 import com.ivy.wallet.ui.theme.components.ReorderModalSingleType
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
 
@@ -139,15 +140,9 @@ private fun BoxWithConstraintsScope.UI(
         },
         onReordered = { onEvent(BudgetScreenEvent.OnReorder(it)) }
     ) { _, item ->
-        Text(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 24.dp)
-                .padding(vertical = 8.dp),
+        ReorderItemLabel(
+            modifier = Modifier.padding(start = 4.dp),
             text = item.budget.name,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
         )
     }
 

@@ -116,6 +116,13 @@ fun BoxScope.IvyModal(
         visibilityThreshold = 0.01f
     )
 
+    val ivyContext = ivyWalletCtx()
+    val onScreen = visible || modalPercentVisible > 0.01f
+    DisposableEffect(onScreen) {
+        if (onScreen) ivyContext.onModalShown()
+        onDispose { if (onScreen) ivyContext.onModalHidden() }
+    }
+
     if (visible || blurAlpha > 0.01f) {
         Box(
             modifier = Modifier

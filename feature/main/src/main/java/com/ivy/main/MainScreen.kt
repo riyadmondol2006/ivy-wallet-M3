@@ -4,7 +4,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -12,8 +14,10 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.accounts.AccountsTab
 import com.ivy.base.model.TransactionType
@@ -78,15 +82,18 @@ private fun BoxWithConstraintsScope.UI(
     onCreateAccount: (CreateAccountData) -> Unit,
     onEditAccount: (com.ivy.legacy.datamodel.Account, Double) -> Unit,
 ) {
-    val boxScope = this
-
     // Hosted here (above the bottom bar) rather than inside AccountsTab so the modal's bottom
     // action row — and the amount keypad's "Enter" — aren't occluded by the BottomBar. Used for
     // the FAB "add account" flow. Credit cards use their own Material3 modal sheets.
     var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
 
+    // Tabs host their own legacy sheets. While one is open the tab is drawn above the bottom bar,
+    // otherwise the bar covers the sheet's close/save row.
+    val sheetOpen = ivyWalletCtx().openModalCount > 0
+
     AnimatedContent(
         targetState = tab,
+        modifier = Modifier.zIndex(if (sheetOpen) 1f else 0f),
         transitionSpec = {
             // Cross-slide: moving toward Accounts (higher ordinal) goes forward, back to Home reverses.
             val forward = targetState.ordinal > initialState.ordinal
@@ -94,7 +101,9 @@ private fun BoxWithConstraintsScope.UI(
         },
         label = "main-tab-transition"
     ) { currentTab ->
-        with(boxScope) {
+        // A real full-size box: AnimatedContent's own layout ignores Box alignment, which pinned
+        // bottom sheets to the top of the screen.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             when (currentTab) {
                 MainTab.HOME -> HomeTab()
                 MainTab.ACCOUNTS -> AccountsTab()

@@ -76,6 +76,7 @@ import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.CircleButtonFilled
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.ReorderButton
+import com.ivy.wallet.ui.theme.components.ReorderItemLabel
 import com.ivy.wallet.ui.theme.components.ReorderModalSingleType
 import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.IvyModal
@@ -213,16 +214,11 @@ private fun BoxWithConstraintsScope.UI(
             onEvent(CategoriesScreenEvent.OnReorder(it))
         }
     ) { _, item ->
-        Text(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 24.dp)
-                .padding(vertical = 8.dp),
+        ReorderItemLabel(
             text = item.category.name.value,
-            style = UI.typo.b1.style(
-                color = item.category.color.value.toComposeColor(),
-                fontWeight = FontWeight.Bold
-            )
+            accentColor = item.category.color.value.toComposeColor(),
+            iconName = item.category.icon?.id,
+            defaultIcon = R.drawable.ic_custom_category_s,
         )
     }
 

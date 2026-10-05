@@ -312,6 +312,7 @@
     <string name="exchange_rate">Exchange rate</string>
     <string name="choose_color">Select a color</string>
     <string name="reorder">Reorder</string>
+    <string name="reorder_hint">Drag the handle to change the order</string>
     <string name="keyword">Keyword</string>
     <string name="edit_budget">Edit budget</string>
     <string name="create_budget">Create budget</string>
@@ -319,6 +320,8 @@
     <string name="budget_amount_uppercase">BUDGET AMOUNT</string>
     <string name="confirm_budget_deletion_warning">Are you sure you want to delete the "%1$s" budget?</string>
     <string name="edit_savings_goal">Edit Savings goal</string>
+    <string name="savings_goal_help">Money you keep aside. Everything above it is left to spend.</string>
+    <string name="savings_goal_amount">Goal amount</string>
     <string name="choose_icon">Select an icon</string>
     <string name="choose_month">Choose month</string>
     <string name="or_custom_range">or custom range</string>

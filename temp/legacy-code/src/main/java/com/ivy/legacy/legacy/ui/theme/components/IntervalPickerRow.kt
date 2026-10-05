@@ -1,18 +1,23 @@
 package com.ivy.wallet.ui.theme.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,23 +26,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.data.model.IntervalType
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.forDisplay
 import com.ivy.legacy.utils.capitalizeLocal
 import com.ivy.legacy.utils.selectEndTextFieldValue
-import com.ivy.ui.R
 
 private const val RepeatIntervalCharLimit = 5
+private val RowInset = 24.dp
+private val FieldGap = 12.dp
+private val NumberFieldWidth = 96.dp
+private val ControlHeight = 56.dp
 
+/**
+ * "Every N days/weeks/months/years" picker: a compact number field next to a unit selector of the
+ * same height. Used by the period picker ("or in the last") and the recurring-rule sheet.
+ */
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun IntervalPickerRow(
@@ -48,45 +59,52 @@ fun IntervalPickerRow(
     onSetIntervalType: (IntervalType) -> Unit
 ) {
     Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = RowInset),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(24.dp))
-
-        var interNTextFieldValue by remember(intervalN) {
+        var intervalText by remember(intervalN) {
             mutableStateOf(selectEndTextFieldValue(intervalN.toString()))
         }
+        val focusManager = LocalFocusManager.current
 
-        IvyNumberTextField(
+        OutlinedTextField(
             modifier = Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shape = UI.shapes.rFull
-                )
-                .padding(vertical = 12.dp),
-            value = interNTextFieldValue,
-            textColor = MaterialTheme.colorScheme.onSurface,
-            hint = "0"
-        ) {
-            val filteredText = it.text.take(RepeatIntervalCharLimit)
-            if (it.text != interNTextFieldValue.text) {
-                try {
-                    onSetIntervalN(filteredText.toInt())
-                } catch (e: Exception) {
+                .width(NumberFieldWidth)
+                .testTag("base_number_input"),
+            value = intervalText,
+            onValueChange = {
+                val filtered = it.text.filter(Char::isDigit).take(RepeatIntervalCharLimit)
+                if (filtered != intervalText.text) {
+                    filtered.toIntOrNull()?.let(onSetIntervalN)
                 }
-            }
-            interNTextFieldValue = it.copy(text = filteredText)
-        }
+                intervalText = it.copy(text = filtered)
+            },
+            placeholder = {
+                Text(
+                    text = "0",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+            },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.titleMedium.copy(textAlign = TextAlign.Center),
+            shape = MaterialTheme.shapes.large,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        )
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(FieldGap))
 
         IntervalTypeSelector(
             intervalN = intervalN,
-            intervalType = intervalType
-        ) {
-            onSetIntervalType(it)
-        }
-
-        Spacer(Modifier.width(24.dp))
+            intervalType = intervalType,
+            onSetIntervalType = onSetIntervalType,
+        )
     }
 }
 
@@ -97,75 +115,59 @@ private fun RowScope.IntervalTypeSelector(
 
     onSetIntervalType: (IntervalType) -> Unit
 ) {
-    OutlinedCard(
-        modifier = Modifier.weight(1f),
-        shape = UI.shapes.rFull,
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = Color.Transparent
-        ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
+    Surface(
+        modifier = Modifier
+            .weight(1f)
+            .height(ControlHeight),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(Modifier.width(20.dp))
-
+        Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
-                modifier = Modifier.size(48.dp),
-                onClick = {
-                    onSetIntervalType(
-                        when (intervalType) {
-                            IntervalType.DAY -> IntervalType.YEAR
-                            IntervalType.WEEK -> IntervalType.DAY
-                            IntervalType.MONTH -> IntervalType.WEEK
-                            IntervalType.YEAR -> IntervalType.MONTH
-                        }
-                    )
-                }
+                onClick = { onSetIntervalType(intervalType.previous()) },
             ) {
                 Icon(
-                    modifier = Modifier.rotate(-180f),
-                    painter = painterResource(id = R.drawable.ic_arrow_right),
+                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                     contentDescription = "interval_type_arrow_left",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-
-            Spacer(Modifier.weight(1f))
 
             Text(
+                modifier = Modifier.weight(1f),
                 text = intervalType.forDisplay(intervalN).capitalizeLocal(),
-                style = UI.typo.b2.style(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
             )
 
-            Spacer(Modifier.weight(1f))
-
             IconButton(
-                modifier = Modifier.size(48.dp),
-                onClick = {
-                    onSetIntervalType(
-                        when (intervalType) {
-                            IntervalType.DAY -> IntervalType.WEEK
-                            IntervalType.WEEK -> IntervalType.MONTH
-                            IntervalType.MONTH -> IntervalType.YEAR
-                            IntervalType.YEAR -> IntervalType.DAY
-                        }
-                    )
-                }
+                onClick = { onSetIntervalType(intervalType.next()) },
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_arrow_right),
+                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                     contentDescription = "interval_type_arrow_right",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-
-            Spacer(Modifier.width(20.dp))
         }
     }
+}
+
+private fun IntervalType.next(): IntervalType = when (this) {
+    IntervalType.DAY -> IntervalType.WEEK
+    IntervalType.WEEK -> IntervalType.MONTH
+    IntervalType.MONTH -> IntervalType.YEAR
+    IntervalType.YEAR -> IntervalType.DAY
+}
+
+private fun IntervalType.previous(): IntervalType = when (this) {
+    IntervalType.DAY -> IntervalType.YEAR
+    IntervalType.WEEK -> IntervalType.DAY
+    IntervalType.MONTH -> IntervalType.WEEK
+    IntervalType.YEAR -> IntervalType.MONTH
 }
 
 @Preview
