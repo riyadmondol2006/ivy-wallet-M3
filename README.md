@@ -17,18 +17,31 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 ## What's New (vs upstream)
 
 ### Material 3 Redesign
-- Full app-wide conversion to **Material 3** components and tokens — `MaterialTheme.colorScheme`, `MaterialTheme.typography`, `MaterialTheme.shapes` replace the legacy `UI.colors`/`UI.typo`/`UI.shapes` design system everywhere
+- App-wide **Material 3** theming — `MaterialTheme.colorScheme`, `MaterialTheme.typography` and `MaterialTheme.shapes` are the source of truth; the legacy `UI.colors`/`UI.typo`/`UI.shapes` tokens are bridged onto the M3 theme so screens that still use them render with the same colours, type scale and corner radii
 - New **M3 Expressive** design layer: `IvyExpressiveType` (expressive type scale), `IvyExpressiveShapes` (morphable shape system), `IvyThemeController` (dynamic theme switching at runtime), `AppearanceCard` (in-app appearance picker)
 - Dual design-system bridge keeps the remaining legacy screens visually coherent while migration continues
 - `IvyMaterial3Theme` wraps the full app in a single M3 `MaterialTheme` with dynamic colour support
 
 ### Credit Cards Feature
 - Accounts now support an optional **credit limit** (`creditLimit: Double?`), turning any account into a credit card account
-- Room DB migrated to **v131** (`Migration130to131_AccountCreditLimit`) — adds `creditLimit` column with a safe default
-- **Credit Cards section** on the Accounts tab — shows each card's current owed amount, limit left, and a progress bar
-- **Mark as Paid** flow — clears the balance of a credit card with a single tap
+- Room DB migrated to **v132** (`Migration130to131_AccountCreditLimit`, `Migration131to132_DualCurrencyCards`) — adds the credit limit and dual-currency card columns with safe defaults
+- **Credit Cards section** on the Accounts tab — shows each card's amount to pay and limit left per currency
+- **Pay** flow — records a transfer from a paying account to the card (partial and cross-currency payments supported); **Reset** clears a card's balance with a confirmed adjustment
 - **Home summary card** — when credit cards exist, the Home tab shows total balance and total credit exposure separately
-- Feature flag (`creditCardsEnabled`) enabled by default
+- **Billing cycle** — optional statement day and payment due day per card; cards show "Payment due in N days" / "Overdue since …", and a reminder fires when a payment is due within three days
+- **Include in balance** per card — card debt can count against the total balance and card spending appears in the income/expense statistics (default on)
+- Feature flag (`creditCardsEnabled`) enabled by default; turning it off keeps card accounts in the normal list
+
+### Reminders, undo and history
+- **Planned-payment reminders** — a daily notification (09:00) for planned payments due today or overdue, plus an immediate check when a rule is saved; tapping it opens Planned payments. Separate switch in Settings; the Android 13+ notification permission is requested when needed
+- **Undo delete** — deleting a transaction, skipping a planned payment, deleting a planned rule or a budget shows a Material 3 snackbar with **Undo** instead of a confirmation dialog
+- **Balance over time** — the Balance screen draws a line chart of the total balance (1M / 3M / 6M / 1Y / All), tap a point for its date and value
+
+### Design system
+- One Material 3 **component kit** in `shared/ui/core` (`IvyTopBar`, `IvyScreenTitle`, `IvyBottomActionBar`, `IvyListCard`, `IvySearchField`, `IvyConfirmDialog`, `IvyCloseButton`, `BackButton`, `IvyLineChart`) used by both new and legacy screens
+- Legacy `UI.typo` / `UI.shapes` tokens are **bridged** onto the M3 type and shape scales, legacy modals use the M3 sheet shape, scrim, drag handle and spring motion, and the legacy buttons follow the dynamic colour scheme
+- One date/time picker (Compose Material 3) everywhere; `Theme.AUTO` is the default and status-bar contrast follows the resolved scheme
+- Themed home-screen widget (Glance `GlanceTheme`, Material You on Android 12+)
 
 ### Settings Redesign
 - Full **Material 3** layout — cards, dividers, and spacing follow M3 conventions
@@ -61,7 +74,7 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 ### Repo & Build
 - App **renamed to "Ivy Wallet M3"** (launcher label across all build types)
 - **New adaptive launcher icon** — a white veined ivy leaf on a green gradient squircle, authored as Android vector drawables (foreground / background / monochrome themed-icon layers) with an SVG master in [`branding/`](branding/ivy-wallet-m3-logo.svg)
-- Version bumped to **2.0.0** (code 208)
+- Version name and code live in `gradle/libs.versions.toml` and are bumped by the release workflow
 - Release/debug APKs signed with **all four signature schemes** (v1 JAR + v2/v3/v4 APK Signature Scheme)
 - Application ID: `com.ivym3.wallet`
 - Git remote updated to `https://github.com/riyadmondol2006/ivy-wallet-M3`
@@ -90,13 +103,12 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 
 ### Build
 - [Gradle KTS](https://docs.gradle.org/current/userguide/kotlin_dsl.html) + version catalogs
-- AGP 8.6.0, minSdk 28, compileSdk/targetSdk 35, JVM target 17
+- AGP 9.1.1, minSdk 28, compileSdk/targetSdk 37, JVM target 17
 - [Detekt](https://github.com/detekt/detekt) 1.23.8 (linter)
 - [Fastlane](https://fastlane.tools/) (build automation)
 
-### Monitoring
-- [Firebase Crashlytics](https://firebase.google.com/products/crashlytics)
-- [Timber](https://github.com/JakeWharton/timber)
+### Logging
+- [Timber](https://github.com/JakeWharton/timber) (no crash reporting or analytics; nothing leaves the device except your own cloud sync)
 
 ---
 
