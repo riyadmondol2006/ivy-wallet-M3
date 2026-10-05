@@ -120,13 +120,9 @@ hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.re
 hilt-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
 
 # Google
-google-services-plugin = { module = "com.google.gms:google-services", version = "4.4.3" }
 google-play-update = { module = "com.google.android.play:app-update", version = "2.1.0" }
 google-play-services = { module = "com.google.android.gms:play-services-tasks", version = "18.2.0" }
 google-play-review = { module = "com.google.android.play:review-ktx", version = "2.0.1" }
-firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics", version = "19.4.4" }
-firebase-crashlytics-gradle-plugin = { module = "com.google.firebase:firebase-crashlytics-gradle", version = "3.0.4" }
-firebase-firestore = { module = "com.google.firebase:firebase-firestore", version = "25.1.4" }
 
 # AndroidX
 androidx-security = { module = "androidx.security:security-crypto", version = "1.0.0" }
@@ -230,9 +226,6 @@ google = [
     "google-play-update",
     "google-play-services",
     "google-play-review"
-]
-firebase = [
-    "firebase-crashlytics"
 ]
 hilt = [
     "hilt",

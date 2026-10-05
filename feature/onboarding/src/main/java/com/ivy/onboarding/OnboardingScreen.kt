@@ -1,7 +1,6 @@
 package com.ivy.onboarding
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,12 +28,8 @@ fun BoxWithConstraintsScope.OnboardingScreen(screen: OnboardingScreen) {
     val state by viewModel.state
     val uiState = viewModel.uiState()
 
-    val isSystemDarkTheme = isSystemInDarkTheme()
     onScreenStart {
-        viewModel.start(
-            screen = screen,
-            isSystemDarkMode = isSystemDarkTheme
-        )
+        viewModel.start(screen = screen)
     }
 
     UI(

@@ -7,7 +7,6 @@ import com.ivy.design.l0_system.Gradient
 import com.ivy.domain.RootScreen
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.navigation.Navigation
-import com.ivy.poll.data.PollRepository
 
 @Immutable
 data class CustomerJourneyCardModel(
@@ -27,6 +26,5 @@ data class CustomerJourneyCardModel(
 
 @Immutable
 data class CustomerJourneyDeps(
-    val pollRepository: PollRepository,
     val timeProvider: TimeProvider,
 )

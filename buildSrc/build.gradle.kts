@@ -18,8 +18,6 @@ dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.compose.compiler.plugin)
     implementation(libs.hilt.gradle.plugin)
-    implementation(libs.google.services.plugin)
-    implementation(libs.firebase.crashlytics.gradle.plugin)
     implementation(libs.detekt.gradle.plugin)
     implementation(libs.kotlinx.serialization.plugin)
     implementation(libs.ksp.plugin)

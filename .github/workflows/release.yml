@@ -26,6 +26,8 @@ permissions:
 
 jobs:
   release:
+    # Releases are cut from main only; the final step pushes HEAD to main.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -92,6 +94,10 @@ jobs:
       # To encode your keystore: base64 -i sign.jks | pbcopy  (macOS)
       - name: Decode signing keystore
         run: echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > sign.jks
+
+      # Same gates as CI, so a release can never ship code that CI would have rejected.
+      - name: Static analysis and unit tests
+        run: ./gradlew detekt testDebugUnitTest --no-configuration-cache
 
       - name: Build signed release APK
         env:

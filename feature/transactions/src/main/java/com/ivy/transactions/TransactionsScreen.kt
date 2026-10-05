@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -104,13 +105,15 @@ fun BoxWithConstraintsScope.TransactionsScreen(screen: TransactionsScreen) {
     val uiState = viewModel.uiState()
 
     val view = LocalView.current
+    // Resolved from the active colour scheme, so AUTO and AMOLED pick the right icon contrast.
+    val lightSurface by rememberUpdatedState(UI.colors.isLight)
     LaunchedEffect(Unit) {
         viewModel.start(screen)
 
         nav.onBackPressed[screen] = {
             setStatusBarDarkTextCompat(
                 view = view,
-                darkText = ivyContext.theme == Theme.LIGHT
+                darkText = lightSurface
             )
             false
         }
@@ -535,8 +538,13 @@ private fun BoxWithConstraintsScope.DeleteModals(
         visible = deleteModal1Visible,
         title = stringResource(R.string.confirm_deletion),
         description = if (account != null) {
-            stringResource(if (account.creditCardGroupId != null) R.string.credit_group_delete_warning
-                else R.string.account_confirm_deletion_description)
+            stringResource(
+                if (account.creditCardGroupId != null) {
+                    R.string.credit_group_delete_warning
+                } else {
+                    R.string.account_confirm_deletion_description
+                }
+            )
         } else {
             stringResource(R.string.category_confirm_deletion_description)
         },

@@ -15,14 +15,9 @@ import com.ivy.design.l0_system.Red
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.MainTab
 import com.ivy.navigation.EditPlannedScreen
-import com.ivy.navigation.Navigation
 import com.ivy.navigation.PieChartStatisticScreen
-import com.ivy.navigation.PollScreen
-import com.ivy.poll.data.PollRepository
-import com.ivy.poll.data.model.PollId
 import com.ivy.ui.R
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
-import java.time.LocalDate
 import javax.inject.Inject
 
 @Deprecated("Legacy code")
@@ -31,7 +26,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
   private val plannedPaymentRuleDao: PlannedPaymentRuleDao,
   private val sharedPrefs: SharedPrefs,
   private val ivyContext: IvyWalletCtx,
-  private val pollRepository: PollRepository,
   private val timeProvider: TimeProvider,
 ) {
 
@@ -39,7 +33,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
     val trnCount = transactionRepository.countHappenedTransactions().value
     val plannedPaymentsCount = plannedPaymentRuleDao.countPlannedPayments()
     val deps = CustomerJourneyDeps(
-      pollRepository = pollRepository,
       timeProvider = timeProvider,
     )
 
@@ -73,7 +66,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
       addPlannedPaymentCard(),
       didYouKnow_pinAddTransactionWidgetCard(),
       didYouKnow_expensesPieChart(),
-      voteCard()
     )
 
     fun adjustBalanceCard() = CustomerJourneyCardModel(
@@ -158,29 +150,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
       hasDismiss = true,
       onAction = { _, _, ivyActivity ->
         ivyActivity.reviewIvyWallet(dismissReviewCard = true)
-      }
-    )
-
-    @Suppress("MaxLineLength", "NoImplicitFunctionReturnType")
-    private fun voteCard() = CustomerJourneyCardModel(
-      id = "vote_card",
-      // to users that haven't voted
-      condition = { trnCount, _, _, deps ->
-        val expiry = LocalDate.of(2025, 7, 28)
-        trnCount > 3 &&
-            // set expiration
-            deps.timeProvider.localDateNow().isBefore(expiry) &&
-            !deps.pollRepository.hasVoted(PollId.PaidIvy)
-      },
-      title = "How much are you willing to pay for Ivy Wallet?",
-      description = "Google Play requires us to update Ivy Wallet to target API level 35 (Android 15). We'd like to know if you will be interested to pay on a subscription basis so we can maintain the app.",
-      cta = "Vote",
-      ctaIcon = R.drawable.ic_telegram_24dp,
-      hasDismiss = false,
-      background = Gradient.solid(Ivy),
-      // navigate to PollScreen
-      onAction = { navigation: Navigation, _, _ ->
-        navigation.navigateTo(PollScreen)
       }
     )
   }

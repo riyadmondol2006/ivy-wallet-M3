@@ -102,15 +102,15 @@ class OnboardingViewModel @Inject constructor(
         syncExchangeRatesUseCase = syncExchangeRatesUseCase,
     )
 
-    fun start(screen: OnboardingScreen, isSystemDarkMode: Boolean) {
+    fun start(screen: OnboardingScreen) {
         viewModelScope.launch {
-            initiateSettings(isSystemDarkMode)
+            initiateSettings()
 
             router.initBackHandling(
                 screen = screen,
                 viewModelScope = viewModelScope,
                 restartOnboarding = {
-                    start(screen, isSystemDarkMode)
+                    start(screen)
                 }
             )
 
@@ -118,7 +118,7 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
-    private suspend fun initiateSettings(isSystemDarkMode: Boolean) {
+    private suspend fun initiateSettings() {
         val defaultCurrency = IvyCurrency.getDefault()
         _currency.value = defaultCurrency
 
@@ -126,7 +126,8 @@ class OnboardingViewModel @Inject constructor(
             if (settingsDao.findAll().isEmpty()) {
                 settingsWriter.save(
                     Settings(
-                        theme = if (isSystemDarkMode) Theme.DARK else Theme.LIGHT,
+                        // Follow the system until the user picks a theme explicitly.
+                        theme = Theme.AUTO,
                         name = "",
                         baseCurrency = defaultCurrency.code,
                         bufferAmount = 1000.0.toBigDecimal()

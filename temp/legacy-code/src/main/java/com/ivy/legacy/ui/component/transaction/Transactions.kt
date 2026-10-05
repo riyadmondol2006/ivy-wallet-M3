@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,13 +30,9 @@ import com.ivy.navigation.Navigation
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.TransactionHistoryDateDivider
-import com.ivy.wallet.ui.theme.Black
-import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Orange
 import com.ivy.wallet.ui.theme.Red
-import com.ivy.wallet.ui.theme.White
-import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -176,27 +173,15 @@ private fun LazyListScope.overdueSection(
 
         if (overdue.expanded) {
             item {
-                val isLightTheme = UI.colors.pure == White
-                IvyButton(
+                // Tonal M3 button: legible in every theme without a light/dark branch.
+                FilledTonalButton(
                     modifier = Modifier
                         .animateItem(placementSpec = IvyMotion.placementSpring())
-                        .padding(horizontal = 24.dp),
-                    text = stringRes(R.string.skip_all),
-                    wrapContentMode = false,
-                    backgroundGradient = if (isLightTheme) {
-                        Gradient(White, White)
-                    } else {
-                        Gradient(
-                            Black,
-                            Black
-                        )
-                    },
-                    textStyle = UI.typo.b2.style(
-                        color = if (isLightTheme) Black else White,
-                        fontWeight = FontWeight.Bold
-                    )
+                        .padding(horizontal = 24.dp)
+                        .fillMaxWidth(),
+                    onClick = { onSkipAllTransactions(overdue.trns) },
                 ) {
-                    onSkipAllTransactions(overdue.trns)
+                    Text(text = stringRes(R.string.skip_all))
                 }
             }
 

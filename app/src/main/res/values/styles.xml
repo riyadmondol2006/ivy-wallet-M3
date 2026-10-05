@@ -1,7 +1,8 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar">
+    <!-- Material 3 DayNight so View-based dialogs (date/time pickers) follow dark mode. -->
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:colorPrimary">@color/ivy</item>
         <item name="android:colorPrimaryDark">@color/ivy</item>
         <item name="android:colorAccent">@color/ivy</item>
