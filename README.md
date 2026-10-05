@@ -116,19 +116,18 @@ This is a personal fork of the now-archived [Ivy-Apps/ivy-wallet](https://github
 
 Workflows run on every push to `main` and on pull requests. All jobs use **Temurin Java 21** for the Gradle and screenshot-test tooling (the app's JVM bytecode target remains 17), and each CI workflow cancels superseded runs on the same branch/PR (`concurrency` + `cancel-in-progress`) for faster feedback and fewer wasted minutes.
 
-### Release flow — one click
+### Release flow — automatic on every push
 
-Releases are fully on-demand via a single `release.yml` workflow. There is **no cron and no bot PR**.
+Every push to `main` is released by the single `release.yml` workflow. There is **no manual step, no cron and no bot PR**. Each run:
 
-1. Go to **Actions → Release → Run workflow**.
-2. Set **version** to a semantic version like `2.1.0`, or leave it as `auto` to patch-bump the latest tag (the first release defaults to `1.0.0`). Optionally tick **prerelease**.
-3. Click **Run**. That one run:
-   - bumps `version-name` (semantic) and auto-increments `version-code` in `gradle/libs.versions.toml`;
-   - commits `Release v<version> (<code>) [skip ci]` and tags `v<version>` on `main`;
-   - decodes your signing keystore and builds the signed `assembleRelease` APK (signed with the v1/v2/v3/v4 schemes);
-   - publishes a GitHub Release titled `Ivy Wallet M3 v<version>` with an **auto-generated changelog** (commits since the previous tag) and the signed APK attached.
+- patch-bumps `version-name` from the latest `v*` tag (the first release defaults to `1.0.0`) and auto-increments `version-code` in `gradle/libs.versions.toml`;
+- runs detekt and the unit tests, then decodes your signing keystore and builds the signed `assembleRelease` APK (v1/v2/v3/v4 schemes);
+- only after the build succeeded, commits `Release v<version> (<code>) [skip ci]` and tags `v<version>` on `main`;
+- publishes a GitHub Release titled `Ivy Wallet M3 v<version>` with an **auto-generated changelog** (commits since the previous tag) and the signed APK attached.
 
-To install: open the new Release and download **app-release.apk** onto your device (API 28+). Releases are serialized (`concurrency: release`) so two never run at once. The bump commit carries `[skip ci]` so it doesn't re-run the push CI jobs — the signed release build is the validation.
+**Actions → Release → Run workflow** is still available when you want an explicit version such as `2.1.0` (a minor or major bump) or a pre-release.
+
+To install: open the new Release and download **app-release.apk** onto your device (API 28+). Releases are serialized (`concurrency: release`) so two never run at once; a push that lands during a release is queued and released next. The bump commit carries `[skip ci]` and is pushed with the Actions token, so it triggers neither CI nor another release — the signed release build is the validation.
 
 ### Required GitHub Secrets
 
@@ -150,7 +149,7 @@ Just two workflows — lean and focused:
 | Workflow | Triggers | What it does |
 |----------|----------|-------------|
 | `ci.yml` | PR, push to main | Parallel jobs: **detekt**, **unit tests**, **Android lint** (release), and **build** (demo APK artifact). Cancels superseded runs. |
-| `release.yml` | Manual (`Run workflow`) | Builds the **signed APK first**, then bumps version, commits + tags, and publishes a GitHub Release with auto-changelog. |
+| `release.yml` | Push to main (auto patch bump), or manual `Run workflow` for an explicit version | Builds the **signed APK first**, then bumps version, commits + tags, and publishes a GitHub Release with auto-changelog. |
 
 The old upstream community workflows (issue/stale bots, PR-description check, screenshot/emulator/compose-stability checks, wrapper-upgrade) and their `ci-actions/` helper modules have been removed. The legacy `fastlane/` directory is unused and can be ignored.
 

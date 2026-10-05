@@ -1,9 +1,13 @@
 name: Release
 
-# One-click release. Pick a semantic version (or leave "auto" to patch-bump the latest tag) and
-# this single run does everything: bump the version, commit + tag it on main, build the signed
-# APK, and publish a GitHub Release with an auto-generated changelog. No cron, no bot PR.
+# Automatic release. Every push to main bumps the patch version, builds the signed APK, commits +
+# tags the version on main and publishes a GitHub Release with an auto-generated changelog. No
+# manual step is required. "Run workflow" is still available to pick an explicit version or to
+# mark a pre-release.
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       version:
@@ -26,20 +30,26 @@ permissions:
 
 jobs:
   release:
-    # Releases are cut from main only; the final step pushes HEAD to main.
-    if: github.ref == 'refs/heads/main'
+    # Releases are cut from main only; the final step pushes HEAD to main. The version-bump commit
+    # this workflow pushes must not release itself again (its [skip ci] marker and the bot token
+    # already prevent that; this condition is the explicit guard).
+    if: github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'Release v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Always release the current tip of main (not the pushed SHA) so a run that queued
+          # behind another release still fast-forwards when it pushes its own bump commit.
+          ref: main
           fetch-depth: 0  # need full history + tags for "auto" resolution and changelog
 
       - name: Resolve version name & code
         id: ver
         run: |
           set -euo pipefail
-          INPUT="${{ github.event.inputs.version }}"
+          # Pushes have no inputs: they always patch-bump the latest tag.
+          INPUT="${{ github.event.inputs.version || 'auto' }}"
 
           if [ "$INPUT" = "auto" ]; then
             LATEST=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
@@ -124,7 +134,7 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: "Ivy Wallet M3 ${{ steps.ver.outputs.tag }}"
           generate_release_notes: true
-          prerelease: ${{ github.event.inputs.prerelease }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: app/build/outputs/apk/release/app-release.apk
           draft: false
           body: |
