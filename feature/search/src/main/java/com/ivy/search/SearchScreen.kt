@@ -50,7 +50,10 @@ fun SearchScreen(screen: SearchScreen) {
 @Composable
 private fun SearchUi(
     uiState: SearchState,
-    onEvent: (SearchEvent) -> Unit
+    onEvent: (SearchEvent) -> Unit,
+    // Off in previews and screenshot tests: focusing a text field there starts an input-method
+    // thread the layout renderer cannot run.
+    autoFocus: Boolean = true,
 ) {
     Column(
         modifier = Modifier
@@ -68,6 +71,7 @@ private fun SearchUi(
         SearchInput(
             searchQueryTextFieldValue = searchQueryTextFieldValue,
             hint = stringResource(R.string.search_transactions),
+            focus = autoFocus,
             showClearIcon = searchQueryTextFieldValue.text.isNotEmpty(),
             onSetSearchQueryTextField = {
                 searchQueryTextFieldValue = it
@@ -138,7 +142,8 @@ private fun Preview(isDark: Boolean = false) {
                 categories = persistentListOf(),
                 shouldShowAccountSpecificColorInTransactions = false
             ),
-            onEvent = {}
+            onEvent = {},
+            autoFocus = false,
         )
     }
 }

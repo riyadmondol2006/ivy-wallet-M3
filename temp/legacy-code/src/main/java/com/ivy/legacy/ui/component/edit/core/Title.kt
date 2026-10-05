@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -135,7 +136,7 @@ private fun PreviewTitleWithSuggestions() {
         Column {
             Title(
                 type = TransactionType.EXPENSE,
-                titleFocus = FocusRequester(),
+                titleFocus = remember { FocusRequester() },
                 initialTransactionId = null,
                 titleTextFieldValue = selectEndTextFieldValue(""),
                 setTitleTextFieldValue = {},

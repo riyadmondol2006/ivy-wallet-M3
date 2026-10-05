@@ -62,7 +62,7 @@ fun BoxWithConstraintsScope.AddKeywordModal(
 
         Spacer(Modifier.height(32.dp))
 
-        val inputFocus = FocusRequester()
+        val inputFocus = remember { FocusRequester() }
 
         onScreenStart {
             inputFocus.requestFocus()

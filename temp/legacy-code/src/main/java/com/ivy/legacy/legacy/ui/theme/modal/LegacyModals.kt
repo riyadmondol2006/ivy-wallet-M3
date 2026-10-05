@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -25,7 +26,7 @@ fun ModalNameInput(
     setTextFieldValue: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val nameFocus = FocusRequester()
+    val nameFocus = remember { FocusRequester() }
 
     onScreenStart {
         if (autoFocusKeyboard) {

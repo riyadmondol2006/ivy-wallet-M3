@@ -93,7 +93,7 @@ fun BoxWithConstraintsScope.DescriptionModal(
 
         Spacer(Modifier.height(24.dp))
 
-        val focus = FocusRequester()
+        val focus = remember { FocusRequester() }
         onScreenStart {
             focus.requestFocus()
         }

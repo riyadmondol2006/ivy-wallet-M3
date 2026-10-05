@@ -29,8 +29,9 @@ before you commit UI work and record once per change, not per hunk.
 - Snapshot files are named `<Test>_<method>[Theme].png`; delete stale images when you rename a
   test.
 
-## Known environment issue
+## Text fields must not auto-focus in snapshots
 
-`SearchPaparazziTest` can fail with `NoSuchMethodError: Thread.setPosixNicenessInternal` on some
-JDK 21 builds: layoutlib's `HandlerThread` delegate calls a JDK-internal method that newer JDK
-patch releases removed. It is not a product bug; use the JDK pinned by CI (Temurin 21) locally.
+Focusing a text field makes layoutlib start the input-method `HandlerThread`, which fails with
+`NoSuchMethodError: Thread.setPosixNicenessInternal` on current JDK 21 builds (locally and on
+CI). Screens that focus a field on open take a flag that their preview turns off, for example
+`SearchUi(autoFocus = false)` in `SearchScreen.kt`.

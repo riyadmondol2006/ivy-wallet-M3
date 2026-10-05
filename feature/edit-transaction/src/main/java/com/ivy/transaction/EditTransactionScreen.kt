@@ -266,7 +266,7 @@ private fun BoxWithConstraintsScope.UI(
             )
         )
     }
-    val titleFocus = FocusRequester()
+    val titleFocus = remember { FocusRequester() }
     val scrollState = rememberScrollState()
 
     // This is to scroll the column to the customExchangeCard composable when it is shown

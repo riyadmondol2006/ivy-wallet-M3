@@ -51,7 +51,7 @@ fun BoxWithConstraintsScope.AddOrEditTagModal(
     onTagDelete: (Tag) -> Unit = {},
     onDismiss: () -> Unit
 ) {
-    val titleFocus = FocusRequester()
+    val titleFocus = remember { FocusRequester() }
 
     var titleTextFieldValue by remember(id) {
         mutableStateOf(

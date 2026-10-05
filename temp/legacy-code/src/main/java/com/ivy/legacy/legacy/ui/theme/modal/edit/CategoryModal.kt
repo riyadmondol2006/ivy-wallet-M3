@@ -187,7 +187,7 @@ fun IconNameRow(
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val nameFocus = FocusRequester()
+        val nameFocus = remember { FocusRequester() }
 
         onScreenStart {
             if (autoFocusKeyboard) {
