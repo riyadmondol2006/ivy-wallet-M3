@@ -99,7 +99,17 @@ class CSVMapper @Inject constructor() {
         id = null, // 14 - Don't map because it fcks up the sync with Insufficient Permission error
 
         accountCreditLimit = 15,
-        toAccountCreditLimit = 16
+        toAccountCreditLimit = 16,
+        accountCreditGroup = 17,
+        accountCreditLimitShared = 18,
+        accountCreditExchangeRate = 19,
+        toAccountCreditGroup = 20,
+        toAccountCreditLimitShared = 21,
+        toAccountCreditExchangeRate = 22,
+        accountCreditStatementDay = 23,
+        accountCreditDueDay = 24,
+        toAccountCreditStatementDay = 25,
+        toAccountCreditDueDay = 26,
     )
 
     // Praseto - https://play.google.com/store/apps/details?id=com.realbyteapps.moneymanagerfree&hl=en&gl=US

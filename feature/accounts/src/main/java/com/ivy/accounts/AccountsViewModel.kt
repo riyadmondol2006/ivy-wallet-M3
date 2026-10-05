@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
@@ -27,7 +28,6 @@ import com.ivy.ui.R
 import com.ivy.wallet.domain.action.settings.BaseCurrencyAct
 import com.ivy.wallet.domain.action.viewmodel.account.AccountDataAct
 import com.ivy.wallet.domain.action.wallet.CalcWalletBalanceAct
-import com.ivy.legacy.datamodel.Account as LegacyAccount
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.ivy.legacy.datamodel.Account as LegacyAccount
 
 @Stable
 @SuppressLint("StaticFieldLeak")
@@ -65,7 +66,7 @@ class AccountsViewModel @Inject constructor(
     private var reorderVisible by mutableStateOf(false)
     private var creditBusy by mutableStateOf(false)
     private var creditError by mutableStateOf<String?>(null)
-    private var creditSuccess by mutableStateOf(0)
+    private var creditSuccess by mutableIntStateOf(0)
 
     init {
         viewModelScope.launch {
@@ -156,12 +157,16 @@ class AccountsViewModel @Inject constructor(
         return features.compactAccountsMode.asEnabledState()
     }
 
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
     override fun onEvent(event: AccountsEvent) {
         if (event is AccountsEvent.ClearCreditError) {
             creditError = null
             return
         }
-        if (event is AccountsEvent.SaveCreditCard || event is AccountsEvent.PayCreditCard || event is AccountsEvent.ResetCreditCard) {
+        val creditOperation = event is AccountsEvent.SaveCreditCard ||
+            event is AccountsEvent.PayCreditCard ||
+            event is AccountsEvent.ResetCreditCard
+        if (creditOperation) {
             if (creditBusy) return
             creditBusy = true
             creditError = null
@@ -172,10 +177,13 @@ class AccountsViewModel @Inject constructor(
                         when (event) {
                             is AccountsEvent.SaveCreditCard -> creditCardService.save(event.input)
                             is AccountsEvent.PayCreditCard -> creditCardService.pay(
-                                event.input, context.getString(R.string.credit_card_payment)
+                                event.input,
+                                context.getString(R.string.credit_card_payment)
                             )
                             is AccountsEvent.ResetCreditCard -> creditCardService.reset(
-                                event.accountId, event.expectedOwed, context.getString(R.string.credit_balance_adjustment)
+                                event.accountId,
+                                event.expectedOwed,
+                                context.getString(R.string.credit_balance_adjustment)
                             )
                             else -> Unit
                         }
@@ -228,7 +236,6 @@ class AccountsViewModel @Inject constructor(
             startInternally()
         }
     }
-
 
     private suspend fun reorder(newOrder: List<AccountData>) {
         ioThread {

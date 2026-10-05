@@ -109,6 +109,26 @@ class ExportCsvUseCase @Inject constructor(
         csvAppend(accountsMap[account]?.creditLimit?.csvFormat())
         // To Account Credit Limit
         csvAppend(accountsMap[toAccountId]?.creditLimit?.csvFormat())
+        // Dual-currency card pairing, so a card with two ledgers survives an Ivy CSV round-trip.
+        csvAppendCreditGroup(accountsMap[account])
+        csvAppendCreditGroup(accountsMap[toAccountId])
+        // Billing cycle (statement day, due day) for each side.
+        csvAppendCreditCycle(accountsMap[account])
+        csvAppendCreditCycle(accountsMap[toAccountId])
+    }
+
+    private fun CsvRowScope.csvAppendCreditCycle(account: Account?) {
+        csvAppend(account?.creditStatementDay?.toString())
+        csvAppend(account?.creditDueDay?.toString())
+    }
+
+    private fun CsvRowScope.csvAppendCreditGroup(account: Account?) {
+        // Account Credit Group
+        csvAppend(account?.creditCardGroupId?.value?.toString())
+        // Account Credit Limit Shared
+        csvAppend(account?.creditLimitShared?.toString())
+        // Account Credit Exchange Rate
+        csvAppend(account?.creditExchangeRate?.csvFormat())
     }
 
     @OptIn(ExperimentalTypeInference::class)

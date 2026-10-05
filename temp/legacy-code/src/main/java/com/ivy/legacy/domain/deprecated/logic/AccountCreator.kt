@@ -78,27 +78,38 @@ class AccountCreator @Inject constructor(
             val edited = legacyAccount.toDomainAccount(currencyRepository).getOrNull()
                 ?: return@ioThread
             val original = accountRepository.findById(edited.id)
-            val account = if (original?.creditCardGroupId != null) edited.copy(
-                asset = original.asset,
-                creditCardGroupId = original.creditCardGroupId,
-                creditLimitShared = original.creditLimitShared,
-                creditExchangeRate = original.creditExchangeRate,
-            ) else edited
+            val account = if (original?.creditCardGroupId != null) {
+                edited.copy(
+                    asset = original.asset,
+                    creditCardGroupId = original.creditCardGroupId,
+                    creditLimitShared = original.creditLimitShared,
+                    creditExchangeRate = original.creditExchangeRate,
+                )
+            } else {
+                edited
+            }
             val group = account.creditCardGroupId
             if (group != null) {
                 val members = accountRepository.findAll().filter { it.creditCardGroupId == group }
-                val primaryName = if (account.id == group) account.name.value
-                    else account.name.value.removeSuffix(" · ${account.asset.code}")
-                accountRepository.saveMany(members.map { member ->
-                    (if (member.id == account.id) account else member).copy(
-                        name = NotBlankTrimmedString.unsafe(
-                            if (member.id == group) primaryName else "$primaryName · ${member.asset.code}"
-                        ),
-                        color = account.color,
-                        icon = account.icon,
-                    )
-                })
-            } else accountRepository.save(account)
+                val primaryName = if (account.id == group) {
+                    account.name.value
+                } else {
+                    account.name.value.removeSuffix(" · ${account.asset.code}")
+                }
+                accountRepository.saveMany(
+                    members.map { member ->
+                        (if (member.id == account.id) account else member).copy(
+                            name = NotBlankTrimmedString.unsafe(
+                                if (member.id == group) primaryName else "$primaryName · ${member.asset.code}"
+                            ),
+                            color = account.color,
+                            icon = account.icon,
+                        )
+                    }
+                )
+            } else {
+                accountRepository.save(account)
+            }
 
             accountLogic.adjustBalance(
                 account = updatedLegacyAccount,

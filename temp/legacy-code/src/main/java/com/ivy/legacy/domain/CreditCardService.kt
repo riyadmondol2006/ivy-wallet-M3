@@ -2,6 +2,7 @@ package com.ivy.legacy.domain
 
 import com.ivy.base.model.TransactionType
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
@@ -27,15 +28,22 @@ import javax.inject.Singleton
 class CreditCardService @Inject constructor(
     private val accounts: AccountRepository,
     private val transactions: TransactionRepository,
+    private val plannedPaymentRuleWriter: WritePlannedPaymentRuleDao,
     private val transactionMapper: TransactionMapper,
     private val balance: CalcAccBalanceAct,
     private val timeProvider: TimeProvider,
 ) {
     private val mutex = Mutex()
 
-    suspend fun save(input: CreditCardInput) = mutex.withLock {
+    @Suppress("CyclomaticComplexMethod")
+    suspend fun save(input: CreditCardInput): Unit = mutex.withLock {
         require(input.name.isNotBlank())
         require(validMoney(input.limit, input.currency))
+        require((input.statementDay == null) == (input.dueDay == null)) {
+            "Statement day and due day must be set together"
+        }
+        require(input.statementDay?.let { it in 1..DAYS_IN_LONGEST_MONTH } ?: true)
+        require(input.dueDay?.let { it in 1..DAYS_IN_LONGEST_MONTH } ?: true)
         val existing = input.primaryId?.let { accounts.findById(it) }
         require(input.primaryId == null || existing?.creditLimit != null)
         if (existing != null) require(existing.asset.code == input.currency)
@@ -61,29 +69,36 @@ class CreditCardService @Inject constructor(
             asset = AssetCode.unsafe(input.currency),
             color = ColorInt(input.color),
             icon = input.icon?.let { IconAsset.from(it).getOrNull() },
-            includeInBalance = false,
+            includeInBalance = input.includeInBalance,
             orderNum = existing?.orderNum ?: (accounts.findMaxOrderNum() + 1.0),
             creditLimit = input.limit,
             creditCardGroupId = if (dual) primaryId else null,
             creditLimitShared = dual && input.sharedLimit,
             creditExchangeRate = input.exchangeRate.takeIf { dual && input.sharedLimit },
+            creditStatementDay = input.statementDay,
+            creditDueDay = input.dueDay,
         )
         val secondary = if (dual) {
             primary.copy(
                 id = previousSecondary?.id ?: AccountId(UUID.randomUUID()),
                 name = NotBlankTrimmedString.unsafe("${input.name.trim()} · ${input.secondaryCurrency}"),
                 asset = AssetCode.unsafe(input.secondaryCurrency!!),
-                orderNum = previousSecondary?.orderNum ?: (primary.orderNum + 0.001),
+                orderNum = previousSecondary?.orderNum ?: (primary.orderNum + SECONDARY_ORDER_OFFSET),
                 creditLimit = input.secondaryLimit,
                 creditLimitShared = false,
                 creditExchangeRate = null,
+                // The billing cycle belongs to the physical card, i.e. the primary ledger.
+                creditStatementDay = null,
+                creditDueDay = null,
             )
-        } else null
+        } else {
+            null
+        }
         // Room's list upsert commits both currency accounts together; existing transactions stay put.
         accounts.saveMany(listOfNotNull(primary, secondary))
     }
 
-    suspend fun pay(input: CreditCardPaymentInput, title: String) = mutex.withLock {
+    suspend fun pay(input: CreditCardPaymentInput, title: String): Unit = mutex.withLock {
         val card = requireNotNull(accounts.findById(input.cardAccountId))
         val source = requireNotNull(accounts.findById(input.fromAccountId))
         require(card.creditLimit != null && source.creditLimit == null && source.id != card.id)
@@ -108,16 +123,47 @@ class CreditCardService @Inject constructor(
         transactions.save(transfer)
     }
 
-    suspend fun reset(cardId: AccountId, expectedOwed: Double, title: String) = mutex.withLock {
+    /**
+     * Deletes a credit card together with every currency ledger in its group, their transactions and
+     * planned payments. Returns the ids that were removed.
+     */
+    suspend fun delete(cardId: AccountId): List<AccountId> = mutex.withLock {
+        val selected = accounts.findById(cardId) ?: return@withLock emptyList()
+        val group = selected.creditCardGroupId
+        val ids = if (group == null) {
+            listOf(selected.id)
+        } else {
+            accounts.findAll().filter { it.creditCardGroupId == group }.map { it.id }
+        }
+        ids.forEach { id ->
+            transactions.deleteAllByAccountId(id)
+            plannedPaymentRuleWriter.deletedByAccountId(id.value)
+            accounts.deleteById(id)
+        }
+        ids
+    }
+
+    suspend fun reset(cardId: AccountId, expectedOwed: Double, title: String): Unit = mutex.withLock {
         val card = requireNotNull(accounts.findById(cardId))
         require(card.creditLimit != null)
         val owed = (-balance(CalcAccBalanceAct.Input(card)).balance).max(BigDecimal.ZERO)
         // Do not reset a changed amount that the user did not see in the confirmation.
         require(owed.signum() > 0 && owed.compareTo(expectedOwed.toBigDecimal()) == 0)
-        val entity = TransactionEntity(accountId = card.id.value, type = TransactionType.INCOME,
-            amount = owed.toDouble(), title = title, dateTime = timeProvider.utcNow())
+        val entity = TransactionEntity(
+            accountId = card.id.value,
+            type = TransactionType.INCOME,
+            amount = owed.toDouble(),
+            title = title,
+            dateTime = timeProvider.utcNow()
+        )
         val adjustment = with(transactionMapper) { entity.toDomain() }.getOrNull()
         transactions.save(requireNotNull(adjustment))
+    }
+
+    private companion object {
+        /** Keeps the secondary currency ledger right after its primary account in sort order. */
+        const val SECONDARY_ORDER_OFFSET = 0.001
+        const val DAYS_IN_LONGEST_MONTH = 31
     }
 }
 

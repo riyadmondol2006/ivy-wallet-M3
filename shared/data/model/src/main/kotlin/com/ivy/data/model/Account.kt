@@ -11,7 +11,7 @@ import java.util.UUID
 @JvmInline
 value class AccountId(override val value: UUID) : UniqueId
 
-@Suppress("DataClassDefaultValues")
+@Suppress("DataClassDefaultValues", "DataClassTypedIDs")
 data class Account(
     override val id: AccountId,
     val name: NotBlankTrimmedString,
@@ -26,6 +26,10 @@ data class Account(
     val creditLimitShared: Boolean = false,
     /** Units of the primary currency per one unit of the secondary currency. */
     val creditExchangeRate: Double? = null,
+    /** Day of month (1..31) the card statement closes; null when the card has no cycle set. */
+    val creditStatementDay: Int? = null,
+    /** Day of month (1..31) the statement payment is due; null when the card has no cycle set. */
+    val creditDueDay: Int? = null,
 ) : Identifiable<AccountId>, Reorderable
 
 val Account.isSecondaryCreditCurrency: Boolean

@@ -16,7 +16,7 @@ import com.ivy.data.model.Account as DomainAccount
 
 @Deprecated("Legacy data model. Will be deleted")
 @Immutable
-@Suppress("DataClassDefaultValues")
+@Suppress("DataClassDefaultValues", "DataClassTypedIDs")
 data class Account(
     val name: String,
     val color: Int,
@@ -28,6 +28,8 @@ data class Account(
     val creditCardGroupId: UUID? = null,
     val creditLimitShared: Boolean = false,
     val creditExchangeRate: Double? = null,
+    val creditStatementDay: Int? = null,
+    val creditDueDay: Int? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -45,6 +47,8 @@ data class Account(
         creditCardGroupId = creditCardGroupId,
         creditLimitShared = creditLimitShared,
         creditExchangeRate = creditExchangeRate,
+        creditStatementDay = creditStatementDay,
+        creditDueDay = creditDueDay,
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id
@@ -68,6 +72,8 @@ data class Account(
                 creditCardGroupId = creditCardGroupId?.let(::AccountId),
                 creditLimitShared = creditLimitShared,
                 creditExchangeRate = creditExchangeRate,
+                creditStatementDay = creditStatementDay,
+                creditDueDay = creditDueDay,
             )
         }
     }

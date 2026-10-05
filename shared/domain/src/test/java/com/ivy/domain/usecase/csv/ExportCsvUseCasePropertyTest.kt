@@ -108,4 +108,31 @@ class ExportCsvUseCasePropertyTest {
         limitIdx shouldBe IvyCsvRow.Columns.indexOf("Account Credit Limit")
         dataRow[limitIdx].replace(",", "").toDouble() shouldBe 500.0
     }
+
+    @Test
+    fun `dual-currency card account exports its pairing columns`() = runTest {
+        // given - a transaction whose source account is a shared-limit dual-currency card
+        val trn = Arb.transaction().next()
+        val fromId = trn.getFromAccount()
+        val card = Arb.account(accountId = Some(fromId)).next().copy(
+            creditLimit = 500.0,
+            creditCardGroupId = fromId,
+            creditLimitShared = true,
+            creditExchangeRate = 120.5,
+        )
+        val others = listOfNotNull(trn.getToAccount()).map { Arb.account(accountId = Some(it)).next() }
+        coEvery { accountRepository.findAll() } returns listOf(card) + others
+        coEvery { categoryRepository.findAll() } returns emptyList()
+
+        // when
+        val csv = useCase.exportCsv { listOf(trn) }
+
+        // then
+        val rows = ReadCsvUseCase().readCsv(csv)
+        val header = rows.first()
+        val dataRow = rows[1]
+        dataRow[header.indexOf("Account Credit Group")] shouldBe fromId.value.toString()
+        dataRow[header.indexOf("Account Credit Limit Shared")] shouldBe "true"
+        dataRow[header.indexOf("Account Credit Exchange Rate")].replace(",", "").toDouble() shouldBe 120.5
+    }
 }

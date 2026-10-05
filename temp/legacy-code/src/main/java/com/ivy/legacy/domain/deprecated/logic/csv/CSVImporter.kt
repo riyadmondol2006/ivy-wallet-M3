@@ -177,7 +177,13 @@ class CSVImporter @Inject constructor(
                 color = row.extract(rowMapping.toAccountColor)?.toIntOrNull(),
                 icon = row.extract(rowMapping.toAccountIcon),
                 orderNum = row.extract(rowMapping.toAccountOrderNum)?.toDoubleOrNull(),
-                creditLimit = mapAmount(row.extract(rowMapping.toAccountCreditLimit))
+                creditLimit = mapAmount(row.extract(rowMapping.toAccountCreditLimit)),
+                creditCardGroupId = mapUuid(row.extract(rowMapping.toAccountCreditGroup)),
+                creditLimitShared = row.extract(rowMapping.toAccountCreditLimitShared)
+                    ?.toBooleanStrictOrNull() ?: false,
+                creditExchangeRate = mapAmount(row.extract(rowMapping.toAccountCreditExchangeRate)),
+                creditStatementDay = row.extract(rowMapping.toAccountCreditStatementDay)?.toIntOrNull(),
+                creditDueDay = row.extract(rowMapping.toAccountCreditDueDay)?.toIntOrNull(),
             )
         } else {
             null
@@ -226,7 +232,13 @@ class CSVImporter @Inject constructor(
             color = row.extract(rowMapping.accountColor)?.toIntOrNull(),
             icon = row.extract(rowMapping.accountIcon),
             orderNum = row.extract(rowMapping.accountOrderNum)?.toDoubleOrNull(),
-            creditLimit = mapAmount(row.extract(rowMapping.accountCreditLimit))
+            creditLimit = mapAmount(row.extract(rowMapping.accountCreditLimit)),
+            creditCardGroupId = mapUuid(row.extract(rowMapping.accountCreditGroup)),
+            creditLimitShared = row.extract(rowMapping.accountCreditLimitShared)
+                ?.toBooleanStrictOrNull() ?: false,
+            creditExchangeRate = mapAmount(row.extract(rowMapping.accountCreditExchangeRate)),
+            creditStatementDay = row.extract(rowMapping.accountCreditStatementDay)?.toIntOrNull(),
+            creditDueDay = row.extract(rowMapping.accountCreditDueDay)?.toIntOrNull(),
         ) ?: return null
 
         val category = mapCategory(
@@ -443,6 +455,11 @@ class CSVImporter @Inject constructor(
         orderNum: Double?,
         currencyRawString: String?,
         creditLimit: Double? = null,
+        creditCardGroupId: UUID? = null,
+        creditLimitShared: Boolean = false,
+        creditExchangeRate: Double? = null,
+        creditStatementDay: Int? = null,
+        creditDueDay: Int? = null,
     ): LegacyAccount? {
         if (accountNameString == null || accountNameString.isBlank()) return null
 
@@ -450,6 +467,23 @@ class CSVImporter @Inject constructor(
             accountNameString.toLowerCaseLocal() == it.name.toLowerCaseLocal()
         }
         if (existingAccount != null) {
+            // An account created earlier in this import (or before it) without credit data
+            // becomes a card when the CSV says so; existing card settings are never overwritten.
+            if (existingAccount.creditLimit == null && creditLimit != null) {
+                val upgraded = existingAccount.copy(
+                    creditLimit = creditLimit,
+                    creditCardGroupId = creditCardGroupId,
+                    creditLimitShared = creditLimitShared,
+                    creditExchangeRate = creditExchangeRate,
+                    creditStatementDay = creditStatementDay,
+                    creditDueDay = creditDueDay,
+                )
+                upgraded.toDomainAccount(currencyRepository).getOrNull()?.let { domain ->
+                    accountRepository.save(domain)
+                    accounts = accountDao.findAll().map { it.toLegacyDomain() }
+                    return upgraded
+                }
+            }
             return existingAccount
         }
 
@@ -479,6 +513,11 @@ class CSVImporter @Inject constructor(
             icon = icon,
             orderNum = orderNum ?: accountDao.findMaxOrderNum().nextOrderNum(),
             creditLimit = creditLimit,
+            creditCardGroupId = creditCardGroupId,
+            creditLimitShared = creditLimitShared,
+            creditExchangeRate = creditExchangeRate,
+            creditStatementDay = creditStatementDay,
+            creditDueDay = creditDueDay,
         )
         val domainAccount = newAccount.toDomainAccount(currencyRepository).getOrNull()
             ?: return null
@@ -550,6 +589,13 @@ class CSVImporter @Inject constructor(
         } catch (e: Exception) {
             UUID.randomUUID()
         }
+    }
+
+    /** Parses an optional UUID column; anything unparseable is treated as absent. */
+    private fun mapUuid(value: String?): UUID? = try {
+        value?.takeIf { it.isNotBlank() }?.let(UUID::fromString)
+    } catch (e: IllegalArgumentException) {
+        null
     }
 
     private fun List<String>.extract(index: Int?): String? =

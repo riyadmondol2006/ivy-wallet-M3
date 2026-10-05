@@ -1,15 +1,35 @@
 package com.ivy.legacy.domain
 
 import com.ivy.base.time.TimeProvider
-import com.ivy.data.model.*
-import com.ivy.data.model.primitive.*
-import com.ivy.data.repository.*
+import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
+import com.ivy.data.model.Account
+import com.ivy.data.model.AccountId
+import com.ivy.data.model.Income
+import com.ivy.data.model.Transaction
+import com.ivy.data.model.Transfer
+import com.ivy.data.model.primitive.AssetCode
+import com.ivy.data.model.primitive.ColorInt
+import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.data.repository.AccountRepository
+import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
-import com.ivy.legacy.data.model.*
+import com.ivy.legacy.data.model.CreditCardInput
+import com.ivy.legacy.data.model.CreditCardPaymentInput
 import com.ivy.wallet.domain.action.account.CalcAccBalanceAct
-import io.mockk.*
+import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.util.UUID
 
@@ -21,12 +41,30 @@ class CreditCardServiceTest {
     private val time = mockk<TimeProvider> {
         every { utcNow() } returns java.time.Instant.parse("2026-09-06T00:00:00Z")
     }
-    private val service = CreditCardService(accounts, transactions, mapper, balance, time)
+    private val plannedPayments = mockk<WritePlannedPaymentRuleDao>(relaxed = true)
+    private val service = CreditCardService(accounts, transactions, plannedPayments, mapper, balance, time)
     private val primary = Account(
-        AccountId(UUID.randomUUID()), NotBlankTrimmedString.unsafe("Visa"), AssetCode.unsafe("BDT"),
-        ColorInt(1), null, false, 2.0, creditLimit = 100000.0,
+        AccountId(UUID.randomUUID()),
+        NotBlankTrimmedString.unsafe("Visa"),
+        AssetCode.unsafe("BDT"),
+        ColorInt(1),
+        null,
+        false,
+        2.0,
+        creditLimit = 100000.0,
     )
-    private fun input() = CreditCardInput(primary.id, "Updated Visa", "BDT", 150000.0, 2, null, "USD", 1000.0, true, 120.0)
+    private fun input() = CreditCardInput(
+        primaryId = primary.id,
+        name = "Updated Visa",
+        currency = "BDT",
+        limit = 150000.0,
+        color = 2,
+        icon = null,
+        secondaryCurrency = "USD",
+        secondaryLimit = 1000.0,
+        sharedLimit = true,
+        exchangeRate = 120.0,
+    )
 
     @Test fun convertingExistingCardPreservesIdAndCreatesLinkedEmptyLedger() = runTest {
         coEvery { accounts.findById(primary.id) } returns primary
@@ -45,9 +83,14 @@ class CreditCardServiceTest {
         assertNotEquals(main.id, second.id)
         coVerify(exactly = 0) { transactions.save(any()) }
     }
+
     @Test fun editingDualCardPreservesBothIdsAndIndependentModeClearsRate() = runTest {
         val main = primary.copy(creditCardGroupId = primary.id)
-        val second = primary.copy(id = AccountId(UUID.randomUUID()), asset = AssetCode.unsafe("USD"), creditCardGroupId = primary.id)
+        val second = primary.copy(
+            id = AccountId(UUID.randomUUID()),
+            asset = AssetCode.unsafe("USD"),
+            creditCardGroupId = primary.id
+        )
         coEvery { accounts.findById(primary.id) } returns main
         coEvery { accounts.findAll() } returns listOf(main, second)
         val saved = slot<List<Account>>()
@@ -57,8 +100,13 @@ class CreditCardServiceTest {
         assertFalse(saved.captured[0].creditLimitShared)
         assertNull(saved.captured[0].creditExchangeRate)
     }
+
     @Test fun existingSecondaryCurrencyCannotBeRemovedOrReinterpreted() = runTest {
-        val second = primary.copy(id = AccountId(UUID.randomUUID()), asset = AssetCode.unsafe("USD"), creditCardGroupId = primary.id)
+        val second = primary.copy(
+            id = AccountId(UUID.randomUUID()),
+            asset = AssetCode.unsafe("USD"),
+            creditCardGroupId = primary.id
+        )
         coEvery { accounts.findById(primary.id) } returns primary
         coEvery { accounts.findAll() } returns listOf(primary, second)
         for (currency in listOf(null, "EUR")) {
@@ -69,6 +117,7 @@ class CreditCardServiceTest {
         }
         coVerify(exactly = 0) { accounts.saveMany(any()) }
     }
+
     @Test fun overpaymentIsRejectedAgainstFreshBalance() = runTest {
         val bank = primary.copy(id = AccountId(UUID.randomUUID()), creditLimit = null)
         coEvery { accounts.findById(primary.id) } returns primary
@@ -80,6 +129,7 @@ class CreditCardServiceTest {
         } catch (_: IllegalArgumentException) { }
         coVerify(exactly = 0) { transactions.save(any()) }
     }
+
     @Test fun crossCurrencyPartialPaymentRecordsActualDebitAndCredit() = runTest {
         val card = primary.copy(asset = AssetCode.unsafe("USD"))
         val bank = primary.copy(id = AccountId(UUID.randomUUID()), creditLimit = null)
@@ -98,6 +148,7 @@ class CreditCardServiceTest {
         assertEquals(50.0, transfer.toValue.amount.value, 0.0)
         assertTrue(transfer.settled)
     }
+
     @Test fun sameCurrencyPaymentUsesEqualAmounts() = runTest {
         val bank = primary.copy(id = AccountId(UUID.randomUUID()), creditLimit = null)
         coEvery { accounts.findById(primary.id) } returns primary
@@ -114,6 +165,7 @@ class CreditCardServiceTest {
         } catch (_: IllegalArgumentException) { }
         coVerify(exactly = 1) { transactions.save(any()) }
     }
+
     @Test fun resetIsAnAdjustmentOnlyAndRejectsChangedBalance() = runTest {
         coEvery { accounts.findById(primary.id) } returns primary
         coEvery { balance(any()) } returns CalcAccBalanceAct.Output(primary, (-100).toBigDecimal())

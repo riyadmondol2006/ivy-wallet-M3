@@ -33,8 +33,11 @@ import com.ivy.frp.then
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.data.model.toCloseTimeRange
+import com.ivy.legacy.datamodel.Account as LegacyAccount
+import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.datamodel.temp.toImmutableLegacyTags
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
+import com.ivy.legacy.domain.CreditCardService
 import com.ivy.legacy.domain.deprecated.logic.AccountCreator
 import com.ivy.legacy.utils.computationThread
 import com.ivy.legacy.utils.dateNowUTC
@@ -45,6 +48,7 @@ import com.ivy.navigation.Navigation
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.ui.ComposeViewModel
 import com.ivy.ui.R
+import com.ivy.ui.undo.UndoDeleteController
 import com.ivy.wallet.domain.action.account.AccTrnsAct
 import com.ivy.wallet.domain.action.account.AccountsAct
 import com.ivy.wallet.domain.action.account.CalcAccBalanceAct
@@ -66,7 +70,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
-import com.ivy.legacy.datamodel.Account as LegacyAccount
 
 @Stable
 @HiltViewModel
@@ -92,6 +95,8 @@ class TransactionsViewModel @Inject constructor(
     private val exchangeAct: ExchangeAct,
     private val transactionRepository: TransactionRepository,
     private val plannedPaymentRuleWriter: WritePlannedPaymentRuleDao,
+    private val creditCardService: CreditCardService,
+    private val undoDelete: UndoDeleteController,
     private val transactionMapper: TransactionMapper,
     private val tagRepository: TagRepository,
     private val timeProvider: TimeProvider,
@@ -380,21 +385,21 @@ class TransactionsViewModel @Inject constructor(
         expenses.doubleValue = incomeExpensePair.expense.toDouble()
 
         history.value = (
-                accTrnsAct then {
-                    trnsWithDateDivsAct(
-                        LegacyTrnsWithDateDivsAct.Input(
-                            baseCurrency = baseCurrency.value,
-                            transactions = with(transactionMapper) {
-                                it.map {
-                                    val tags =
-                                        tagRepository.findByIds(it.tags).toImmutableLegacyTags()
-                                    it.toEntity().toLegacyDomain(tags = tags)
-                                }
+            accTrnsAct then {
+                trnsWithDateDivsAct(
+                    LegacyTrnsWithDateDivsAct.Input(
+                        baseCurrency = baseCurrency.value,
+                        transactions = with(transactionMapper) {
+                            it.map {
+                                val tags =
+                                    tagRepository.findByIds(it.tags).toImmutableLegacyTags()
+                                it.toEntity().toLegacyDomain(tags = tags)
                             }
-                        )
+                        }
                     )
-                }
-                )(
+                )
+            }
+            )(
             AccTrnsAct.Input(
                 accountId = initialAccount.id,
                 range = range.toCloseTimeRange()
@@ -643,10 +648,10 @@ class TransactionsViewModel @Inject constructor(
         val accountFilterIdSet = accountFilterList.toHashSet()
         val trans = transactions.filter {
             it.categoryId == null && (
-                    accountFilterIdSet.contains(it.accountId) || accountFilterIdSet.contains(
-                        it.toAccountId
-                    )
-                    ) && it.type == TransactionType.TRANSFER
+                accountFilterIdSet.contains(it.accountId) || accountFilterIdSet.contains(
+                    it.toAccountId
+                )
+                ) && it.type == TransactionType.TRANSFER
         }
 
         val historyIncomeExpense = calcTrnsIncomeExpenseAct(
@@ -736,11 +741,12 @@ class TransactionsViewModel @Inject constructor(
 
     private suspend fun deleteAccount(accountId: UUID) {
         ioThread {
-            val selected = accountRepository.findById(AccountId(accountId))
-            val group = selected?.creditCardGroupId
-            val ids = if (group == null) listOf(AccountId(accountId))
-                else accountRepository.findAll().filter { it.creditCardGroupId == group }.map { it.id }
-            ids.forEach { id ->
+            val id = AccountId(accountId)
+            val selected = accountRepository.findById(id)
+            if (selected?.creditLimit != null) {
+                // Credit cards may span two currency ledgers; the service removes the whole group.
+                creditCardService.delete(id)
+            } else {
                 transactionRepository.deleteAllByAccountId(accountId = id)
                 plannedPaymentRuleWriter.deletedByAccountId(accountId = id.value)
                 accountRepository.deleteById(id)
@@ -811,6 +817,7 @@ class TransactionsViewModel @Inject constructor(
                     screen = screen,
                     reset = false
                 )
+                offerUndoSkip(screen, listOf(transaction))
             }
         }
     }
@@ -825,14 +832,29 @@ class TransactionsViewModel @Inject constructor(
                     screen = screen,
                     reset = false
                 )
+                offerUndoSkip(screen, transactions)
             }
+        }
+    }
+
+    /** Skipping deletes the planned instance; Undo writes the original rows back. */
+    private fun offerUndoSkip(screen: TransactionsScreen, skipped: List<Transaction>) {
+        if (skipped.isEmpty()) return
+        val message = if (skipped.size == 1) {
+            stringRes(R.string.planned_payment_skipped)
+        } else {
+            stringRes(R.string.planned_payments_skipped, skipped.size.toString())
+        }
+        undoDelete.offer(message) {
+            skipped.forEach { trn -> trn.toDomain(transactionMapper)?.let { transactionRepository.save(it) } }
+            start(screen = screen, reset = false)
         }
     }
 
     private fun updateAccountDeletionState(confirmationText: String) {
         accountNameConfirmation.value = selectEndTextFieldValue(confirmationText)
         enableDeletionButton.value = account.value?.name == confirmationText ||
-                category.value?.name?.value == confirmationText
+            category.value?.name?.value == confirmationText
     }
 
     fun start(
@@ -868,7 +890,7 @@ class TransactionsViewModel @Inject constructor(
                 // unspecifiedCategory==false is explicitly checked to accommodate for a temp
                 // AccountTransfers Category during Reports Screen
                 screen.categoryId != null && screen.transactions.isNotEmpty() &&
-                        screen.unspecifiedCategory == false -> {
+                    screen.unspecifiedCategory == false -> {
                     initForCategoryWithTransactions(
                         screen.categoryId!!,
                         screen.accountIdFilterList,

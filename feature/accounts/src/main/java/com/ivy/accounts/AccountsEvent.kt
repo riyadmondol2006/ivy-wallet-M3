@@ -14,6 +14,8 @@ sealed interface AccountsEvent {
 
     data class SaveCreditCard(val input: com.ivy.legacy.data.model.CreditCardInput) : AccountsEvent
     data class PayCreditCard(val input: com.ivy.legacy.data.model.CreditCardPaymentInput) : AccountsEvent
+
+    @Suppress("DataClassTypedIDs")
     data class ResetCreditCard(val accountId: AccountId, val expectedOwed: Double) : AccountsEvent
     data object ClearCreditError : AccountsEvent
 }

@@ -3,11 +3,17 @@ package com.ivy.legacy.data.model
 import androidx.compose.runtime.Immutable
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.isSecondaryCreditCurrency
+import com.ivy.legacy.utils.withDayOfMonthSafe
 import com.ivy.wallet.domain.data.IvyCurrency
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+
+private const val RateDivisionScale = 12
 
 @Immutable
+@Suppress("DataClassDefaultValues")
 data class CreditCurrencyStats(
     val currency: String,
     val toPay: Double,
@@ -18,6 +24,7 @@ data class CreditCurrencyStats(
 )
 
 @Immutable
+@Suppress("DataClassDefaultValues", "DataClassFunctions")
 data class CreditCardData(
     val primary: AccountData,
     val secondary: AccountData? = null,
@@ -25,6 +32,7 @@ data class CreditCardData(
     val accounts: List<AccountData> get() = listOfNotNull(primary, secondary)
     val shared: Boolean get() = secondary != null && primary.account.creditLimitShared
 
+    @Suppress("ReturnCount")
     fun stats(): List<CreditCurrencyStats> {
         val first = primary.standaloneStats()
         val second = secondary?.standaloneStats()?.copy(limitIsCap = shared) ?: return listOf(first)
@@ -32,11 +40,13 @@ data class CreditCardData(
         val rate = primary.account.creditExchangeRate
             ?.takeIf { it.isFinite() && it > 0.0 }?.toBigDecimal()
             ?: return listOf(first.copy(available = null), second.copy(available = null))
-        val remaining = (first.limit.toBigDecimal() - first.toPay.toBigDecimal() -
-            second.toPay.toBigDecimal() * rate).max(BigDecimal.ZERO)
+        val remaining = (
+            first.limit.toBigDecimal() - first.toPay.toBigDecimal() -
+                second.toPay.toBigDecimal() * rate
+            ).max(BigDecimal.ZERO)
         val secondRemaining = (second.limit.toBigDecimal() - second.toPay.toBigDecimal())
             .max(BigDecimal.ZERO)
-            .min(remaining.divide(rate, 12, RoundingMode.DOWN))
+            .min(remaining.divide(rate, RateDivisionScale, RoundingMode.DOWN))
         return listOf(
             first.copy(
                 available = remaining.moneyDown(first.currency),
@@ -89,13 +99,17 @@ fun creditCurrencyTotals(cards: List<CreditCardData>): List<CreditCurrencyStats>
             currency = currency,
             toPay = values.sumOf { it.toPay.toBigDecimal() }.toDouble(),
             limit = values.sumOf { it.limit.toBigDecimal() }.toDouble(),
-            available = if (values.any { it.available == null }) null
-            else values.sumOf { it.available!!.toBigDecimal() }.toDouble(),
+            available = if (values.any { it.available == null }) {
+                null
+            } else {
+                values.sumOf { it.available!!.toBigDecimal() }.toDouble()
+            },
             estimated = values.any { it.estimated },
             limitIsCap = values.any { it.limitIsCap },
         )
     }
 
+@Suppress("DataClassDefaultValues", "DataClassTypedIDs")
 data class CreditCardInput(
     val primaryId: AccountId?,
     val name: String,
@@ -107,11 +121,91 @@ data class CreditCardInput(
     val secondaryLimit: Double?,
     val sharedLimit: Boolean,
     val exchangeRate: Double?,
+    /**
+     * Whether the card's debt counts against the total balance and its purchases show up in the
+     * income/expense statistics. Defaults to true so card spending is visible like any other account.
+     */
+    val includeInBalance: Boolean = true,
+    /** Statement closing day of month (1..31); set together with [dueDay] or not at all. */
+    val statementDay: Int? = null,
+    /** Payment due day of month (1..31). */
+    val dueDay: Int? = null,
 )
 
+@Suppress("DataClassTypedIDs")
 data class CreditCardPaymentInput(
     val cardAccountId: AccountId,
     val fromAccountId: AccountId,
     val paidAmount: Double,
     val debitedAmount: Double,
 )
+
+/** One billing cycle: the statement that closed on [statementDate] must be paid by [dueDate]. */
+@Immutable
+data class CreditCardCycle(
+    val statementDate: LocalDate,
+    val dueDate: LocalDate,
+)
+
+/** What the card UI should say about the next payment. */
+@Immutable
+sealed interface CreditDueStatus {
+    /** Payment for the latest statement is due in [days] (0 = today) on [dueDate]. */
+    data class DueIn(val days: Long, val dueDate: LocalDate) : CreditDueStatus
+
+    /** The latest statement's due date has passed and the card still carries a balance. */
+    data class Overdue(val dueDate: LocalDate) : CreditDueStatus
+
+    /** Nothing is owed; the next statement closes on [statementDate]. */
+    data class NextStatement(val statementDate: LocalDate) : CreditDueStatus
+}
+
+/** The most recent statement on or before [today] and the payment due date that follows it. */
+fun CreditCardData.currentCycle(today: LocalDate): CreditCardCycle? {
+    val statementDay = primary.account.creditStatementDay
+    val dueDay = primary.account.creditDueDay
+    if (statementDay == null || dueDay == null) return null
+    var statement = today.withDayOfMonthSafe(statementDay)
+    if (statement.isAfter(today)) statement = today.minusMonths(1).withDayOfMonthSafe(statementDay)
+    return CreditCardCycle(statementDate = statement, dueDate = dueDateAfter(statement, dueDay))
+}
+
+/** The first statement closing date strictly after [today], or null when no cycle is set. */
+fun CreditCardData.nextStatementDate(today: LocalDate): LocalDate? {
+    val statementDay = primary.account.creditStatementDay ?: return null
+    val sameMonth = today.withDayOfMonthSafe(statementDay)
+    return if (sameMonth.isAfter(today)) sameMonth else today.plusMonths(1).withDayOfMonthSafe(statementDay)
+}
+
+/** Days from [today] to the current cycle's due date (negative when overdue); null without a cycle. */
+fun CreditCardData.daysUntilDue(today: LocalDate): Long? =
+    currentCycle(today)?.let { ChronoUnit.DAYS.between(today, it.dueDate) }
+
+/** True when any ledger of the card carries debt. */
+val CreditCardData.owesMoney: Boolean
+    get() = accounts.any { it.balance < 0.0 }
+
+fun CreditCardData.dueStatus(today: LocalDate): CreditDueStatus? {
+    val cycle = currentCycle(today) ?: return null
+    val days = ChronoUnit.DAYS.between(today, cycle.dueDate)
+    return when {
+        !owesMoney -> nextStatementDate(today)?.let(CreditDueStatus::NextStatement)
+        days < 0 -> CreditDueStatus.Overdue(cycle.dueDate)
+        else -> CreditDueStatus.DueIn(days, cycle.dueDate)
+    }
+}
+
+/** The due date on or after the statement date; a due day before the statement day rolls over a month. */
+private fun dueDateAfter(statement: LocalDate, dueDay: Int): LocalDate {
+    val sameMonth = statement.withDayOfMonthSafe(dueDay)
+    return if (sameMonth.isAfter(statement)) sameMonth else statement.plusMonths(1).withDayOfMonthSafe(dueDay)
+}
+
+/** Earliest upcoming (or overdue) payment date across cards that still owe money. */
+fun List<CreditCardData>.nearestDueDate(today: LocalDate): LocalDate? = mapNotNull { card ->
+    when (val status = card.dueStatus(today)) {
+        is CreditDueStatus.DueIn -> status.dueDate
+        is CreditDueStatus.Overdue -> status.dueDate
+        is CreditDueStatus.NextStatement, null -> null
+    }
+}.minOrNull()

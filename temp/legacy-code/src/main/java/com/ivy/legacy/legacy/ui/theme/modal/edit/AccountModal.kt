@@ -59,7 +59,6 @@ data class AccountModalData(
     val adjustBalanceMode: Boolean = false,
     val forceNonZeroBalance: Boolean = false,
     val autoFocusKeyboard: Boolean = true,
-    val creditCardMode: Boolean = false,
     val id: UUID = UUID.randomUUID()
 )
 
@@ -91,10 +90,6 @@ fun BoxWithConstraintsScope.AccountModal(
     var includeInBalance by remember(modal) {
         mutableStateOf(account?.includeInBalance ?: true)
     }
-    val creditCardMode = modal?.creditCardMode ?: false
-    var creditLimit by remember(modal) {
-        mutableStateOf(account?.creditLimit ?: 0.0)
-    }
 
     var amountModalVisible by remember { mutableStateOf(false) }
     var currencyModalVisible by remember { mutableStateOf(false) }
@@ -113,8 +108,7 @@ fun BoxWithConstraintsScope.AccountModal(
             ModalAddSave(
                 item = modal?.account,
                 enabled = nameTextFieldValue.text.isNotNullOrBlank() &&
-                    (!forceNonZeroBalance || amount > 0) &&
-                    (!creditCardMode || creditLimit > 0)
+                    (!forceNonZeroBalance || amount > 0)
             ) {
                 save(
                     account = account,
@@ -124,8 +118,6 @@ fun BoxWithConstraintsScope.AccountModal(
                     icon = icon,
                     amount = amount,
                     includeInBalance = includeInBalance,
-                    creditCardMode = creditCardMode,
-                    creditLimit = creditLimit,
 
                     onCreateAccount = onCreateAccount,
                     onEditAccount = onEditAccount,
@@ -144,8 +136,6 @@ fun BoxWithConstraintsScope.AccountModal(
 
         ModalTitle(
             text = when {
-                creditCardMode && modal?.account != null -> stringResource(R.string.credit_cards)
-                creditCardMode -> stringResource(R.string.new_credit_card)
                 modal?.account != null -> stringResource(R.string.edit_account)
                 else -> stringResource(R.string.new_account)
             },
@@ -190,25 +180,19 @@ fun BoxWithConstraintsScope.AccountModal(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (!creditCardMode) {
-                    IvyCheckboxWithText(
-                        modifier = Modifier
-                            .padding(start = 16.dp)
-                            .align(Alignment.Start),
-                        text = stringResource(R.string.include_account),
-                        checked = includeInBalance
-                    ) {
-                        includeInBalance = it
-                    }
+                IvyCheckboxWithText(
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .align(Alignment.Start),
+                    text = stringResource(R.string.include_account),
+                    checked = includeInBalance
+                ) {
+                    includeInBalance = it
                 }
             },
-            label = if (creditCardMode) {
-                stringResource(R.string.credit_limit).uppercase()
-            } else {
-                stringResource(R.string.enter_account_balance).uppercase()
-            },
+            label = stringResource(R.string.enter_account_balance).uppercase(),
             currency = currencyCode,
-            amount = if (creditCardMode) creditLimit else amount,
+            amount = amount,
             amountPaddingTop = 40.dp,
             amountPaddingBottom = 40.dp,
         ) {
@@ -216,22 +200,18 @@ fun BoxWithConstraintsScope.AccountModal(
         }
     }
 
-    val amountModalId = remember(modal, amount, creditLimit) {
+    val amountModalId = remember(modal, amount) {
         UUID.randomUUID()
     }
     AmountModal(
         id = amountModalId,
         visible = amountModalVisible,
         currency = currencyCode,
-        initialAmount = if (creditCardMode) creditLimit else amount,
-        showPlusMinus = !creditCardMode,
+        initialAmount = amount,
+        showPlusMinus = true,
         dismiss = { amountModalVisible = false }
     ) { newAmount ->
-        if (creditCardMode) {
-            creditLimit = newAmount
-        } else {
-            amount = newAmount
-        }
+        amount = newAmount
 
         if (modal?.adjustBalanceMode == true) {
             save(
@@ -242,8 +222,6 @@ fun BoxWithConstraintsScope.AccountModal(
                 icon = icon,
                 amount = newAmount,
                 includeInBalance = includeInBalance,
-                creditCardMode = creditCardMode,
-                creditLimit = creditLimit,
 
                 onCreateAccount = onCreateAccount,
                 onEditAccount = onEditAccount,
@@ -287,8 +265,6 @@ private fun save(
     icon: String?,
     amount: Double,
     includeInBalance: Boolean,
-    creditCardMode: Boolean = false,
-    creditLimit: Double = 0.0,
 
     onCreateAccount: (CreateAccountData) -> Unit,
     onEditAccount: (Account, balance: Double) -> Unit,
@@ -299,13 +275,11 @@ private fun save(
             account.copy(
                 name = nameTextFieldValue.text.trim(),
                 currency = currency,
-                includeInBalance = if (creditCardMode) false else includeInBalance,
+                includeInBalance = includeInBalance,
                 icon = icon,
                 color = color.toArgb(),
-                creditLimit = if (creditCardMode) creditLimit else account.creditLimit
+                creditLimit = account.creditLimit
             ),
-            // In credit-card mode `amount` stays at the account's current balance
-            // (the amount field edits the credit limit instead), so this is a no-op adjustment.
             amount
         )
     } else {
@@ -315,9 +289,9 @@ private fun save(
                 currency = currency,
                 color = color,
                 icon = icon,
-                balance = if (creditCardMode) 0.0 else amount,
-                includeBalance = if (creditCardMode) false else includeInBalance,
-                creditLimit = if (creditCardMode) creditLimit else null
+                balance = amount,
+                includeBalance = includeInBalance,
+                creditLimit = null
             )
         )
     }

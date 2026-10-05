@@ -35,11 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ivy.base.legacy.Theme
@@ -49,6 +49,7 @@ import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.design.api.LocalTimeProvider
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.data.model.AccountData
 import com.ivy.legacy.data.model.CreditCardData
@@ -96,8 +97,14 @@ private fun BoxWithConstraintsScope.UI(
     val creditCards = remember(state.accountsData) {
         groupCreditCards(state.accountsData)
     }
-    val normalAccounts = remember(state.accountsData) {
-        state.accountsData.filter { it.account.creditLimit == null }.toImmutableList()
+    // Cards get their own section only while the feature is on; otherwise they stay in the list so
+    // turning the flag off never hides an account and its balance.
+    val normalAccounts = remember(state.accountsData, state.creditCardsEnabled) {
+        if (state.creditCardsEnabled) {
+            state.accountsData.filter { it.account.creditLimit == null }.toImmutableList()
+        } else {
+            state.accountsData
+        }
     }
 
     var markPaidCard: CreditCardData? by remember { mutableStateOf(null) }
@@ -138,14 +145,18 @@ private fun BoxWithConstraintsScope.UI(
     ) {
         if (state.creditOperationError != null && !editorVisible && markPaidCard == null) {
             item {
-                Text(state.creditOperationError, Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.error)
+                Text(
+                    state.creditOperationError,
+                    Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
         if (state.creditCardsEnabled) {
             item(key = "credit_cards_section") {
                 CreditCardsSection(
-                    cards = creditCards,
+                    today = LocalTimeProvider.current.localDateNow(),
+                    cards = creditCards.toImmutableList(),
                     onCardClick = {
                         onEvent(AccountsEvent.ClearCreditError)
                         markPaidCard = it
@@ -266,6 +277,7 @@ private fun BoxWithConstraintsScope.UI(
     markPaidCard?.let { initialCard ->
         val card = creditCards.firstOrNull { it.primary.account.id == initialCard.primary.account.id } ?: initialCard
         CreditCardDetailsSheet(
+            today = LocalTimeProvider.current.localDateNow(),
             card = card,
             payableAccounts = normalAccounts,
             busy = state.creditOperationInProgress,
@@ -290,14 +302,16 @@ private fun BoxWithConstraintsScope.UI(
             onDismiss = { markPaidCard = null }
         )
     }
-    if (editorVisible) CreditCardEditor(
-        card = editingCard,
-        baseCurrency = state.baseCurrency,
-        busy = state.creditOperationInProgress,
-        error = state.creditOperationError,
-        onSave = { onEvent(AccountsEvent.SaveCreditCard(it)) },
-        onDismiss = { editorVisible = false },
-    )
+    if (editorVisible) {
+        CreditCardEditor(
+            card = editingCard,
+            baseCurrency = state.baseCurrency,
+            busy = state.creditOperationInProgress,
+            error = state.creditOperationError,
+            onSave = { onEvent(AccountsEvent.SaveCreditCard(it)) },
+            onDismiss = { editorVisible = false },
+        )
+    }
 }
 
 @Composable

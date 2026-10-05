@@ -32,6 +32,8 @@ class AccountMapper @Inject constructor(
             creditCardGroupId = creditCardGroupId?.let(::AccountId),
             creditLimitShared = creditLimitShared,
             creditExchangeRate = creditExchangeRate,
+            creditStatementDay = creditStatementDay,
+            creditDueDay = creditDueDay,
         )
     }
 
@@ -47,6 +49,8 @@ class AccountMapper @Inject constructor(
             creditCardGroupId = creditCardGroupId?.value,
             creditLimitShared = creditLimitShared,
             creditExchangeRate = creditExchangeRate,
+            creditStatementDay = creditStatementDay,
+            creditDueDay = creditDueDay,
             id = id.value,
             isSynced = true, // TODO: Delete this
         )

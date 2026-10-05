@@ -48,6 +48,17 @@ data class IvyCsvRow(
             "ID",
             "Account Credit Limit",
             "To Account Credit Limit",
+            // Dual-currency card pairing (only Ivy CSVs carry these; other wallets lack them).
+            "Account Credit Group",
+            "Account Credit Limit Shared",
+            "Account Credit Exchange Rate",
+            "To Account Credit Group",
+            "To Account Credit Limit Shared",
+            "To Account Credit Exchange Rate",
+            "Account Credit Statement Day",
+            "Account Credit Due Day",
+            "To Account Credit Statement Day",
+            "To Account Credit Due Day",
         )
     }
 }

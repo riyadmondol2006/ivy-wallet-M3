@@ -36,6 +36,12 @@ data class AccountEntity(
     val creditLimitShared: Boolean = false,
     @SerialName("creditExchangeRate")
     val creditExchangeRate: Double? = null,
+    /** Day of month (1..31) the card statement closes; null when not set. */
+    @SerialName("creditStatementDay")
+    val creditStatementDay: Int? = null,
+    /** Day of month (1..31) the statement payment is due; null when not set. */
+    @SerialName("creditDueDay")
+    val creditDueDay: Int? = null,
 
     @Deprecated("Obsolete field used for cloud sync. Can't be deleted because of backwards compatibility")
     @SerialName("isSynced")

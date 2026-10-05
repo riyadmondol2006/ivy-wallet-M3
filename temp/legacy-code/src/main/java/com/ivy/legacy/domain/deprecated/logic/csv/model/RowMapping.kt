@@ -15,6 +15,11 @@ data class RowMapping(
     val accountColor: Int? = null,
     val accountIcon: Int? = null,
     val accountCreditLimit: Int? = null,
+    val accountCreditGroup: Int? = null,
+    val accountCreditLimitShared: Int? = null,
+    val accountCreditExchangeRate: Int? = null,
+    val accountCreditStatementDay: Int? = null,
+    val accountCreditDueDay: Int? = null,
 
     val date: Int,
     val dateOnlyFormat: String? = null,
@@ -30,6 +35,11 @@ data class RowMapping(
     val toAccountOrderNum: Int? = null,
     val toAccountIcon: Int? = null,
     val toAccountCreditLimit: Int? = null,
+    val toAccountCreditGroup: Int? = null,
+    val toAccountCreditLimitShared: Int? = null,
+    val toAccountCreditExchangeRate: Int? = null,
+    val toAccountCreditStatementDay: Int? = null,
+    val toAccountCreditDueDay: Int? = null,
 
     val category: Int?,
     val categoryOrderNum: Int? = null,

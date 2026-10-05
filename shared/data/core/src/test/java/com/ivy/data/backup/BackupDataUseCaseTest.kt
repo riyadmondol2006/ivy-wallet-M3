@@ -146,14 +146,44 @@ class BackupDataUseCaseTest {
     }
 
     @Test
+    fun `credit card billing cycle round trips through backup`() = runTest {
+        val sourceDao = FakeAccountDao()
+        sourceDao.save(
+            AccountEntity(
+                name = "Visa",
+                currency = "USD",
+                color = 1,
+                creditLimit = 1000.0,
+                creditStatementDay = 5,
+                creditDueDay = 25,
+                id = UUID.randomUUID()
+            )
+        )
+        val json = newBackupDataUseCase(accountDao = sourceDao).generateJsonBackup()
+        val targetDao = FakeAccountDao()
+        newBackupDataUseCase(accountDao = targetDao).importJson(json, onProgress = {})
+        val restored = targetDao.findAll().single()
+        restored.creditStatementDay shouldBe 5
+        restored.creditDueDay shouldBe 25
+    }
+
+    @Test
     fun `dual currency card metadata round trips through backup`() = runTest {
         val id = UUID.randomUUID()
         val sourceDao = FakeAccountDao()
-        val primary = AccountEntity(name = "Visa", currency = "BDT", color = 1,
+        val primary = AccountEntity(
+            name = "Visa", currency = "BDT", color = 1,
             creditLimit = 100000.0, creditCardGroupId = id, creditLimitShared = true,
-            creditExchangeRate = 120.0, includeInBalance = false, id = id)
-        val secondary = primary.copy(id = UUID.randomUUID(), name = "Visa · USD", currency = "USD",
-            creditLimit = 1000.0, creditLimitShared = false, creditExchangeRate = null)
+            creditExchangeRate = 120.0, includeInBalance = false, id = id
+        )
+        val secondary = primary.copy(
+            id = UUID.randomUUID(),
+            name = "Visa · USD",
+            currency = "USD",
+            creditLimit = 1000.0,
+            creditLimitShared = false,
+            creditExchangeRate = null
+        )
         sourceDao.save(primary)
         sourceDao.save(secondary)
         val json = newBackupDataUseCase(accountDao = sourceDao).generateJsonBackup()
