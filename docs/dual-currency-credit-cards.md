@@ -6,12 +6,16 @@ The debug build includes the searchable transaction account picker and dual-curr
 
 Enable Credit cards in Settings if the section is hidden. In Accounts, add a card or tap an
 existing credit card and choose Edit. Enable Dual-currency card, select its second currency,
-and enter its limit.
+choose how the two limits work, and enter the second limit.
 
-- Shared overall limit (default for a new dual card): both balances consume the main limit.
-  The second limit is a spending cap, not additional credit. The bank rate is required here.
-  Approximate available amounts share the same overall credit and must not be added together.
-- Separate limits: each currency's debt reduces only its own limit. The bank rate is optional.
+The limit choice is required when a card becomes dual-currency (nothing is preselected) and can
+be changed later from Edit:
+
+- **Shared limit**: second-currency spending is converted at the bank rate and uses up the main
+  limit. The second limit only caps second-currency spending; it is not extra credit. The bank
+  rate is required. The amounts left in each currency come from the same credit and must not be
+  added together.
+- **Separate limits**: each currency's debt reduces only its own limit. The bank rate is optional.
 
 The bank rate is entered as main-currency units per one second-currency unit (for a BDT card with
 a USD ledger: how many BDT the bank charges for 1 USD). Update it when the bank's rate changes.

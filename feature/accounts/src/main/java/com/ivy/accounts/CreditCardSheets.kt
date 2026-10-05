@@ -1,5 +1,6 @@
 package com.ivy.accounts
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -29,6 +32,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -93,7 +98,8 @@ internal fun CreditCardEditor(
         )
     }
     var secondLimit by rememberSaveable { mutableStateOf(secondary?.creditLimit?.plain().orEmpty()) }
-    var shared by rememberSaveable { mutableStateOf(if (secondary != null) card.shared else true) }
+    // Null until the user picks how the two limits work; an existing dual card keeps its saved choice.
+    var shared by rememberSaveable { mutableStateOf<Boolean?>(if (secondary != null) card.shared else null) }
     var rate by rememberSaveable { mutableStateOf(primary?.creditExchangeRate?.plain().orEmpty()) }
     var color by rememberSaveable { mutableStateOf(primary?.color?.value ?: Color(DefaultCardColor).toArgb()) }
     var icon by rememberSaveable { mutableStateOf(primary?.icon?.id ?: "ic_vue_money_card") }
@@ -107,12 +113,12 @@ internal fun CreditCardEditor(
     val rateValue = rate.number()
     // The rate is optional with separate limits (it only feeds the owed total) and required with a
     // shared limit, where available credit cannot be estimated without it.
-    val rateValid = rateValue?.let { it.isFinite() && it > 0 } ?: (rate.isBlank() && !shared)
+    val rateValid = rateValue?.let { it.isFinite() && it > 0 } ?: (rate.isBlank() && shared != true)
     val valid = cycleValid && name.isNotBlank() && limitValue?.let { validMoney(it, currency) } == true &&
         (
             !dual || (
                 currency != secondCurrency && secondValue?.let { validMoney(it, secondCurrency) } == true &&
-                    rateValid
+                    shared != null && rateValid
                 )
             )
     ModalBottomSheet(
@@ -153,17 +159,23 @@ internal fun CreditCardEditor(
                     secondCurrency,
                     enabled = secondary == null && !busy
                 ) { secondCurrency = it }
+                LimitModeChoice(
+                    shared = shared,
+                    mainCurrency = currency,
+                    secondCurrency = secondCurrency,
+                    enabled = !busy,
+                    showError = attempted && shared == null,
+                    onChange = { shared = it },
+                )
                 MoneyField(
                     secondLimit,
                     { secondLimit = it },
-                    stringResource(if (shared) R.string.credit_cap_in else R.string.credit_limit_in, secondCurrency),
+                    stringResource(
+                        if (shared == true) R.string.credit_cap_in else R.string.credit_limit_in,
+                        secondCurrency
+                    ),
                     !busy
                 )
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.shared_credit_limit), Modifier.weight(1f))
-                    Switch(checked = shared, onCheckedChange = { shared = it }, enabled = !busy)
-                }
-                HelperText(stringResource(if (shared) R.string.shared_credit_help else R.string.separate_credit_help))
                 MoneyField(
                     rate,
                     { rate = it },
@@ -171,7 +183,7 @@ internal fun CreditCardEditor(
                     !busy
                 )
                 HelperText(
-                    if (shared) {
+                    if (shared == true) {
                         stringResource(R.string.credit_rate_help)
                     } else {
                         stringResource(R.string.credit_rate_optional_help, currency)
@@ -265,7 +277,7 @@ internal fun CreditCardEditor(
                             icon = icon,
                             secondaryCurrency = secondCurrency.takeIf { dual },
                             secondaryLimit = secondValue.takeIf { dual },
-                            sharedLimit = dual && shared,
+                            sharedLimit = dual && shared == true,
                             exchangeRate = rateValue.takeIf { dual },
                             includeInBalance = includeInBalance,
                             statementDay = statementDay,
@@ -458,6 +470,74 @@ internal fun CreditCardDetailsSheet(
             },
             onDismiss = { chooseSource = false },
         )
+    }
+}
+
+/** Shared limit or separate limits for a dual-currency card; nothing is preselected for a new card. */
+@Composable
+internal fun LimitModeChoice(
+    shared: Boolean?,
+    mainCurrency: String,
+    secondCurrency: String,
+    enabled: Boolean,
+    showError: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.credit_limit_mode_title), style = MaterialTheme.typography.labelLarge)
+        LimitModeOption(
+            selected = shared == true,
+            title = stringResource(R.string.credit_limit_mode_shared),
+            description = stringResource(R.string.credit_limit_mode_shared_help, secondCurrency, mainCurrency),
+            enabled = enabled,
+            onClick = { onChange(true) },
+        )
+        LimitModeOption(
+            selected = shared == false,
+            title = stringResource(R.string.credit_limit_mode_separate),
+            description = stringResource(R.string.credit_limit_mode_separate_help, mainCurrency, secondCurrency),
+            enabled = enabled,
+            onClick = { onChange(false) },
+        )
+        if (showError) ErrorText(stringResource(R.string.credit_limit_mode_required))
+    }
+}
+
+@Composable
+private fun LimitModeOption(
+    selected: Boolean,
+    title: String,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
+            RadioButton(selected = selected, onClick = null, enabled = enabled)
+            Column(
+                Modifier.padding(start = 12.dp).weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

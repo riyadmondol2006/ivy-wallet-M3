@@ -643,9 +643,12 @@
     <string name="main_currency">Main currency</string>
     <string name="card_name">Card name</string>
     <string name="edit_credit_card">Edit credit card</string>
-    <string name="shared_credit_limit">Shared overall limit</string>
-    <string name="shared_credit_help">Both currencies use the main limit. The second limit is a spending cap, not extra credit.</string>
-    <string name="separate_credit_help">Each currency has its own independent credit limit.</string>
+    <string name="credit_limit_mode_title">How do the two limits work?</string>
+    <string name="credit_limit_mode_shared">Shared limit</string>
+    <string name="credit_limit_mode_shared_help">%1$s spending is converted at the bank rate and uses up the %2$s limit. The %1$s limit only caps how much you can spend in %1$s.</string>
+    <string name="credit_limit_mode_separate">Separate limits</string>
+    <string name="credit_limit_mode_separate_help">Each currency has its own limit. Spending in %2$s does not reduce the %1$s limit.</string>
+    <string name="credit_limit_mode_required">Choose how the two limits work.</string>
     <string name="credit_currency_locked">Currencies are kept fixed to protect transaction history. Adding a second currency starts it with a zero balance.</string>
     <string name="credit_rate_label">Bank rate: 1 %1$s in %2$s</string>
     <string name="credit_rate_help">Use your bank’s rate and update it when needed. Available credit and the total owed are estimates; your bank’s statement is authoritative.</string>
@@ -667,7 +670,7 @@
     <string name="credit_payment_disclaimer">Records a transfer in Ivy Wallet only. It does not send money to your bank.</string>
     <string name="credit_operation_failed">Could not save. Check the amounts and current card balance, then try again.</string>
     <string name="credit_payment_invalid">Enter a positive amount no greater than the amount to pay, using valid currency decimals.</string>
-    <string name="credit_form_invalid">Enter a name, positive limits and, for a shared limit, a positive bank rate. Choose two different currencies.</string>
+    <string name="credit_form_invalid">Enter a name and positive limits, choose two different currencies and how their limits work, and for a shared limit enter a positive bank rate.</string>
     <string name="credit_no_payable_accounts">Add a bank or cash account before recording a payment.</string>
     <string name="credit_all_paid">Nothing to pay in this currency.</string>
     <string name="credit_view_currency_transactions">Transactions · %1$s</string>
