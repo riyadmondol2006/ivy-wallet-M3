@@ -13,6 +13,7 @@ import com.ivy.base.Toaster
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.refreshWidget
+import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
@@ -45,6 +46,7 @@ import com.ivy.navigation.Navigation
 import com.ivy.ui.ComposeViewModel
 import com.ivy.ui.R
 import com.ivy.ui.time.impl.DateTimePicker
+import com.ivy.ui.undo.UndoDeleteController
 import com.ivy.wallet.domain.action.account.AccountByIdAct
 import com.ivy.wallet.domain.action.account.AccountsAct
 import com.ivy.wallet.domain.action.transaction.TrnByIdAct
@@ -102,6 +104,7 @@ class EditTransactionViewModel @Inject constructor(
     private val transactionRepo: TransactionRepository,
     private val transactionMapper: TransactionMapper,
     private val tagRepository: TagRepository,
+    private val undoDelete: UndoDeleteController,
     private val tagMapper: TagMapper,
     private val features: Features,
     private val timeConverter: TimeConverter,
@@ -611,8 +614,18 @@ class EditTransactionViewModel @Inject constructor(
     private fun delete() {
         viewModelScope.launch {
             ioThread {
-                loadedTransaction?.let {
-                    transactionRepo.deleteById(TransactionId(it.id))
+                val transaction = loadedTransaction
+                if (transaction != null) {
+                    val associationId = AssociationId(transaction.id)
+                    val tagIds = transactionAssociatedTags.toList()
+                    // Remove the tag links too, so a deleted transaction leaves nothing behind.
+                    tagIds.forEach { tagRepository.removeTagAssociation(associationId, it) }
+                    transactionRepo.deleteById(TransactionId(transaction.id))
+                    undoDelete.offer(stringRes(R.string.transaction_deleted)) {
+                        transaction.toDomain(transactionMapper)?.let { transactionRepo.save(it) }
+                        tagIds.forEach { tagRepository.associateTagToEntity(associationId, it) }
+                        refreshWidget(WalletBalanceWidgetReceiver::class.java)
+                    }
                 }
                 closeScreen()
             }

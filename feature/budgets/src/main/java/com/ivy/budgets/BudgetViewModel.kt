@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewModelScope
 import com.ivy.base.legacy.SharedPrefs
+import com.ivy.base.legacy.stringRes
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.budgets.model.DisplayBudget
@@ -30,6 +31,7 @@ import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.ui.ComposeViewModel
 import com.ivy.ui.R
+import com.ivy.ui.undo.UndoDeleteController
 import com.ivy.wallet.domain.action.account.AccountsAct
 import com.ivy.wallet.domain.action.budget.BudgetsAct
 import com.ivy.wallet.domain.action.exchange.ExchangeAct
@@ -51,6 +53,7 @@ import kotlin.math.abs
 class BudgetViewModel @Inject constructor(
     private val sharedPrefs: SharedPrefs,
     private val budgetWriter: WriteBudgetDao,
+    private val undoDelete: UndoDeleteController,
     private val budgetCreator: BudgetCreator,
     private val ivyContext: com.ivy.legacy.IvyWalletCtx,
     private val accountsAct: AccountsAct,
@@ -283,6 +286,10 @@ class BudgetViewModel @Inject constructor(
         viewModelScope.launch {
             budgetCreator.deleteBudget(budget) {
                 start()
+                undoDelete.offer(stringRes(R.string.budget_deleted)) {
+                    com.ivy.legacy.utils.ioThread { budgetWriter.save(budget.toEntity()) }
+                    start()
+                }
             }
         }
     }

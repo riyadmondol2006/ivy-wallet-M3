@@ -27,9 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.timepicker.MaterialTimePicker
-import com.google.android.material.timepicker.TimeFormat
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.ivy.IvyNavGraph
 import com.ivy.base.legacy.Theme
@@ -37,18 +34,18 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.design.api.IvyDesign
 import com.ivy.design.api.IvyUI
-import com.ivy.design.system.IvyMaterial3Theme
 import com.ivy.domain.RootScreen
 import com.ivy.home.customerjourney.CustomerJourneyCardsProvider
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.appDesign
 import com.ivy.legacy.utils.activityForResultLauncher
-import com.ivy.legacy.utils.sendToCrashlytics
 import com.ivy.legacy.utils.simpleActivityForResultLauncher
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.NavigationRoot
 import com.ivy.ui.R
+import com.ivy.ui.snackbar.IvySnackbarController
+import com.ivy.ui.GlobalOverlays
 import com.ivy.ui.time.TimeFormatter
 import com.ivy.ui.time.impl.DateTimePicker
 import com.ivy.wallet.ui.applocked.AppLockedScreen
@@ -56,8 +53,7 @@ import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import com.ivy.widget.transaction.AddTransactionWidget
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
 import dagger.hilt.android.AndroidEntryPoint
-import java.time.LocalDate
-import java.time.LocalTime
+import java.time.ZoneOffset
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -84,6 +80,9 @@ class RootActivity : AppCompatActivity(), RootScreen {
     @Inject
     lateinit var dateTimePicker: DateTimePicker
 
+    @Inject
+    lateinit var snackbarController: IvySnackbarController
+
     private lateinit var createFileLauncher: ActivityResultLauncher<String>
     private lateinit var onFileCreated: (fileUri: Uri) -> Unit
 
@@ -102,8 +101,8 @@ class RootActivity : AppCompatActivity(), RootScreen {
             val viewModel: RootViewModel = viewModel()
             val isSystemInDarkTheme = isSystemInDarkTheme()
 
-            LaunchedEffect(isSystemInDarkTheme) {
-                viewModel.start(isSystemInDarkTheme, intent)
+            LaunchedEffect(Unit) {
+                viewModel.start(intent)
             }
 
             val appLocked by viewModel.appLocked.collectAsState()
@@ -145,15 +144,15 @@ class RootActivity : AppCompatActivity(), RootScreen {
                 }
             }
 
-            IvyMaterial3Theme(
+            GlobalOverlays(
                 dark = isDarkThemeEnabled(
                     ivyDesign = appDesign(ivyContext),
                     systemDarkTheme = isSystemInDarkTheme
                 ),
-                isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK
-            ) {
-                dateTimePicker.Content()
-            }
+                isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK,
+                dateTimePicker = dateTimePicker,
+                snackbarController = snackbarController,
+            )
         }
     }
 
@@ -178,69 +177,23 @@ class RootActivity : AppCompatActivity(), RootScreen {
         WalletBalanceWidgetReceiver.updateBroadcast(this)
     }
 
-    private companion object {
-        private const val MILLISECONDS_IN_DAY = 24 * 60 * 60 * 1000
-    }
-
+    // The legacy screens still ask the activity for a picker; both now open the same Material 3
+    // Compose pickers the new screens use, so there is one picker style and it follows the theme.
     private fun setupDatePicker() {
-        ivyContext.onShowDatePicker = { minDate,
-                                        maxDate,
-                                        initialDate,
-                                        onDatePicked ->
-            val datePicker =
-                MaterialDatePicker.Builder.datePicker()
-                    .setSelection(
-                        if (initialDate != null) {
-                            initialDate.toEpochDay() * MILLISECONDS_IN_DAY
-                        } else {
-                            MaterialDatePicker.todayInUtcMilliseconds()
-                        }
-                    )
-                    .build()
-            datePicker.show(supportFragmentManager, "datePicker")
-            datePicker.addOnPositiveButtonClickListener {
-                onDatePicked(LocalDate.ofEpochDay(it / MILLISECONDS_IN_DAY))
-            }
-
-            if (minDate != null) {
-                datePicker.addOnCancelListener {
-                    onDatePicked(minDate)
-                }
-            }
-
-            if (maxDate != null) {
-                datePicker.addOnCancelListener {
-                    onDatePicked(maxDate)
-                }
-            }
-
-            if (initialDate != null) {
-                datePicker.addOnCancelListener {
-                    onDatePicked(initialDate)
-                }
-            }
+        ivyContext.onShowDatePicker = { _, _, initialDate, onDatePicked ->
+            dateTimePicker.pickDate(
+                initialDate = initialDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant(),
+                onDatePick = onDatePicked,
+            )
         }
     }
 
     private fun setupTimePicker() {
-        ivyContext.onShowTimePicker = { initialTime,
-                                        onTimePicked ->
-            val nowLocal = initialTime ?: timeProvider.localTimeNow()
-            val is24Hour = android.text.format.DateFormat.is24HourFormat(this)
-            val timeFormat = if (is24Hour) TimeFormat.CLOCK_24H else TimeFormat.CLOCK_12H
-
-            val picker =
-                MaterialTimePicker.Builder()
-                    .setTimeFormat(timeFormat)
-                    .setHour(nowLocal.hour)
-                    .setMinute(nowLocal.minute)
-                    .build()
-            picker.show(supportFragmentManager, "timePicker")
-            picker.addOnPositiveButtonClickListener {
-                onTimePicked(
-                    LocalTime.of(picker.hour, picker.minute).withSecond(0)
-                )
-            }
+        ivyContext.onShowTimePicker = { initialTime, onTimePicked ->
+            dateTimePicker.pickTime(
+                initialTime = initialTime ?: timeProvider.localTimeNow(),
+                onTimePick = { onTimePicked(it.withSecond(0)) },
+            )
         }
     }
 
@@ -369,7 +322,6 @@ class RootActivity : AppCompatActivity(), RootScreen {
             startActivity(browserIntent)
         } catch (e: Exception) {
             e.printStackTrace()
-            e.sendToCrashlytics("Cannot open URL in browser, intent not supported.")
             Toast.makeText(
                 this,
                 "No browser app found. Visit manually: $url",

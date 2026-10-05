@@ -243,7 +243,6 @@ private fun BoxWithConstraintsScope.UI(
     var categoryModalData: CategoryModalData? by remember { mutableStateOf(null) }
     var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
     var descriptionModalVisible by remember { mutableStateOf(false) }
-    var deleteTrnModalVisible by remember { mutableStateOf(false) }
     var changeTransactionTypeModalVisible by remember { mutableStateOf(false) }
     var amountModalShown by remember { mutableStateOf(false) }
     var exchangeRateAmountModalShown by remember { mutableStateOf(false) }
@@ -293,7 +292,8 @@ private fun BoxWithConstraintsScope.UI(
             type = if (loanData.isLoanRecord) TransactionType.TRANSFER else transactionType,
             initialTransactionId = screen.initialTransactionId,
             onDeleteTrnModal = {
-                deleteTrnModalVisible = true
+                // Deleting is immediate; the snackbar offers Undo instead of a confirmation dialog.
+                onDelete()
             },
             onChangeTransactionTypeModal = {
                 changeTransactionTypeModalVisible = true
@@ -561,15 +561,6 @@ private fun BoxWithConstraintsScope.UI(
             descriptionModalVisible = false
         }
     )
-
-    DeleteModal(
-        visible = deleteTrnModalVisible,
-        title = stringResource(R.string.confirm_deletion),
-        description = stringResource(R.string.transaction_confirm_deletion_description),
-        dismiss = { deleteTrnModalVisible = false }
-    ) {
-        onDelete()
-    }
 
     ChangeTransactionTypeModal(
         visible = changeTransactionTypeModalVisible,
