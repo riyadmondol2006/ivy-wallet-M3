@@ -31,8 +31,8 @@ paparazzi = "2.0.0-alpha05"
 min-sdk = "28"
 compile-sdk = "37"
 build-tools = "37.0.0"
-version-name = "1.0.4"
-version-code = "213"
+version-name = "1.0.5"
+version-code = "214"
 jvm-target = "17"
 
 
