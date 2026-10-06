@@ -315,7 +315,7 @@ private fun QuickAccess(
             QuickTile(
                 modifier = Modifier.weight(1f),
                 icon = R.drawable.home_more_menu_planned_payments,
-                label = stringResource(R.string.planned_payments),
+                label = stringResource(R.string.planned_payments_inline),
             ) { nav.navigateTo(PlannedPaymentsScreen) }
         }
 

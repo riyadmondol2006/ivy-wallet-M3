@@ -104,7 +104,7 @@
     <string name="hi">Hi</string>
     <string name="hi_name">Hi %1$s</string>
     <string name="cashflow">Cashflow: %1$s%2$s %3$s</string>
-    <string name="search_transactions">Search transactions...</string>
+    <string name="search_transactions">Search transactions…</string>
     <string name="ivy_wallet_open_source">Ivy Wallet is open-source</string>
     <string name="open_source_fork_note">A community fork of Ivy-Apps/ivy-wallet</string>
     <string name="fork_label">Fork</string>
@@ -122,7 +122,7 @@
     <string name="settings">Settings</string>
     <string name="light_mode">Light mode</string>
     <string name="dark_mode">Dark mode</string>
-    <string name="amoled_mode">AMOLED Dark mode</string>
+    <string name="amoled_mode">AMOLED dark mode</string>
     <string name="auto_mode">Auto mode</string>
     <string name="planned_payments">Planned\nPayments</string>
     <string name="share_ivy">Share Ivy</string>
@@ -487,8 +487,8 @@
     <string name="experimental_settings">Experimental Settings</string>
     <string name="wallet_balance">Wallet balance</string>
     <string name="total_exclusive">Total (exclusive): %1$s %2$s</string>
-    <string name="total_balance">Total Balance</string>
-    <string name="total_balance_excluded">Total Balance (excluded)</string>
+    <string name="total_balance">Total balance</string>
+    <string name="total_balance_excluded">Total balance (excluded)</string>
     <string name="initial_loan_record">Starting record</string>
     <string name="loan_record_type">Record type</string>
     <string name="increase_loan">Increase</string>
@@ -539,13 +539,13 @@
     <string name="advanced_features">Advanced features</string>
 
     <!-- Cloud Sync (Upstash Redis) -->
-    <string name="cloud_sync">Cloud Sync</string>
+    <string name="cloud_sync">Cloud sync</string>
     <string name="cloud_sync_description">Back up and sync your data to your own Upstash Redis database</string>
     <string name="cloud_sync_not_set_up">Not set up</string>
     <string name="cloud_sync_mode_off">Off</string>
     <string name="cloud_sync_mode_manual">Manual</string>
     <string name="cloud_sync_mode_auto">Auto</string>
-    <string name="cloud_sync_setup_title">Cloud Sync setup</string>
+    <string name="cloud_sync_setup_title">Cloud sync setup</string>
     <string name="cloud_sync_guide_title">How to get your Upstash Redis</string>
     <string name="cloud_sync_guide_step_1">1. Create a free account at upstash.com</string>
     <string name="cloud_sync_guide_step_2">2. Create a new Redis database (any region)</string>

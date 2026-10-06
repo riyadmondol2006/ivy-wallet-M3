@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,23 +18,20 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
+import com.ivy.design.system.IvySpacing
+import com.ivy.design.system.income
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.utils.clickableNoIndication
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.legacy.utils.springBounce
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.components.IvyDividerDot
 import com.ivy.wallet.ui.theme.components.IvyIcon
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
+/** Collapsible list section header ("Upcoming", "Overdue", ...) with the section's income and expense totals. */
 @Composable
 fun SectionDivider(
     expanded: Boolean,
@@ -53,7 +52,8 @@ fun SectionDivider(
             .fillMaxWidth()
             .clickableNoIndication(rememberInteractionSource()) {
                 setExpanded(!expanded)
-            },
+            }
+            .padding(horizontal = IvySpacing.screenGutter),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val expandIconRotation by animateFloatAsState(
@@ -61,16 +61,12 @@ fun SectionDivider(
             animationSpec = springBounce()
         )
 
-        Spacer(Modifier.width(24.dp))
-
         Column {
             Text(
                 modifier = Modifier.testTag("upcoming_title"),
                 text = title,
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = titleColor
-                )
+                style = MaterialTheme.typography.titleMedium,
+                color = titleColor,
             )
 
             if (showIncomeExpenseRow) {
@@ -90,10 +86,9 @@ fun SectionDivider(
 
         IvyIcon(
             modifier = Modifier.rotate(expandIconRotation),
-            icon = R.drawable.ic_expandarrow
+            icon = R.drawable.ic_expandarrow,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-
-        Spacer(Modifier.width(32.dp))
     }
 }
 
@@ -110,18 +105,14 @@ private fun SectionDividerIncomeExpenseRow(
             Text(
                 modifier = Modifier.testTag("upcoming_expense"),
                 text = "${expenses.format(baseCurrency)} $baseCurrency",
-                style = UI.typo.nC.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
-                )
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = stringResource(R.string.expenses_lowercase),
-                style = UI.typo.c.style(
-                    fontWeight = FontWeight.Normal,
-                    color = UI.colors.pureInverse
-                )
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -137,18 +128,14 @@ private fun SectionDividerIncomeExpenseRow(
             Text(
                 modifier = Modifier.testTag("upcoming_income"),
                 text = "${income.format(baseCurrency)} $baseCurrency",
-                style = UI.typo.nC.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.green
-                )
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.income,
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = stringResource(R.string.income_lowercase),
-                style = UI.typo.c.style(
-                    fontWeight = FontWeight.Normal,
-                    color = UI.colors.pureInverse
-                )
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -161,7 +148,7 @@ private fun Preview_Income_Expenses() {
         SectionDivider(
             expanded = true,
             title = "Upcoming",
-            titleColor = Orange,
+            titleColor = MaterialTheme.colorScheme.secondary,
             baseCurrency = "BGN",
             income = 8043.23,
             expenses = 923.87
@@ -177,7 +164,7 @@ private fun Preview_Expenses() {
         SectionDivider(
             expanded = true,
             title = "Overdue",
-            titleColor = Red,
+            titleColor = MaterialTheme.colorScheme.error,
             baseCurrency = "BGN",
             income = 0.0,
             expenses = 923.87
@@ -193,7 +180,7 @@ private fun Preview_Income() {
         SectionDivider(
             expanded = true,
             title = "Upcoming",
-            titleColor = Orange,
+            titleColor = MaterialTheme.colorScheme.secondary,
             baseCurrency = "BGN",
             income = 8043.23,
             expenses = 0.0

@@ -54,7 +54,8 @@ fun AmountCurrencyB1Row(
     amount: Double,
     currency: String,
     amountFontWeight: FontWeight = FontWeight.Bold,
-    textColor: Color = UI.colors.pureInverse
+    textColor: Color = UI.colors.pureInverse,
+    shortenBigNumbers: Boolean = false
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -63,7 +64,8 @@ fun AmountCurrencyB1Row(
             amount = amount,
             currency = currency,
             amountFontWeight = amountFontWeight,
-            textColor = textColor
+            textColor = textColor,
+            shortenBigNumbers = shortenBigNumbers
         )
     }
 }

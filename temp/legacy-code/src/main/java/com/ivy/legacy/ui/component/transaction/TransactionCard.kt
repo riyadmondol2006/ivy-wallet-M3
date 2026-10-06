@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,7 +47,6 @@ import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.api.LocalTimeProvider
-import com.ivy.design.l0_system.BlueLight
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.IvyText
@@ -72,7 +72,6 @@ import com.ivy.ui.time.TimeFormatter
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GreenDark
 import com.ivy.wallet.ui.theme.IvyDark
@@ -134,7 +133,7 @@ fun TransactionCard(
             val timeFormatter = LocalTimeFormatter.current
             val timeProvider = LocalTimeProvider.current
             Text(
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = CardInset),
                 text = stringResource(
                     R.string.due_on,
                     with(timeFormatter) {
@@ -144,15 +143,13 @@ fun TransactionCard(
                             )
                         )
                     }
-                ).uppercase(),
-                style = UI.typo.nC.style(
-                    color = if (transaction.dueDate!!.isAfter(timeProvider.utcNow())) {
-                        Orange
-                    } else {
-                        UI.colors.gray
-                    },
-                    fontWeight = FontWeight.Bold
-                )
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (transaction.dueDate!!.isAfter(timeProvider.utcNow())) {
+                    MaterialTheme.colorScheme.secondary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
         }
 
@@ -163,12 +160,10 @@ fun TransactionCard(
                 )
             )
             Text(
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = CardInset),
                 text = transaction.title!!,
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = UI.colors.pureInverse
-                )
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
@@ -177,11 +172,9 @@ fun TransactionCard(
             Spacer(Modifier.height(if (transaction.title.isNotNullOrBlank()) 4.dp else 8.dp))
             Text(
                 text = description,
-                modifier = Modifier.padding(horizontal = 24.dp),
-                style = UI.typo.nC.style(
-                    color = UI.colors.gray,
-                    fontWeight = FontWeight.Bold
-                ),
+                modifier = Modifier.padding(horizontal = CardInset),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -204,15 +197,13 @@ fun TransactionCard(
 
         if (transaction.type == TransactionType.TRANSFER && toAccountCurrency != transactionCurrency) {
             Text(
-                modifier = Modifier.padding(start = 68.dp),
+                modifier = Modifier.padding(start = CardInset + 44.dp),
                 text = "${
                     transaction.toAmount.toDouble()
                         .format(IvyCurrency.getDecimalPlaces(toAccountCurrency))
                 } $toAccountCurrency",
-                style = UI.typo.nB2.style(
-                    color = Gray,
-                    fontWeight = FontWeight.Normal
-                )
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -220,28 +211,18 @@ fun TransactionCard(
             // Pay/Get button
             Spacer(Modifier.height(16.dp))
             val isExpense = transaction.type == TransactionType.EXPENSE
-            Row {
-                IvyButton(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 24.dp),
-                    text = stringResource(R.string.skip),
-                    wrapContentMode = false,
-                    backgroundGradient = Gradient.solid(UI.colors.pure),
-                    textStyle = UI.typo.b2.style(
-                        color = UI.colors.pureInverse,
-                        fontWeight = FontWeight.Bold
-                    )
+            Row(modifier = Modifier.padding(horizontal = CardInset)) {
+                FilledTonalButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = { onSkipTransaction(transaction) },
                 ) {
-                    onSkipTransaction(transaction)
+                    Text(text = stringResource(R.string.skip))
                 }
 
                 Spacer(Modifier.width(8.dp))
 
                 IvyButton(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 24.dp),
+                    modifier = Modifier.weight(1f),
                     text = if (isExpense) stringResource(R.string.pay) else stringResource(R.string.get),
                     wrapContentMode = false,
                     backgroundGradient = Gradient.solid(
@@ -283,16 +264,13 @@ private fun ColumnScope.TransactionTags(tags: ImmutableList<LegacyTag>) {
     Spacer(Modifier.height(12.dp))
 
     LazyRow(
-        modifier = Modifier.padding(horizontal = 24.dp)
+        modifier = Modifier.padding(horizontal = CardInset)
     ) {
         item {
-            // Tag Text
             Text(
-                text = "Tags:",
-                style = UI.typo.nC.style(
-                    color = UI.colors.gray,
-                    fontWeight = FontWeight.Normal
-                )
+                text = stringResource(R.string.tags),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -301,10 +279,8 @@ private fun ColumnScope.TransactionTags(tags: ImmutableList<LegacyTag>) {
         items(tags, key = { it.id }) { tag ->
             Text(
                 text = "#${tag.name}",
-                style = UI.typo.nC.style(
-                    color = BlueLight,
-                    fontWeight = FontWeight.Normal
-                )
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.width(6.dp))
         }
@@ -328,7 +304,7 @@ private fun TransactionHeaderRow(
 
     if (transaction.type == TransactionType.TRANSFER) {
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(horizontal = CardInset),
         ) {
             if (category != null) {
                 CategoryBadgeDisplay(category, nav)
@@ -343,7 +319,7 @@ private fun TransactionHeaderRow(
     } else {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(horizontal = CardInset),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (category != null) {
@@ -468,6 +444,9 @@ private fun TransactionBadge(
 
 private const val TransferHeaderGradientThreshold = 0.35f
 
+/** Horizontal inset of everything inside a transaction card, so badges, text and amounts share one edge. */
+private val CardInset = 20.dp
+
 @Composable
 private fun TransferHeader(
     accounts: List<Account>,
@@ -577,7 +556,7 @@ fun TypeAmountCurrency(
         modifier = modifier.testTag("type_amount_currency"),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(24.dp))
+        Spacer(Modifier.width(CardInset))
 
         val scheme = MaterialTheme.colorScheme
         val style = when (transactionType) {
@@ -650,7 +629,7 @@ fun TypeAmountCurrency(
             textColor = style.textColor
         )
 
-        Spacer(Modifier.width(24.dp))
+        Spacer(Modifier.width(CardInset))
     }
 }
 

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,10 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ivy.design.system.IvySpacing
 import com.ivy.legacy.ui.component.CreditCurrencySummary
 import com.ivy.legacy.ui.component.CreditOwedTotalRow
 import com.ivy.ui.R
+import com.ivy.ui.component.IvyListCard
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -26,6 +28,7 @@ import java.time.format.FormatStyle
 /**
  * Every credit card with what it owes per currency and, for a dual-currency card, the total in its
  * main currency at the bank rate. With several cards an "All cards" footer adds them up.
+ * Same flat tonal card as the balance hero and the transaction cards.
  */
 @Composable
 fun CreditCardsSummaryCard(
@@ -33,8 +36,12 @@ fun CreditCardsSummaryCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(onClick = onClick, modifier = modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    IvyListCard(
+        onClick = onClick,
+        modifier = modifier.padding(horizontal = IvySpacing.screenGutter).fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.credit_cards), style = MaterialTheme.typography.titleMedium)
             summary.cards.forEachIndexed { index, card ->
                 if (index > 0) HorizontalDivider(Modifier.padding(vertical = 2.dp))
@@ -47,7 +54,12 @@ fun CreditCardsSummaryCard(
                         defaultIcon = R.drawable.ic_custom_account_s,
                         tint = Color(card.color),
                     )
-                    Text(card.name, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        card.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 CreditCurrencySummary(card.stats)
                 card.total?.let { CreditOwedTotalRow(it) }

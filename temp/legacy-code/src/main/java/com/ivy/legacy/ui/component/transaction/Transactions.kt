@@ -9,20 +9,19 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.design.system.IvyMotion
+import com.ivy.design.system.IvySpacing
 import com.ivy.legacy.data.AppBaseData
 import com.ivy.legacy.data.LegacyDueSection
 import com.ivy.navigation.EditTransactionScreen
@@ -30,9 +29,6 @@ import com.ivy.navigation.Navigation
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.TransactionHistoryDateDivider
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.Orange
-import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.components.IvyIcon
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -97,12 +93,7 @@ fun LazyListScope.transactions(
         }
     }
 
-    scrollHackSpacer(
-        history = history,
-        upcoming = upcoming,
-        overdue = overdue,
-        lastItemSpacer = lastItemSpacer
-    )
+    scrollHackSpacer(lastItemSpacer = lastItemSpacer)
 }
 
 private fun LazyListScope.upcomingSection(
@@ -124,7 +115,7 @@ private fun LazyListScope.upcomingSection(
                 expanded = upcoming.expanded,
                 setExpanded = setExpanded,
                 title = stringRes(R.string.upcoming),
-                titleColor = Orange,
+                titleColor = MaterialTheme.colorScheme.secondary,
                 baseCurrency = baseData.baseCurrency,
                 income = upcoming.stats.income.toDouble(),
                 expenses = upcoming.stats.expense.abs().toDouble()
@@ -164,7 +155,7 @@ private fun LazyListScope.overdueSection(
                 expanded = overdue.expanded,
                 setExpanded = setExpanded,
                 title = stringRes(R.string.overdue),
-                titleColor = Red,
+                titleColor = MaterialTheme.colorScheme.error,
                 baseCurrency = baseData.baseCurrency,
                 income = overdue.stats.income.toDouble(),
                 expenses = overdue.stats.expense.abs().toDouble()
@@ -177,7 +168,7 @@ private fun LazyListScope.overdueSection(
                 FilledTonalButton(
                     modifier = Modifier
                         .animateItem(placementSpec = IvyMotion.placementSpring())
-                        .padding(horizontal = 24.dp)
+                        .padding(horizontal = IvySpacing.screenGutter)
                         .fillMaxWidth(),
                     onClick = { onSkipAllTransactions(overdue.trns) },
                 ) {
@@ -316,29 +307,25 @@ private fun LazyItemScope.NoTransactionsEmptyState(
 
         IvyIcon(
             icon = R.drawable.ic_notransactions,
-            tint = Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(24.dp))
 
         Text(
             text = emptyStateTitle,
-            style = UI.typo.b1.style(
-                color = Gray,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(Modifier.height(8.dp))
 
         Text(
-            modifier = Modifier.padding(horizontal = 32.dp),
+            modifier = Modifier.padding(horizontal = 24.dp),
             text = emptyStateText,
-            style = UI.typo.b2.style(
-                color = Gray,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
-            )
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
 
         Spacer(Modifier.height(96.dp))
@@ -346,27 +333,11 @@ private fun LazyItemScope.NoTransactionsEmptyState(
 }
 
 private fun LazyListScope.scrollHackSpacer(
-    history: List<TransactionHistoryItem>,
-    upcoming: LegacyDueSection?,
-    overdue: LegacyDueSection?,
-
     lastItemSpacer: Dp?,
 ) {
     item {
-        if (lastItemSpacer != null) {
-            Spacer(Modifier.height(lastItemSpacer))
-        } else {
-            // last spacer - scroll hack
-            val trnCount = history.size.plus(
-                if (upcoming != null && upcoming.expanded) upcoming.trns.size else 0
-            ).plus(
-                if (overdue != null && overdue.expanded) overdue.trns.size else 0
-            )
-            if (trnCount <= 5) {
-                Spacer(Modifier.height(300.dp))
-            } else {
-                Spacer(Modifier.height(150.dp))
-            }
-        }
+        // Callers with a floating bottom bar pass their own inset; the default keeps the last
+        // card clear of the bottom edge on the remaining legacy screens.
+        Spacer(Modifier.height(lastItemSpacer ?: 150.dp))
     }
 }

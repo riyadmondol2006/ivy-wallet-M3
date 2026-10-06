@@ -11,19 +11,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.CloudSync
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -34,6 +38,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,14 +47,12 @@ import com.ivy.base.model.TransactionType
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.api.LocalTimeProvider
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
+import com.ivy.design.system.IvySpacing
 import com.ivy.design.system.expense
 import com.ivy.design.system.financialNumberStyle
 import com.ivy.design.system.income
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.ivyWalletCtx
-import com.ivy.legacy.ui.component.transaction.TransactionsDividerLine
 import com.ivy.legacy.utils.clickableNoIndication
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.horizontalSwipeListener
@@ -59,16 +62,15 @@ import com.ivy.legacy.utils.rememberSwipeListenerState
 import com.ivy.legacy.utils.shortenAmount
 import com.ivy.legacy.utils.shouldShortAmount
 import com.ivy.legacy.utils.springBounce
-import com.ivy.legacy.utils.verticalSwipeListener
 import com.ivy.navigation.PieChartStatisticScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.components.BalanceRowMini
-import com.ivy.wallet.ui.theme.components.IvyIcon
-import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
-import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
+import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1Row
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+
+private const val HiddenAmount = "****"
 
 @Suppress("LongParameterList")
 @ExperimentalAnimationApi
@@ -99,7 +101,7 @@ internal fun HomeHeader(
             label = "Home Header Expand Collapse"
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(12.dp))
 
         HeaderStickyRow(
             percentExpanded = percentExpanded,
@@ -120,12 +122,12 @@ internal fun HomeHeader(
             onOpenMoreMenu = onOpenMoreMenu,
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         if (percentExpanded < 0.5f) {
-            TransactionsDividerLine(
+            HorizontalDivider(
                 modifier = Modifier.alpha(1f - percentExpanded),
-                paddingHorizontal = 0.dp
+                color = MaterialTheme.colorScheme.outlineVariant,
             )
         }
     }
@@ -150,10 +152,13 @@ private fun HeaderStickyRow(
     onManualSync: () -> Unit,
     onOpenMoreMenu: () -> Unit,
 ) {
+    // Same geometry as a Material 3 top app bar: 16dp start gutter, 4dp end inset so the 48dp
+    // icon buttons' glyphs land on the 16dp gutter, and a 48dp minimum height.
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .heightIn(min = 48.dp)
+            .padding(start = IvySpacing.screenGutter, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End,
     ) {
@@ -180,7 +185,8 @@ private fun HeaderStickyRow(
                 maxLines = 1,
             )
 
-            // Balance mini row
+            // Collapsed state: the balance on one line, the same height as the greeting, so the
+            // header never changes height while it collapses.
             if (percentExpanded < 1f) {
                 BalanceRowMini(
                     modifier = Modifier
@@ -192,16 +198,18 @@ private fun HeaderStickyRow(
                                 onBalanceClick()
                             }
                         },
+                    textColor = MaterialTheme.colorScheme.onSurface,
                     currency = currency,
                     balance = balance,
                     shortenBigNumbers = true,
                     hiddenMode = hideBalance,
-                    doubleRowDisplay = true,
                 )
             }
         }
 
-        IvyOutlinedButton(
+        Spacer(Modifier.width(IvySpacing.inlineGap))
+
+        PeriodButton(
             modifier = Modifier.horizontalSwipeListener(
                 sensitivity = 75,
                 state = rememberSwipeListenerState(),
@@ -212,27 +220,17 @@ private fun HeaderStickyRow(
                     onSelectPreviousMonth()
                 },
             ),
-            iconStart = R.drawable.ic_calendar,
-            text = period.toDisplayShort(
-                startDateOfMonth = ivyWalletCtx().startDayOfMonth,
-                timeConverter = LocalTimeConverter.current,
-                timeProvider = LocalTimeProvider.current,
-                timeFormatter = LocalTimeFormatter.current,
-            ),
-            minWidth = 130.dp,
-        ) {
-            onShowMonthModal()
-        }
+            period = period,
+            onClick = onShowMonthModal,
+        )
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(4.dp))
 
         if (manualSyncVisible) {
             IconButton(
                 onClick = onManualSync,
                 enabled = !syncing,
-                modifier = Modifier
-                    .size(40.dp)
-                    .testTag("home_manual_sync"),
+                modifier = Modifier.testTag("home_manual_sync"),
             ) {
                 if (syncing) {
                     CircularProgressIndicator(
@@ -241,7 +239,7 @@ private fun HeaderStickyRow(
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.Filled.Refresh,
+                        imageVector = Icons.Rounded.CloudSync,
                         contentDescription = stringResource(R.string.cloud_sync_now),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -249,15 +247,13 @@ private fun HeaderStickyRow(
             }
         }
 
-        // Opens the redesigned "More" panel (quick access, sync, savings goal, open-source).
+        // Opens the "More" panel (quick access, sync, savings goal, open-source).
         IconButton(
             onClick = onOpenMoreMenu,
-            modifier = Modifier
-                .size(40.dp)
-                .testTag("home_more_menu_arrow"),
+            modifier = Modifier.testTag("home_more_menu_arrow"),
         ) {
             Icon(
-                imageVector = Icons.Rounded.KeyboardArrowDown,
+                imageVector = Icons.Rounded.MoreVert,
                 contentDescription = stringResource(R.string.more),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -265,6 +261,38 @@ private fun HeaderStickyRow(
     }
 }
 
+/** Material 3 outlined pill with the calendar icon; a fixed min width keeps it from jumping between months. */
+@Composable
+private fun PeriodButton(
+    period: TimePeriod,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.defaultMinSize(minWidth = 130.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_calendar),
+            contentDescription = null,
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+        )
+        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+        Text(
+            text = period.toDisplayShort(
+                startDateOfMonth = ivyWalletCtx().startDayOfMonth,
+                timeConverter = LocalTimeConverter.current,
+                timeProvider = LocalTimeProvider.current,
+                timeFormatter = LocalTimeFormatter.current,
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+        )
+    }
+}
+
+@Suppress("LongParameterList")
 @ExperimentalAnimationApi
 @Composable
 fun CashFlowInfo(
@@ -275,123 +303,113 @@ fun CashFlowInfo(
     hideBalance: Boolean,
     hideIncome: Boolean,
     onHiddenIncomeClick: () -> Unit,
-    onOpenMoreMenu: () -> Unit,
     onBalanceClick: () -> Unit,
     percentExpanded: Float,
     onHiddenBalanceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val nav = navigation()
+    // Hero balance card: total balance, the month's income/expense split and the resulting cashflow.
+    // No swipe listener here: the whole card must scroll the list like any other item.
     Column(
         modifier = modifier
-            .verticalSwipeListener(
-                sensitivity = Constants.SWIPE_DOWN_THRESHOLD_OPEN_MORE_MENU,
-                state = rememberSwipeListenerState(),
-                onSwipeDown = {
-                    onOpenMoreMenu()
+            .padding(horizontal = IvySpacing.screenGutter)
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.large)
+            .padding(20.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.total_balance),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        ExpressiveBalanceRow(
+            modifier = Modifier
+                .clickableNoIndication(rememberInteractionSource()) {
+                    if (hideBalance) {
+                        onHiddenBalanceClick()
+                    } else {
+                        onBalanceClick()
+                    }
+                }
+                .testTag("home_balance"),
+            currency = currency,
+            balance = balance,
+            percentExpanded = percentExpanded,
+            hiddenMode = hideBalance,
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BalanceStat(
+                modifier = Modifier.weight(1f),
+                icon = R.drawable.ic_income,
+                label = stringResource(R.string.income),
+                amount = monthlyIncome,
+                currency = currency,
+                hidden = hideIncome,
+                amountColor = MaterialTheme.colorScheme.income,
+                testTag = "home_card_income",
+                onClick = {
+                    if (hideIncome) {
+                        onHiddenIncomeClick()
+                    } else {
+                        nav.navigateTo(
+                            PieChartStatisticScreen(type = TransactionType.INCOME),
+                        )
+                    }
                 },
             )
-            .padding(horizontal = 16.dp),
-    ) {
-        // M3 hero balance card: total balance + inline income/expense split.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(UI.shapes.r3)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, UI.shapes.r3)
-                .padding(20.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.total_balance),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            VerticalDivider(
+                modifier = Modifier.height(40.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
             )
 
-            Spacer(Modifier.height(6.dp))
-
-            ExpressiveBalanceRow(
-                modifier = Modifier
-                    .clickableNoIndication(rememberInteractionSource()) {
-                        if (hideBalance) {
-                            onHiddenBalanceClick()
-                        } else {
-                            onBalanceClick()
-                        }
-                    }
-                    .testTag("home_balance"),
+            BalanceStat(
+                modifier = Modifier.weight(1f),
+                icon = R.drawable.ic_expense,
+                label = stringResource(R.string.expenses),
+                amount = monthlyExpenses.absoluteValue,
                 currency = currency,
-                balance = balance,
-                percentExpanded = percentExpanded,
-                hiddenMode = hideBalance,
+                hidden = false,
+                amountColor = MaterialTheme.colorScheme.expense,
+                testTag = "home_card_expense",
+                onClick = {
+                    nav.navigateTo(
+                        PieChartStatisticScreen(type = TransactionType.EXPENSE),
+                    )
+                },
             )
-
-            Spacer(Modifier.height(20.dp))
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                BalanceStat(
-                    modifier = Modifier.weight(1f),
-                    icon = R.drawable.ic_income,
-                    label = stringResource(R.string.income),
-                    amount = monthlyIncome,
-                    currency = currency,
-                    amountColor = MaterialTheme.colorScheme.income,
-                    testTag = "home_card_income",
-                    onClick = {
-                        if (hideIncome) {
-                            onHiddenIncomeClick()
-                        } else {
-                            nav.navigateTo(
-                                PieChartStatisticScreen(type = TransactionType.INCOME),
-                            )
-                        }
-                    },
-                )
-
-                VerticalDivider(
-                    modifier = Modifier.height(40.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
-
-                BalanceStat(
-                    modifier = Modifier.weight(1f),
-                    icon = R.drawable.ic_expense,
-                    label = stringResource(R.string.expenses),
-                    amount = monthlyExpenses.absoluteValue,
-                    currency = currency,
-                    amountColor = MaterialTheme.colorScheme.expense,
-                    testTag = "home_card_expense",
-                    onClick = {
-                        nav.navigateTo(
-                            PieChartStatisticScreen(type = TransactionType.EXPENSE),
-                        )
-                    },
-                )
-            }
         }
 
         val cashflow = monthlyIncome - monthlyExpenses
-        if (cashflow != 0.0 && !hideBalance) {
+        if (cashflow != 0.0 && !hideBalance && !hideIncome) {
             Spacer(Modifier.height(12.dp))
 
             Text(
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 text = stringResource(
                     R.string.cashflow,
                     (if (cashflow > 0) "+" else ""),
                     cashflow.format(currency),
                     currency,
                 ),
-                style = UI.typo.nB2.style(
-                    color = if (cashflow < 0) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.income
-                    },
-                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (cashflow < 0) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.income
+                },
             )
         }
     }
@@ -414,7 +432,7 @@ private fun ExpressiveBalanceRow(
     modifier: Modifier = Modifier,
 ) {
     val amountText = when {
-        hiddenMode -> "****"
+        hiddenMode -> HiddenAmount
         shouldShortAmount(balance) -> shortenAmount(balance)
         else -> balance.format(currency)
     }
@@ -433,12 +451,14 @@ private fun ExpressiveBalanceRow(
     )
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun BalanceStat(
     @DrawableRes icon: Int,
     label: String,
     amount: Double,
     currency: String,
+    hidden: Boolean,
     amountColor: Color,
     testTag: String,
     onClick: () -> Unit,
@@ -446,14 +466,16 @@ private fun BalanceStat(
 ) {
     Column(
         modifier = modifier
-            .clip(UI.shapes.r4)
+            .clip(MaterialTheme.shapes.small)
             .clickable(onClick = onClick)
             .testTag(testTag)
             .padding(vertical = 6.dp, horizontal = 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IvyIcon(
-                icon = icon,
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
                 tint = amountColor,
             )
 
@@ -468,11 +490,19 @@ private fun BalanceStat(
 
         Spacer(Modifier.height(4.dp))
 
-        AmountCurrencyB1(
-            amount = amount,
-            currency = currency,
-            textColor = amountColor,
-            shortenBigNumbers = true,
-        )
+        if (hidden) {
+            Text(
+                text = HiddenAmount,
+                style = MaterialTheme.typography.titleMedium,
+                color = amountColor,
+            )
+        } else {
+            AmountCurrencyB1Row(
+                amount = amount,
+                currency = currency,
+                textColor = amountColor,
+                shortenBigNumbers = true,
+            )
+        }
     }
 }

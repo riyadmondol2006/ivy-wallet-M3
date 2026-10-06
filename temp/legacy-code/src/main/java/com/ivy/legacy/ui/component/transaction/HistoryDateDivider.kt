@@ -5,29 +5,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
+import com.ivy.design.system.IvySpacing
+import com.ivy.design.system.income
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.legacy.utils.dateNowLocal
 import com.ivy.legacy.utils.dateNowUTC
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.formatLocal
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gray
-import com.ivy.wallet.ui.theme.Green
 import java.time.LocalDate
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
+/** Date header above a day's transactions with that day's net cashflow on the trailing side. */
 @Composable
 fun HistoryDateDivider(
     date: LocalDate,
@@ -40,24 +38,22 @@ fun HistoryDateDivider(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(horizontal = IvySpacing.screenGutter),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(24.dp))
-
         val today = dateNowLocal()
 
         Column {
             Text(
                 text = date.formatLocal(
-                    if (today.year == date.year) "MMMM dd." else "MMM dd. yyy"
+                    if (today.year == date.year) "MMMM dd" else "MMM dd, yyyy"
                 ),
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.ExtraBold
-                )
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
 
             Text(
                 text = when (date) {
@@ -74,9 +70,8 @@ fun HistoryDateDivider(
                         date.formatLocal("EEEE")
                     }
                 },
-                style = UI.typo.c.style(
-                    fontWeight = FontWeight.Bold
-                )
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -85,13 +80,13 @@ fun HistoryDateDivider(
         val cashflow = income - expenses
         Text(
             text = "${cashflow.format(baseCurrency)} $baseCurrency",
-            style = UI.typo.nB2.style(
-                fontWeight = FontWeight.Bold,
-                color = if (cashflow > 0) Green else Gray
-            )
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (cashflow > 0) {
+                MaterialTheme.colorScheme.income
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
-
-        Spacer(Modifier.width(32.dp))
     }
 
     Spacer(Modifier.height(4.dp))

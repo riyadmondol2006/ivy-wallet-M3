@@ -5,14 +5,17 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +43,7 @@ import com.ivy.base.legacy.stringRes
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.api.LocalTimeProvider
+import com.ivy.design.system.IvySpacing
 import com.ivy.frp.forward
 import com.ivy.frp.then2
 import com.ivy.home.Constants.SWIPE_HORIZONTAL_THRESHOLD
@@ -53,7 +57,6 @@ import com.ivy.legacy.data.model.MainTab
 import com.ivy.legacy.data.model.Month
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.ivyWalletCtx
-import com.ivy.legacy.ui.component.transaction.TransactionsDividerLine
 import com.ivy.legacy.ui.component.transaction.transactions
 import com.ivy.legacy.utils.horizontalSwipeListener
 import com.ivy.legacy.utils.rememberSwipeListenerState
@@ -129,12 +132,11 @@ fun BoxWithConstraintsScope.HomeUi(
             .horizontalSwipeListener(
                 sensitivity = SWIPE_HORIZONTAL_THRESHOLD,
                 state = rememberSwipeListenerState(),
+                // Accounts is the next tab, so only a swipe towards it (left) changes tabs; this
+                // matches the forward slide transition in MainScreen.
                 onSwipeLeft = {
                     ivyContext.selectMainTab(MainTab.ACCOUNTS)
                 },
-                onSwipeRight = {
-                    ivyContext.selectMainTab(MainTab.ACCOUNTS)
-                }
             )
     ) {
         val listState = rememberScrollPositionListState(
@@ -187,9 +189,6 @@ fun BoxWithConstraintsScope.HomeUi(
                 onEvent(HomeEvent.SetExpanded(it))
             },
             balance = uiState.balance,
-            onOpenMoreMenu = {
-                setMoreMenuExpanded(true)
-            },
             onBalanceClick = {
                 onEvent(HomeEvent.BalanceClick)
             },
@@ -396,7 +395,6 @@ fun HomeLazyColumn(
     setUpcomingExpanded: (Boolean) -> Unit,
     setOverdueExpanded: (Boolean) -> Unit,
 
-    onOpenMoreMenu: () -> Unit,
     onBalanceClick: () -> Unit,
 
     onPayOrGet: (Transaction) -> Unit,
@@ -416,7 +414,10 @@ fun HomeLazyColumn(
                 available: Offset,
                 source: NestedScrollSource
             ): Offset {
-                onSetExpand(listState.firstVisibleItemScrollOffset == 0)
+                onSetExpand(
+                    listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0
+                )
                 return super.onPostScroll(consumed, available, source)
             }
         }
@@ -430,7 +431,9 @@ fun HomeLazyColumn(
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection)
             .testTag("home_lazy_column"),
-        state = listState
+        state = listState,
+        // Bottom inset clears the floating navigation bar and the FAB above it.
+        contentPadding = PaddingValues(top = 8.dp, bottom = HomeListBottomInset),
     ) {
         item {
             CashFlowInfo(
@@ -442,7 +445,6 @@ fun HomeLazyColumn(
                 monthlyIncome = stats.income.toDouble(),
                 monthlyExpenses = stats.expense.toDouble(),
 
-                onOpenMoreMenu = onOpenMoreMenu,
                 onBalanceClick = onBalanceClick,
                 onHiddenBalanceClick = onHiddenBalanceClick,
                 percentExpanded = 1f,
@@ -464,7 +466,10 @@ fun HomeLazyColumn(
         item {
             Spacer(Modifier.height(16.dp))
 
-            TransactionsDividerLine()
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = IvySpacing.screenGutter),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
         }
 
         item {
@@ -493,12 +498,18 @@ fun HomeLazyColumn(
                 )
             ),
             shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
+            dateDividerMarginTop = 24.dp,
+            lastItemSpacer = 0.dp,
             onSkipTransaction = onSkipTransaction,
             onSkipAllTransactions = onSkipAllTransactions
         )
     }
 }
 
+/** 80dp navigation bar + 56dp FAB + a 24dp gap. */
+private val HomeListBottomInset = 160.dp
+
+@Suppress("MagicNumber")
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
 @Preview
@@ -510,18 +521,21 @@ private fun BoxWithConstraintsScope.PreviewHomeTab(isDark: Boolean = false) {
                 theme = Theme.AUTO,
                 name = "",
                 baseData = AppBaseData(
-                    baseCurrency = "",
+                    baseCurrency = "BDT",
                     accounts = persistentListOf(),
                     categories = persistentListOf()
                 ),
-                balance = BigDecimal.ZERO,
+                balance = BigDecimal("14347.50"),
                 buffer = BufferInfo(
                     amount = BigDecimal.ZERO,
                     bufferDiff = BigDecimal.ZERO,
                 ),
                 customerJourneyCards = persistentListOf(),
                 history = persistentListOf(),
-                stats = IncomeExpensePair.zero(),
+                stats = IncomeExpensePair(
+                    income = BigDecimal("52000"),
+                    expense = BigDecimal("37652.50"),
+                ),
                 upcoming = LegacyDueSection(
                     trns = persistentListOf(),
                     stats = IncomeExpensePair.zero(),
@@ -535,7 +549,7 @@ private fun BoxWithConstraintsScope.PreviewHomeTab(isDark: Boolean = false) {
                 period = TimePeriod(month = Month.monthsList().first(), year = 2023),
                 hideBalance = false,
                 hideIncome = false,
-                expanded = false,
+                expanded = true,
                 shouldShowAccountSpecificColorInTransactions = false
             ),
             onEvent = {}

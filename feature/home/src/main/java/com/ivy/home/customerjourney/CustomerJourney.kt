@@ -1,7 +1,6 @@
 package com.ivy.home.customerjourney
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,29 +8,34 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
+import com.ivy.design.system.IvySpacing
 import com.ivy.domain.RootScreen
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.rootScreen
 import com.ivy.navigation.IvyPreview
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.components.IvyButton
-import com.ivy.wallet.ui.theme.components.IvyIcon
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
@@ -46,12 +50,8 @@ fun CustomerJourney(
     if (LocalContext.current is RootScreen) {
         val rootScreen = rootScreen()
 
-        if (customerJourneyCards.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-        }
-
         for (card in customerJourneyCards) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
             CustomerJourneyCard(
                 modifier = modifier,
@@ -68,6 +68,7 @@ fun CustomerJourney(
     }
 }
 
+/** Soft tonal prompt card on `primaryContainer`; same corner radius and gutter as the other Home cards. */
 @Composable
 fun CustomerJourneyCard(
     cardData: CustomerJourneyCardModel,
@@ -75,87 +76,72 @@ fun CustomerJourneyCard(
     modifier: Modifier = Modifier,
     onCTA: () -> Unit,
 ) {
-    // Soft M3 tonal card that follows Material You (no saturated hardcoded fill).
-    val container = MaterialTheme.colorScheme.primaryContainer
     val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
-    Column(
+    Card(
+        onClick = onCTA,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(UI.shapes.r3)
-            .background(container, UI.shapes.r3)
-            .clickable {
-                onCTA()
-            }
+            .padding(horizontal = IvySpacing.screenGutter),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = onContainer,
+        ),
     ) {
-        Spacer(Modifier.height(16.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 8.dp),
+                    text = cardData.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = onContainer,
+                )
+
+                if (cardData.hasDismiss) {
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = stringResource(R.string.close),
+                            tint = onContainer,
+                        )
+                    }
+                }
+            }
+
             Text(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 24.dp, end = 16.dp),
-                text = cardData.title,
-                style = UI.typo.b1.style(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = onContainer
-                )
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
+                text = cardData.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = onContainer,
             )
 
-            if (cardData.hasDismiss) {
-                IvyIcon(
+            if (cardData.cta != null) {
+                Spacer(Modifier.height(4.dp))
+
+                Button(
                     modifier = Modifier
-                        .clickable {
-                            onDismiss()
-                        }
-                        .padding(8.dp), // enlarge click area
-                    icon = R.drawable.ic_dismiss,
-                    tint = onContainer,
-                    contentDescription = "prompt_dismiss",
-                )
-
-                Spacer(Modifier.width(20.dp))
+                        .align(Alignment.End)
+                        .padding(end = 8.dp)
+                        .testTag("cta_prompt_${cardData.id}"),
+                    onClick = onCTA,
+                ) {
+                    Icon(
+                        painter = painterResource(cardData.ctaIcon),
+                        contentDescription = null,
+                        modifier = Modifier.size(ButtonDefaults.IconSize),
+                    )
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(text = cardData.cta)
+                }
             }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Text(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 32.dp),
-            text = cardData.description,
-            style = UI.typo.b2.style(
-                fontWeight = FontWeight.Medium,
-                color = onContainer
-            )
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        if (cardData.cta != null) {
-            IvyButton(
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(horizontal = 20.dp)
-                    .testTag("cta_prompt_${cardData.id}"),
-                text = cardData.cta,
-                shadowAlpha = 0f,
-                iconStart = cardData.ctaIcon,
-                iconTint = MaterialTheme.colorScheme.onPrimary,
-                textStyle = UI.typo.b2.style(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
-                ),
-                padding = 8.dp,
-                backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary)
-            ) {
-                onCTA()
-            }
-
-            Spacer(Modifier.height(20.dp))
         }
     }
 }
