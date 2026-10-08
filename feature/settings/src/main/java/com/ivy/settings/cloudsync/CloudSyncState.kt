@@ -31,6 +31,14 @@ data class CloudSyncState(
     val onboardingRestore: OnboardingRestoreUi,
     val completion: CompletionSignal,
     val quickAdd: QuickAddStatus,
+    /** Shown right after adding a database that already holds a backup (outside onboarding). */
+    val existingBackup: ExistingBackup?,
+)
+
+/** A backup found in a database the user just added. */
+data class ExistingBackup(
+    val accounts: Int,
+    val updatedAtMillis: Long,
 )
 
 sealed interface TestStatus {
@@ -77,6 +85,9 @@ enum class CompletionSignal {
 sealed interface QuickAddStatus {
     data object Idle : QuickAddStatus
     data object Connecting : QuickAddStatus
+
+    /** The pasted database was tested and saved. */
+    data object Connected : QuickAddStatus
 
     /** The pasted text has no host or no password. */
     data object InvalidInput : QuickAddStatus

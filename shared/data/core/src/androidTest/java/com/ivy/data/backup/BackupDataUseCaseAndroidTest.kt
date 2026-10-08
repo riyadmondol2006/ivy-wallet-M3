@@ -136,6 +136,43 @@ class BackupDataUseCaseAndroidTest {
     }
 
     @Test
+    fun aFailureInsideTheReplaceTransactionRollsEverythingBack() = runBlocking<Unit> {
+        // The repositories delete through withContext(IO) inside the transaction; this proves Room
+        // still treats those writes as part of it and undoes them when the block fails.
+        useCase.importBackupFile(
+            copyTestResourceToInternalStorage("backups/450-150.zip"),
+            onProgress = {},
+        ).shouldBeSuccessful()
+        val accountsBefore = db.accountDao.findAll()
+        val transactionsBefore = db.transactionDao.findAll().size
+        val accountRepository = AccountRepository(
+            accountDao = db.accountDao,
+            writeAccountDao = db.writeAccountDao,
+            mapper = AccountMapper(
+                CurrencyRepository(
+                    settingsDao = db.settingsDao,
+                    writeSettingsDao = db.writeSettingsDao,
+                    dispatchersProvider = TestDispatchersProvider,
+                )
+            ),
+            dispatchersProvider = TestDispatchersProvider,
+            memoFactory = fakeRepositoryMemoFactory(),
+        )
+
+        runCatching {
+            RoomDbTransactionRunner(db).inTransaction {
+                accountRepository.deleteAll()
+                db.writeTransactionDao.deleteAll()
+                check(db.accountDao.findAll().isEmpty())
+                error("simulated failure after the deletes")
+            }
+        }
+
+        db.accountDao.findAll() shouldBe accountsBefore
+        db.transactionDao.findAll().size shouldBe transactionsBefore
+    }
+
+    @Test
     fun aBrokenCloudBackupLeavesTheDatabaseUntouched() = runBlocking<Unit> {
         useCase.importBackupFile(
             copyTestResourceToInternalStorage("backups/450-150.zip"),

@@ -549,6 +549,14 @@
     <string name="cloud_sync_quick_add_title">Quick add</string>
     <string name="cloud_sync_quick_add_desc">In your Upstash database, open Connect, copy the redis-cli line and paste it here. The connection is filled in, tested and saved for you.</string>
     <string name="cloud_sync_quick_add_paste">Paste</string>
+    <string name="cloud_sync_quick_add_replace_desc">Paste the redis-cli line of a different database to switch to it. The new connection is tested and saved for you.</string>
+    <string name="cloud_sync_quick_add_connected">Connected and saved</string>
+    <string name="cloud_sync_existing_backup_desc">This database already has an Ivy Wallet backup (%1$d accounts, last updated %2$s). Restore it to this phone, keeping the data already here, or overwrite it with this phone\'s data.</string>
+    <string name="cloud_sync_existing_restore">Restore</string>
+    <string name="cloud_sync_later">Later</string>
+    <string name="cloud_sync_error_title">Cloud sync isn\'t working</string>
+    <string name="cloud_sync_error_desc">Your database couldn\'t be reached: %1$s</string>
+    <string name="cloud_sync_error_open_settings">Check settings</string>
     <string name="cloud_sync_quick_add_connect">Connect</string>
     <string name="cloud_sync_quick_add_invalid">That isn\'t a Redis connection line. Paste the whole line, including the password.</string>
     <string name="cloud_sync_guide_title">How to get your Upstash Redis</string>

@@ -65,20 +65,11 @@ fun NavigationRoot(
     navigation: Navigation,
     navGraph: @Composable (screen: Screen?) -> Unit
 ) {
-    val screenViewModels = rememberScreenViewModelStoreOwner()
+    val screenStores = rememberScreenViewModelStores()
     CompositionLocalProvider(
         LocalNavigation provides navigation,
-        LocalViewModelStoreOwner provides screenViewModels,
+        LocalScreenViewModelStores provides screenStores,
     ) {
-        DisposableEffect(navigation.currentScreen) {
-            onDispose {
-                // Destroy viewModels only for non-legacy screens
-                if (navigation.lastScreen?.isLegacy == false) {
-                    screenViewModels.viewModelStore.clear()
-                }
-            }
-        }
-
         // Seekable transition state so a predictive-back gesture can *scrub* the screen change with
         // the user's finger, instead of the change happening instantly on release.
         val transitionState = remember {
@@ -145,7 +136,23 @@ fun NavigationRoot(
                     // Animate only on genuine screen changes, not on in-screen state updates.
                     contentKey = { it?.let { screen -> screen::class.qualifiedName } ?: "null" },
                 ) { screen ->
-                    CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+                    // Each screen gets its own ViewModel store, provided inside its own slot so a
+                    // screen animating out keeps using its own ViewModels, not the next screen's.
+                    val owner = remember(screen) { screenStores.ownerFor(screen) }
+                    CompositionLocalProvider(
+                        LocalNavAnimatedVisibilityScope provides this,
+                        LocalViewModelStoreOwner provides owner,
+                    ) {
+                        DisposableEffect(screen) {
+                            onDispose {
+                                // Destroy a non-legacy screen's ViewModels once it has fully left
+                                // (after its exit animation). Legacy screens keep theirs, so going
+                                // back to one finds it as it was.
+                                if (screen?.isLegacy == false && navigation.currentScreen != screen) {
+                                    screenStores.clear(screen)
+                                }
+                            }
+                        }
                         navGraph(screen)
                     }
                 }
@@ -155,30 +162,35 @@ fun NavigationRoot(
 }
 
 /**
- * Keeps the screens' ViewModels in their own store, inside a holder that lives in the activity's
- * store. Leaving a screen clears only this store: clearing the activity's store would also destroy
- * activity-level ViewModels such as the root one, which then comes back uninitialised and leaves
- * the app blank (e.g. after restoring a cloud backup during onboarding). The holder survives
- * configuration changes, so screen ViewModels do too, as before.
+ * One ViewModel store per screen, kept in a holder that lives in the activity's store so they
+ * survive configuration changes. Clearing a screen's store touches nothing else: not another
+ * screen's ViewModels, and not activity-level ones such as the root ViewModel (clearing those
+ * used to blank the app, e.g. after restoring a cloud backup during onboarding).
  */
 @Composable
-private fun rememberScreenViewModelStoreOwner(): ViewModelStoreOwner {
+private fun rememberScreenViewModelStores(): ScreenViewModelStores {
     val parent = LocalViewModelStoreOwner.current
-        // Previews and screenshot tests have no owner; their screens don't use ViewModels.
-        ?: return remember {
-            object : ViewModelStoreOwner {
-                override val viewModelStore = ViewModelStore()
-            }
-        }
-    val holder: ScreenViewModelsHolder = viewModel(
-        viewModelStoreOwner = parent,
-        factory = viewModelFactory { initializer { ScreenViewModelsHolder() } },
-    )
-    return remember(parent, holder) {
-        object : ViewModelStoreOwner, HasDefaultViewModelProviderFactory {
-            override val viewModelStore: ViewModelStore = holder.store
+    // Previews and screenshot tests have no owner; their screens don't use ViewModels.
+    val holder: ScreenViewModelsHolder = if (parent == null) {
+        remember { ScreenViewModelsHolder() }
+    } else {
+        viewModel(
+            viewModelStoreOwner = parent,
+            factory = viewModelFactory { initializer { ScreenViewModelsHolder() } },
+        )
+    }
+    return remember(parent, holder) { ScreenViewModelStores(holder, parent) }
+}
 
-            // Screens are created by the activity's factory (Hilt), exactly as before.
+internal class ScreenViewModelStores(
+    private val holder: ScreenViewModelsHolder,
+    private val parent: ViewModelStoreOwner?,
+) {
+    fun ownerFor(screen: Screen?): ViewModelStoreOwner =
+        object : ViewModelStoreOwner, HasDefaultViewModelProviderFactory {
+            override val viewModelStore: ViewModelStore = holder.storeFor(screen)
+
+            // Screen ViewModels are created by the activity's factory (Hilt), exactly as before.
             override val defaultViewModelProviderFactory: ViewModelProvider.Factory
                 get() = (parent as? HasDefaultViewModelProviderFactory)
                     ?.defaultViewModelProviderFactory
@@ -189,20 +201,48 @@ private fun rememberScreenViewModelStoreOwner(): ViewModelStoreOwner {
                     ?.defaultViewModelCreationExtras
                     ?: CreationExtras.Empty
         }
-    }
+
+    fun clear(screen: Screen?): Unit = holder.clear(screen)
 }
 
 internal class ScreenViewModelsHolder : ViewModel() {
-    val store = ViewModelStore()
+    // Screens are data classes/objects, so the same screen always maps to the same store.
+    private val stores = mutableMapOf<Any, ViewModelStore>()
+
+    fun storeFor(screen: Screen?): ViewModelStore = stores.getOrPut(screen ?: NoScreen) { ViewModelStore() }
+
+    fun clear(screen: Screen?) {
+        stores.remove(screen ?: NoScreen)?.clear()
+    }
 
     override fun onCleared() {
-        store.clear()
+        stores.values.forEach(ViewModelStore::clear)
+        stores.clear()
     }
+
+    private object NoScreen
 }
+
+@SuppressLint("ComposeCompositionLocalUsage")
+@Suppress("CompositionLocalAllowlist")
+private val LocalScreenViewModelStores = compositionLocalOf<ScreenViewModelStores?> { null }
 
 @Composable
 fun navigation(): Navigation {
     return LocalNavigation.current
+}
+
+/**
+ * The ViewModel store owner of another screen, for a screen that has to talk to that screen's
+ * ViewModel (e.g. Cloud sync opened from onboarding finishing the onboarding). Pass it as the
+ * `viewModelStoreOwner` of `viewModel()`. Each screen's ViewModels live in their own store, so
+ * asking for the class from this screen's store would create a separate instance.
+ */
+@Composable
+fun screenViewModelStoreOwner(screen: Screen): ViewModelStoreOwner {
+    val stores = LocalScreenViewModelStores.current
+        ?: return checkNotNull(LocalViewModelStoreOwner.current) { "No ViewModelStoreOwner provided" }
+    return remember(stores, screen) { stores.ownerFor(screen) }
 }
 
 /**

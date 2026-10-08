@@ -31,8 +31,16 @@ class SyncConfigDataSource @Inject constructor(
         endpointType: SyncEndpointType,
     ) {
         dataStore.edit { prefs ->
-            prefs[EndpointUrlKey] = endpointUrl.trim().trimEnd('/')
-            prefs[TokenKey] = token.trim()
+            val cleanUrl = endpointUrl.trim().trimEnd('/')
+            val cleanToken = token.trim()
+            if (prefs[EndpointUrlKey] != cleanUrl || prefs[TokenKey] != cleanToken) {
+                // A different database: what this device last synced with the old one no longer
+                // says anything about the new one's backup.
+                prefs.remove(LastSyncedUpdatedAtKey)
+                prefs.remove(LocalChangedAtKey)
+            }
+            prefs[EndpointUrlKey] = cleanUrl
+            prefs[TokenKey] = cleanToken
             prefs[EndpointTypeKey] = endpointType.name
         }
     }
@@ -49,16 +57,19 @@ class SyncConfigDataSource @Inject constructor(
         }
     }
 
-    /** Records that local data changed; keeps the time of the first unsynced change. */
+    /**
+     * Records that local data changed. Always keeps the time of the latest change, so a change made
+     * while an upload was in progress is not forgotten when that upload finishes.
+     */
     suspend fun markLocalChange(at: Long) {
         dataStore.edit { prefs ->
-            if ((prefs[LocalChangedAtKey] ?: 0L) == 0L) prefs[LocalChangedAtKey] = at
+            prefs[LocalChangedAtKey] = maxOf(at, prefs[LocalChangedAtKey] ?: 0L)
         }
     }
 
     /**
      * Forgets local changes once they are in the cloud. [since] is when the synced snapshot was
-     * read from the database: a change marked after it is newer than the cloud and is kept.
+     * read from the database: a change marked after it is not in that snapshot and stays marked.
      */
     suspend fun clearLocalChange(since: Long) {
         dataStore.edit { prefs ->

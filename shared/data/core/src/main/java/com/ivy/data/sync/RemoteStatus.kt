@@ -12,6 +12,8 @@ import com.ivy.data.sync.model.RemoteSyncMeta
  * @param isNewer the remote revision differs from the one this device last synced.
  * @param hasLocalChanges this device has changes that are not in the cloud yet, so pulling merges
  *  both sides instead of replacing this device's data.
+ * @param error why the database could not be reached, or null when the check succeeded (or sync
+ *  is not set up). Shown on the Home screen so a broken connection is never silent.
  */
 data class RemoteStatus(
     val exists: Boolean,
@@ -19,6 +21,7 @@ data class RemoteStatus(
     val isFromOtherDevice: Boolean,
     val isNewer: Boolean,
     val hasLocalChanges: Boolean,
+    val error: String?,
 ) {
     /** True when the app should prompt the user to pull changes made elsewhere. */
     val shouldPromptPull: Boolean
@@ -35,6 +38,10 @@ data class RemoteStatus(
             isFromOtherDevice = false,
             isNewer = false,
             hasLocalChanges = false,
+            error = null,
         )
+
+        /** The database could not be reached; [message] says why. */
+        fun failed(message: String): RemoteStatus = empty().copy(error = message)
     }
 }

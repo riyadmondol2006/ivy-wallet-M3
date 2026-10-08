@@ -45,4 +45,10 @@ sealed interface HomeEvent {
     data object HideRemoteSync : HomeEvent
 
     data object DismissSyncMessage : HomeEvent
+
+    /** Hide the "database unreachable" card until the next check. */
+    data object DismissSyncError : HomeEvent
+
+    /** Open the cloud sync settings from the "database unreachable" card. */
+    data object OpenCloudSync : HomeEvent
 }

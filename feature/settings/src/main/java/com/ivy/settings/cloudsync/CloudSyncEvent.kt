@@ -24,6 +24,14 @@ sealed interface CloudSyncEvent {
 
     /** Pull the cloud backup and import it now. */
     data object RestoreNow : CloudSyncEvent
+
+    /** The newly added database already holds a backup: bring it into this device. */
+    data object RestoreExisting : CloudSyncEvent
+
+    /** The newly added database already holds a backup: replace it with this device's data. */
+    data object OverwriteExisting : CloudSyncEvent
+    data object DismissExisting : CloudSyncEvent
+
     data object RemoveConnection : CloudSyncEvent
     data object DismissMessage : CloudSyncEvent
 

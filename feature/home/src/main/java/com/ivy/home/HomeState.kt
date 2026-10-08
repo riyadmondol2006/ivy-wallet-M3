@@ -55,6 +55,8 @@ data class HomeState(
     val remoteSyncConflict: Boolean = false,
     /** One-shot result of the last sync action, shown as a toast and then dismissed. */
     val syncMessage: SyncMessage? = null,
+    /** Why the configured cloud database could not be reached on the last check, or null. */
+    val syncError: String? = null,
 )
 
 @Immutable

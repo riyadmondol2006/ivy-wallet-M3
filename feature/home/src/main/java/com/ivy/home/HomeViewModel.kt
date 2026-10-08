@@ -48,6 +48,7 @@ import com.ivy.legacy.domain.action.viewmodel.home.ShouldHideIncomeAct
 import com.ivy.legacy.utils.dateNowUTC
 import com.ivy.legacy.utils.ioThread
 import com.ivy.navigation.BalanceScreen
+import com.ivy.navigation.CloudSyncScreen
 import com.ivy.navigation.MainScreen
 import com.ivy.navigation.Navigation
 import com.ivy.ui.ComposeViewModel
@@ -159,6 +160,7 @@ class HomeViewModel @Inject constructor(
     private var remoteSyncPromptAt by mutableLongStateOf(0L)
     private var remoteSyncConflict by mutableStateOf(false)
     private var syncMessage by mutableStateOf<SyncMessage?>(null)
+    private var syncError by mutableStateOf<String?>(null)
 
     @Composable
     override fun uiState(): HomeState {
@@ -189,6 +191,7 @@ class HomeViewModel @Inject constructor(
             remoteSyncPromptAtMillis = remoteSyncPromptAt,
             remoteSyncConflict = remoteSyncConflict,
             syncMessage = syncMessage,
+            syncError = syncError,
         )
     }
 
@@ -303,6 +306,8 @@ class HomeViewModel @Inject constructor(
                 HomeEvent.DismissRemoteSync -> dismissRemoteSync()
                 HomeEvent.HideRemoteSync -> hideRemoteSync()
                 HomeEvent.DismissSyncMessage -> syncMessage = null
+                HomeEvent.DismissSyncError -> syncError = null
+                HomeEvent.OpenCloudSync -> nav.navigateTo(CloudSyncScreen(launchedFromOnboarding = false))
             }
         }
     }
@@ -316,6 +321,8 @@ class HomeViewModel @Inject constructor(
         } else {
             null
         }
+        // A database that can't be reached must not fail silently.
+        syncError = status?.error
         remoteSyncPromptAt = status?.takeIf { it.shouldPromptPull }?.meta?.updatedAt ?: 0L
         // This device has unsynced changes too: offer to merge, or to overwrite the cloud.
         remoteSyncConflict = status?.isConflict == true

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import com.ivy.data.sync.PushError
 import com.ivy.data.sync.RedisConnectionString
+import com.ivy.data.sync.RemoteStatus
 import com.ivy.data.sync.SyncConfigDataSource
 import com.ivy.data.sync.SyncEndpointType
 import com.ivy.data.sync.SyncMode
@@ -40,6 +41,7 @@ class CloudSyncViewModel @Inject constructor(
     private val onboardingRestore = mutableStateOf<OnboardingRestoreUi>(OnboardingRestoreUi.Hidden)
     private val completion = mutableStateOf(CompletionSignal.NONE)
     private val quickAddStatus = mutableStateOf<QuickAddStatus>(QuickAddStatus.Idle)
+    private val existingBackup = mutableStateOf<ExistingBackup?>(null)
 
     fun setLaunchedFromOnboarding(value: Boolean) {
         launchedFromOnboarding.value = value
@@ -75,6 +77,7 @@ class CloudSyncViewModel @Inject constructor(
             onboardingRestore = onboardingRestore.value,
             completion = completion.value,
             quickAdd = quickAddStatus.value,
+            existingBackup = existingBackup.value,
         )
     }
 
@@ -115,6 +118,17 @@ class CloudSyncViewModel @Inject constructor(
             CloudSyncEvent.SyncNow -> syncNow(force = false)
             CloudSyncEvent.ForceSyncNow -> syncNow(force = true)
             CloudSyncEvent.RestoreNow -> restoreNow()
+            CloudSyncEvent.RestoreExisting -> {
+                existingBackup.value = null
+                restoreNow()
+            }
+
+            CloudSyncEvent.OverwriteExisting -> {
+                existingBackup.value = null
+                syncNow(force = true)
+            }
+
+            CloudSyncEvent.DismissExisting -> existingBackup.value = null
             CloudSyncEvent.RemoveConnection -> removeConnection()
             CloudSyncEvent.DismissMessage -> message.value = null
             CloudSyncEvent.OnboardingRestore -> onboardingRestore()
@@ -133,19 +147,20 @@ class CloudSyncViewModel @Inject constructor(
      */
     private fun onUrlChanged(input: String) {
         val isPaste = input.length - url.value.length > 1
-        val pasted = if (isPaste && RedisConnectionString.isRedisConnectionString(input)) {
-            RedisConnectionString.parse(input)?.takeIf { it.password != null }
-        } else {
-            null
-        }
-        if (pasted != null) {
-            endpointType.value = SyncEndpointType.TCP
-            url.value = pasted.tlsUrl
-            token.value = pasted.password.orEmpty()
+        if (isPaste && isConnectionLine(input)) {
+            // A complete connection line was pasted: set it up right away, like Quick add.
+            quickAdd(input)
         } else {
             url.value = input
+            invalidateTest()
         }
-        invalidateTest()
+    }
+
+    companion object {
+        /** True for a pasted connection string that carries its password. */
+        fun isConnectionLine(text: String): Boolean =
+            RedisConnectionString.isRedisConnectionString(text) &&
+                RedisConnectionString.parse(text)?.password != null
     }
 
     private fun invalidateTest() {
@@ -177,7 +192,7 @@ class CloudSyncViewModel @Inject constructor(
     /**
      * Sets the database up from the one line the Upstash console shows
      * (`redis-cli --tls -u redis://default:PASSWORD@host:6379`): fills in the TCP connection,
-     * tests it and saves it.
+     * tests it and saves it, replacing any database saved before.
      */
     private fun quickAdd(connection: String): Unit = launchBusy {
         val address = RedisConnectionString.parse(connection)?.takeIf { it.password != null }
@@ -197,8 +212,8 @@ class CloudSyncViewModel @Inject constructor(
             },
             ifRight = {
                 testStatus.value = TestStatus.Success
-                quickAddStatus.value = QuickAddStatus.Idle
                 saveConnection()
+                quickAddStatus.value = QuickAddStatus.Connected
             },
         )
     }
@@ -228,7 +243,11 @@ class CloudSyncViewModel @Inject constructor(
                 OnboardingRestoreUi.NoBackup
             }
         } else {
-            refreshRemoteSummary()
+            val status = refreshRemoteSummary()
+            // Ask what to do with a backup that is already there, as onboarding does.
+            existingBackup.value = status.meta?.takeIf { status.exists }?.let { meta ->
+                ExistingBackup(accounts = meta.accounts, updatedAtMillis = meta.updatedAt)
+            }
         }
     }
 
@@ -299,7 +318,7 @@ class CloudSyncViewModel @Inject constructor(
         }
     }
 
-    private suspend fun refreshRemoteSummary() {
+    private suspend fun refreshRemoteSummary(): RemoteStatus {
         val status = syncRepository.checkRemote()
         remoteSummary.value = status.meta?.let { meta ->
             RemoteSummary(
@@ -308,5 +327,6 @@ class CloudSyncViewModel @Inject constructor(
                 fromThisDevice = !status.isFromOtherDevice,
             )
         }
+        return status
     }
 }

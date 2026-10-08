@@ -175,7 +175,7 @@ class SyncRepository @Inject constructor(
         if (!config.isConfigured) return@withContext RemoteStatus.empty()
 
         sourceFor(config.endpointType).getMeta(config.endpointUrl!!, config.token!!).fold(
-            ifLeft = { RemoteStatus.empty() },
+            ifLeft = { RemoteStatus.failed(it) },
             ifRight = { meta ->
                 RemoteStatus(
                     exists = meta != null,
@@ -183,6 +183,7 @@ class SyncRepository @Inject constructor(
                     isFromOtherDevice = meta != null && meta.deviceId != config.deviceId,
                     isNewer = meta != null && meta.updatedAt != config.lastSyncedUpdatedAt,
                     hasLocalChanges = hasLocalChanges(config),
+                    error = null,
                 )
             },
         )

@@ -34,7 +34,7 @@ enum class SyncEndpointType {
  * @param deviceId a stable per-install id used to tell "this device" apart from others.
  * @param lastSyncedUpdatedAt the remote `updatedAt` value this device last pushed or pulled
  *  (0 = never). Used to decide whether the cloud has newer changes worth pulling.
- * @param localChangedAt epoch millis of the first local change not yet in the cloud (0 = none).
+ * @param localChangedAt epoch millis of the latest local change not yet in the cloud (0 = none).
  *  Decides whether pulling may replace this device's data or has to merge it.
  */
 @Suppress("DataClassTypedIDs")

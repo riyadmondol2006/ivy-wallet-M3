@@ -10,6 +10,7 @@ import com.ivy.data.sync.RedisSyncDataSource
 import com.ivy.data.sync.RedisSyncDataSource.Companion.BACKUP_KEY
 import com.ivy.data.sync.RedisSyncDataSource.Companion.META_KEY
 import com.ivy.data.sync.RemoteSnapshot
+import com.ivy.data.sync.SyncErrorMessages
 import com.ivy.data.sync.model.RemoteSyncMeta
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -101,7 +102,12 @@ class RedisTcpSyncDataSourceImpl @Inject constructor(
                 conn.authenticate(target.user, password)
                 block(conn).right()
             }
-        }) { e -> (e.message ?: "Redis connection error").left() }
+        }) { e ->
+            when (e) {
+                is RedisServerException -> SyncErrorMessages.describeRedisReply(e.message.orEmpty())
+                else -> SyncErrorMessages.describe(e)
+            }.left()
+        }
     }
 
     private fun openTlsSocket(host: String, port: Int): SSLSocket {

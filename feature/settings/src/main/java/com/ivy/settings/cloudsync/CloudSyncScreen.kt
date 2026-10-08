@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,6 +45,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,8 +64,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.data.sync.SyncEndpointType
 import com.ivy.data.sync.SyncMode
 import com.ivy.legacy.rootScreen
+import com.ivy.navigation.OnboardingScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
+import com.ivy.navigation.screenViewModelStoreOwner
 import com.ivy.onboarding.OnboardingEvent
 import com.ivy.onboarding.viewmodel.OnboardingViewModel
 import com.ivy.ui.R
@@ -83,8 +87,13 @@ fun BoxWithConstraintsScope.CloudSyncScreen(screen: com.ivy.navigation.CloudSync
         viewModel.setLaunchedFromOnboarding(screen.launchedFromOnboarding)
     }
     val state = viewModel.uiState()
-    val onboardingViewModel: OnboardingViewModel? =
-        if (screen.launchedFromOnboarding) viewModel() else null
+    // The onboarding screen's own ViewModel, so finishing or skipping the restore moves the
+    // onboarding on from where it was.
+    val onboardingViewModel: OnboardingViewModel? = if (screen.launchedFromOnboarding) {
+        viewModel(viewModelStoreOwner = screenViewModelStoreOwner(OnboardingScreen))
+    } else {
+        null
+    }
     val nav = navigation()
     val rootScreen = rootScreen()
     val context = LocalContext.current
@@ -156,10 +165,8 @@ private fun CloudSyncUi(
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
 
-        if (!state.savedConfigured) {
-            Spacer(Modifier.height(16.dp))
-            QuickAddCard(state = state, onEvent = onEvent)
-        }
+        Spacer(Modifier.height(16.dp))
+        QuickAddCard(state = state, onEvent = onEvent)
 
         Spacer(Modifier.height(16.dp))
         GuideCard(onOpenUpstash = onOpenUpstash)
@@ -274,19 +281,31 @@ private fun CloudSyncUi(
             ConfiguredSection(state = state, onEvent = onEvent)
         }
 
+        state.existingBackup?.let { ExistingBackupDialog(backup = it, onEvent = onEvent) }
+
         Spacer(Modifier.height(40.dp))
     }
 }
 
 /**
  * One-step setup: paste the line the Upstash console shows under "Connect"
- * (`redis-cli --tls -u redis://default:PASSWORD@host:6379`) and connect.
+ * (`redis-cli --tls -u redis://default:PASSWORD@host:6379`). A pasted line connects on its own;
+ * the button is for lines typed by hand.
  */
 @Composable
 private fun QuickAddCard(state: CloudSyncState, onEvent: (CloudSyncEvent) -> Unit) {
     var connection by rememberSaveable { mutableStateOf("") }
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
+    val latestOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(state.quickAdd) {
+        if (state.quickAdd is QuickAddStatus.Connected) connection = ""
+    }
+    fun connectIfComplete(text: String) {
+        if (CloudSyncViewModel.isConnectionLine(text)) {
+            latestOnEvent(CloudSyncEvent.QuickAdd(text))
+        }
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -301,14 +320,24 @@ private fun QuickAddCard(state: CloudSyncState, onEvent: (CloudSyncEvent) -> Uni
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.cloud_sync_quick_add_desc),
+                text = stringResource(
+                    if (state.savedConfigured) {
+                        R.string.cloud_sync_quick_add_replace_desc
+                    } else {
+                        R.string.cloud_sync_quick_add_desc
+                    }
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = connection,
-                onValueChange = { connection = it },
+                onValueChange = { text ->
+                    val pasted = text.length - connection.length > 1
+                    connection = text
+                    if (pasted) connectIfComplete(text)
+                },
                 placeholder = { Text("redis-cli --tls -u redis://…") },
                 singleLine = true,
                 visualTransformation = MaskConnectionPassword,
@@ -323,7 +352,10 @@ private fun QuickAddCard(state: CloudSyncState, onEvent: (CloudSyncEvent) -> Uni
                                 clipboard.getClipEntry()?.clipData
                                     ?.takeIf { it.itemCount > 0 }
                                     ?.getItemAt(0)?.text
-                                    ?.let { connection = it.toString().trim() }
+                                    ?.let {
+                                        connection = it.toString().trim()
+                                        connectIfComplete(connection)
+                                    }
                             }
                         },
                     ) {
@@ -355,11 +387,56 @@ private fun QuickAddCard(state: CloudSyncState, onEvent: (CloudSyncEvent) -> Uni
                     )
 
                     is QuickAddStatus.Failed -> QuickAddError(status.message)
+                    QuickAddStatus.Connected -> Text(
+                        text = stringResource(R.string.cloud_sync_quick_add_connected),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
                     QuickAddStatus.Idle -> Unit
                 }
             }
         }
     }
+}
+
+/**
+ * Asked once, right after a database that already holds a backup was added from Settings: bring
+ * that backup into this device (merged with its data), or replace it with this device's data.
+ */
+@Composable
+private fun ExistingBackupDialog(backup: ExistingBackup, onEvent: (CloudSyncEvent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onEvent(CloudSyncEvent.DismissExisting) },
+        title = { Text(stringResource(R.string.cloud_sync_restore_found_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.cloud_sync_existing_backup_desc,
+                    backup.accounts,
+                    formatTime(backup.updatedAtMillis),
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onEvent(CloudSyncEvent.RestoreExisting) }) {
+                Text(stringResource(R.string.cloud_sync_existing_restore))
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { onEvent(CloudSyncEvent.OverwriteExisting) }) {
+                    Text(
+                        text = stringResource(R.string.cloud_sync_overwrite),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                TextButton(onClick = { onEvent(CloudSyncEvent.DismissExisting) }) {
+                    Text(stringResource(R.string.cloud_sync_later))
+                }
+            }
+        },
+    )
 }
 
 @Composable

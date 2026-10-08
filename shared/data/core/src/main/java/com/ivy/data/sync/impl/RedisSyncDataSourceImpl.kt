@@ -8,6 +8,7 @@ import com.ivy.data.sync.RedisSyncDataSource
 import com.ivy.data.sync.RedisSyncDataSource.Companion.BACKUP_KEY
 import com.ivy.data.sync.RedisSyncDataSource.Companion.META_KEY
 import com.ivy.data.sync.RemoteSnapshot
+import com.ivy.data.sync.SyncErrorMessages
 import com.ivy.data.sync.model.RemoteSyncMeta
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -154,7 +155,7 @@ class RedisSyncDataSourceImpl @Inject constructor(
         (this as? JsonPrimitive)?.takeIf { !it.isString }?.content?.toLongOrNull()
 
     private fun networkError(e: Throwable): Either<String, Nothing> =
-        (e.message ?: "Network error — check the URL and your connection").left()
+        SyncErrorMessages.describe(e).left()
 
     @Serializable
     @Suppress("DataClassDefaultValues")

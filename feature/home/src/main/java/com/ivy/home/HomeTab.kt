@@ -9,13 +9,20 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -76,11 +84,11 @@ import com.ivy.wallet.ui.theme.modal.ChoosePeriodModal
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModalData
 import com.ivy.wallet.ui.theme.modal.CurrencyModal
 import com.ivy.wallet.ui.theme.modal.DeleteModal
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import java.math.BigDecimal
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
@@ -184,6 +192,9 @@ fun BoxWithConstraintsScope.HomeUi(
 
         HomeLazyColumn(
             hideBalance = uiState.hideBalance,
+            syncError = uiState.syncError,
+            onDismissSyncError = { onEvent(HomeEvent.DismissSyncError) },
+            onOpenCloudSync = { onEvent(HomeEvent.OpenCloudSync) },
             hideIncome = uiState.hideIncome,
             onSetExpand = {
                 onEvent(HomeEvent.SetExpanded(it))
@@ -375,6 +386,47 @@ fun BoxWithConstraintsScope.HomeUi(
     }
 }
 
+/** Shown while the configured cloud database can't be reached, so sync never fails silently. */
+@Composable
+private fun CloudSyncErrorCard(
+    message: String,
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.cloud_sync_error_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close),
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.cloud_sync_error_desc, message),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(end = 12.dp),
+            )
+            TextButton(onClick = onOpenSettings) {
+                Text(stringResource(R.string.cloud_sync_error_open_settings))
+            }
+        }
+    }
+}
+
 @Suppress("LongParameterList")
 @ExperimentalAnimationApi
 @Composable
@@ -411,7 +463,10 @@ fun HomeLazyColumn(
     onHiddenIncomeClick: () -> Unit,
     onSkipTransaction: (Transaction) -> Unit,
     onSkipAllTransactions: (List<Transaction>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    syncError: String? = null,
+    onDismissSyncError: () -> Unit = {},
+    onOpenCloudSync: () -> Unit = {},
 ) {
     val ivyContext = ivyWalletCtx()
 
@@ -459,6 +514,20 @@ fun HomeLazyColumn(
                 hideIncome = hideIncome,
                 onHiddenIncomeClick = onHiddenIncomeClick
             )
+        }
+        if (syncError != null) {
+            item {
+                Spacer(Modifier.height(16.dp))
+
+                CloudSyncErrorCard(
+                    message = syncError,
+                    onOpenSettings = onOpenCloudSync,
+                    onDismiss = onDismissSyncError,
+                    modifier = Modifier
+                        .padding(horizontal = IvySpacing.screenGutter)
+                        .animateItem(),
+                )
+            }
         }
         if (creditCardsEnabled && creditSummary.cardCount > 0) {
             item {

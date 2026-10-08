@@ -300,4 +300,15 @@ class SyncRepositoryTest {
         accounts = 1,
         appVersion = "test",
     )
+
+    @Test
+    fun `remote status carries the reason when the database cannot be reached`() = runTest {
+        coEvery { rest.getMeta(any(), any()) } returns "Unauthorized — double-check your token".left()
+
+        val status = repository.checkRemote()
+
+        status.error shouldBe "Unauthorized — double-check your token"
+        status.exists shouldBe false
+        status.shouldPromptPull shouldBe false
+    }
 }
