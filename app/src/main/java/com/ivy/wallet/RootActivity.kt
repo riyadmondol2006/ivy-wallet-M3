@@ -21,6 +21,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,6 +35,7 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.design.api.IvyDesign
 import com.ivy.design.api.IvyUI
+import com.ivy.design.system.IvyMaterial3Theme
 import com.ivy.domain.RootScreen
 import com.ivy.home.customerjourney.CustomerJourneyCardsProvider
 import com.ivy.legacy.Constants
@@ -41,6 +43,7 @@ import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.appDesign
 import com.ivy.legacy.utils.activityForResultLauncher
 import com.ivy.legacy.utils.simpleActivityForResultLauncher
+import com.ivy.navigation.MainScreen
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.NavigationRoot
 import com.ivy.ui.R
@@ -49,6 +52,8 @@ import com.ivy.ui.GlobalOverlays
 import com.ivy.ui.time.TimeFormatter
 import com.ivy.ui.time.impl.DateTimePicker
 import com.ivy.wallet.ui.applocked.AppLockedScreen
+import com.ivy.wallet.update.AppUpdateController
+import com.ivy.wallet.update.AppUpdateDialog
 import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import com.ivy.widget.transaction.AddTransactionWidget
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
@@ -83,6 +88,9 @@ class RootActivity : AppCompatActivity(), RootScreen {
     @Inject
     lateinit var snackbarController: IvySnackbarController
 
+    @Inject
+    lateinit var appUpdateController: AppUpdateController
+
     private lateinit var createFileLauncher: ActivityResultLauncher<String>
     private lateinit var onFileCreated: (fileUri: Uri) -> Unit
 
@@ -97,6 +105,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         super.onCreate(savedInstanceState)
         setupApp()
         setupPredictiveBack()
+        appUpdateController.checkOnce()
         setContent {
             val viewModel: RootViewModel = viewModel()
             val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -144,14 +153,40 @@ class RootActivity : AppCompatActivity(), RootScreen {
                 }
             }
 
+            val dark = isDarkThemeEnabled(
+                ivyDesign = appDesign(ivyContext),
+                systemDarkTheme = isSystemInDarkTheme
+            )
+            val isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK
             GlobalOverlays(
-                dark = isDarkThemeEnabled(
-                    ivyDesign = appDesign(ivyContext),
-                    systemDarkTheme = isSystemInDarkTheme
-                ),
-                isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK,
+                dark = dark,
+                isTrueBlack = isTrueBlack,
                 dateTimePicker = dateTimePicker,
                 snackbarController = snackbarController,
+            )
+
+            AppUpdatePrompt(appLocked = appLocked, dark = dark, isTrueBlack = isTrueBlack)
+        }
+    }
+
+    // Kept in its own composable so changes to the update state only recompose this scope, not
+    // the whole app.
+    @Composable
+    private fun AppUpdatePrompt(appLocked: Boolean?, dark: Boolean, isTrueBlack: Boolean) {
+        val update by appUpdateController.update.collectAsState()
+        val shown = update ?: return
+        // Only over the unlocked main screen, never over onboarding, the disclaimer or the lock.
+        if (appLocked != false || navigation.currentScreen != MainScreen) return
+
+        IvyMaterial3Theme(dark = dark, isTrueBlack = isTrueBlack) {
+            AppUpdateDialog(
+                update = shown,
+                onUpdate = {
+                    appUpdateController.dismiss()
+                    openUrlInBrowser(shown.downloadUrl)
+                },
+                onSkip = { appUpdateController.skip(shown) },
+                onDismiss = appUpdateController::dismiss,
             )
         }
     }

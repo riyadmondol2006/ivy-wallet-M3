@@ -686,4 +686,8 @@
     <string name="credit_icon">Card icon</string>
     <string name="credit_limit_or_cap">Limit / cap</string>
     <string name="credit_refresh_failed">Saved. Reopen Accounts to refresh the balances.</string>
+    <string name="app_update_title">Update available</string>
+    <string name="app_update_desc">Ivy Wallet M3 %1$s is out. You\'re on %2$s.\n\nTap Update to download it from GitHub.</string>
+    <string name="app_update_confirm">Update</string>
+    <string name="app_update_skip">Skip this version</string>
 </resources>
