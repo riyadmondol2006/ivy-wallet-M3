@@ -45,6 +45,7 @@ class SyncRepositoryTest {
         mode = SyncMode.AUTO,
         deviceId = "device-A",
         lastSyncedUpdatedAt = 1_000L,
+        localChangedAt = 0L,
     )
 
     private val imported = ImportResult(

@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.raise.either
+import arrow.core.raise.ensure
 import com.ivy.base.threading.DispatchersProvider
 import com.ivy.data.DataObserver
 import com.ivy.data.DataWriteEvent
@@ -77,44 +78,40 @@ class SyncRepository @Inject constructor(
         syncMutex.withLock { pushLocked(force) }
     }
 
-    private suspend fun pushLocked(force: Boolean): Either<PushError, Unit> {
+    private suspend fun pushLocked(force: Boolean): Either<PushError, Unit> = either {
         val config = configDataSource.get()
-        if (!config.isConfigured) return PushError.Failed(NOT_CONFIGURED).left()
+        ensure(config.isConfigured) { PushError.Failed(NOT_CONFIGURED) }
 
         val redis = sourceFor(config.endpointType)
         val url = config.endpointUrl!!
         val token = config.token!!
 
         if (!force) {
-            val remote = when (val meta = redis.getMeta(url, token)) {
-                is Either.Left -> return PushError.Failed(meta.value).left()
-                is Either.Right -> meta.value
-            }
+            val remote = redis.getMeta(url, token).mapLeft { PushError.Failed(it) }.bind()
             if (remote != null && remote.isNewerForeignRevision(config)) {
-                return PushError.RemoteNewer(remote).left()
+                raise(PushError.RemoteNewer(remote))
             }
         }
 
         // Read before the snapshot is taken: a change marked after this is not in the upload.
         val snapshotAt = System.currentTimeMillis()
-        val backupJson = try {
-            backupDataUseCase.generateJsonBackup()
-        } catch (e: Exception) {
-            Timber.e(e, "Cloud sync: generating the backup failed")
-            return PushError.Failed(e.message ?: BACKUP_FAILED).left()
-        }
+        val backupJson = Either.catch { backupDataUseCase.generateJsonBackup() }
+            .mapLeft { e ->
+                Timber.e(e, "Cloud sync: generating the backup failed")
+                PushError.Failed(e.message ?: BACKUP_FAILED)
+            }
+            .bind()
         val meta = RemoteSyncMeta(
             deviceId = config.deviceId,
             updatedAt = snapshotAt,
             accounts = accountDao.findAll().size,
             appVersion = appVersion(),
         )
-        return redis.putBackup(url, token, CloudBackupCodec.encode(backupJson), meta)
-            .mapLeft<PushError> { PushError.Failed(it) }
-            .onRight {
-                configDataSource.setLastSyncedUpdatedAt(snapshotAt)
-                configDataSource.clearLocalChange(since = snapshotAt)
-            }
+        redis.putBackup(url, token, CloudBackupCodec.encode(backupJson), meta)
+            .mapLeft { PushError.Failed(it) }
+            .bind()
+        configDataSource.setLastSyncedUpdatedAt(snapshotAt)
+        configDataSource.clearLocalChange(since = snapshotAt)
     }
 
     /**

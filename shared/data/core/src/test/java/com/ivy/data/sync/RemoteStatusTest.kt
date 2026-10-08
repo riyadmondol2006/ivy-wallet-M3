@@ -20,6 +20,7 @@ class RemoteStatusTest {
             meta = meta,
             isFromOtherDevice = true,
             isNewer = true,
+            hasLocalChanges = false,
         )
 
         status.shouldPromptPull shouldBe true
@@ -32,6 +33,7 @@ class RemoteStatusTest {
             meta = meta,
             isFromOtherDevice = false,
             isNewer = true,
+            hasLocalChanges = false,
         )
 
         status.shouldPromptPull shouldBe false
@@ -44,6 +46,7 @@ class RemoteStatusTest {
             meta = meta,
             isFromOtherDevice = true,
             isNewer = false,
+            hasLocalChanges = false,
         )
 
         status.shouldPromptPull shouldBe false

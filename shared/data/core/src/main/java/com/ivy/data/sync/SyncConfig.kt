@@ -45,7 +45,7 @@ data class SyncConfig(
     val mode: SyncMode,
     val deviceId: String,
     val lastSyncedUpdatedAt: Long,
-    val localChangedAt: Long = 0L,
+    val localChangedAt: Long,
 ) {
     val isConfigured: Boolean
         get() = !endpointUrl.isNullOrBlank() && !token.isNullOrBlank()

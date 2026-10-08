@@ -18,7 +18,7 @@ data class RemoteStatus(
     val meta: RemoteSyncMeta?,
     val isFromOtherDevice: Boolean,
     val isNewer: Boolean,
-    val hasLocalChanges: Boolean = false,
+    val hasLocalChanges: Boolean,
 ) {
     /** True when the app should prompt the user to pull changes made elsewhere. */
     val shouldPromptPull: Boolean
@@ -34,6 +34,7 @@ data class RemoteStatus(
             meta = null,
             isFromOtherDevice = false,
             isNewer = false,
+            hasLocalChanges = false,
         )
     }
 }

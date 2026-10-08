@@ -153,25 +153,32 @@ class RootActivity : AppCompatActivity(), RootScreen {
                 }
             }
 
-            val dark = isDarkThemeEnabled(
-                ivyDesign = appDesign(ivyContext),
-                systemDarkTheme = isSystemInDarkTheme
-            )
-            val isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK
-            GlobalOverlays(
-                dark = dark,
-                isTrueBlack = isTrueBlack,
-                dateTimePicker = dateTimePicker,
-                snackbarController = snackbarController,
-            )
-
-            AppUpdatePrompt(appLocked = appLocked, dark = dark, isTrueBlack = isTrueBlack)
+            RootOverlays(systemDarkTheme = isSystemInDarkTheme, appLocked = appLocked)
         }
+    }
+
+    /** Pickers, snackbars and the update prompt, drawn above every screen. */
+    @Composable
+    @Suppress("FunctionNaming")
+    private fun RootOverlays(systemDarkTheme: Boolean, appLocked: Boolean?) {
+        val dark = isDarkThemeEnabled(
+            ivyDesign = appDesign(ivyContext),
+            systemDarkTheme = systemDarkTheme
+        )
+        val isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK
+        GlobalOverlays(
+            dark = dark,
+            isTrueBlack = isTrueBlack,
+            dateTimePicker = dateTimePicker,
+            snackbarController = snackbarController,
+        )
+        AppUpdatePrompt(appLocked = appLocked, dark = dark, isTrueBlack = isTrueBlack)
     }
 
     // Kept in its own composable so changes to the update state only recompose this scope, not
     // the whole app.
     @Composable
+    @Suppress("FunctionNaming")
     private fun AppUpdatePrompt(appLocked: Boolean?, dark: Boolean, isTrueBlack: Boolean) {
         val update by appUpdateController.update.collectAsState()
         val shown = update ?: return

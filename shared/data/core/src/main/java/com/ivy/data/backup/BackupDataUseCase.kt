@@ -266,7 +266,7 @@ class BackupDataUseCase @Inject constructor(
         tagRepository.invalidateCache()
     }
 
-    private fun IvyWalletCompleteData.toImportResult() = ImportResult(
+    private fun IvyWalletCompleteData.toImportResult(): ImportResult = ImportResult(
         rowsFound = transactions.size,
         transactionsImported = transactions.size,
         accountsImported = accounts.size,

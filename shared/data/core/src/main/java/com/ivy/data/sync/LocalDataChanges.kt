@@ -16,22 +16,19 @@ class LocalDataChanges @Inject constructor(
 ) {
     val changes: Flow<Unit>
         get() = db.invalidationTracker
-            .createFlow(*BACKED_UP_TABLES, emitInitialState = false)
+            .createFlow(
+                // Every table that [com.ivy.data.backup.IvyWalletCompleteData] holds.
+                "accounts",
+                "transactions",
+                "categories",
+                "budgets",
+                "loans",
+                "loan_records",
+                "planned_payment_rules",
+                "settings",
+                "tags",
+                "tags_association",
+                emitInitialState = false,
+            )
             .map { }
-
-    companion object {
-        /** Every table [com.ivy.data.backup.IvyWalletCompleteData] holds. */
-        val BACKED_UP_TABLES = arrayOf(
-            "accounts",
-            "transactions",
-            "categories",
-            "budgets",
-            "loans",
-            "loan_records",
-            "planned_payment_rules",
-            "settings",
-            "tags",
-            "tags_association",
-        )
-    }
 }

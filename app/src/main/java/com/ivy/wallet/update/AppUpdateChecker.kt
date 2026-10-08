@@ -43,6 +43,8 @@ class AppUpdateChecker @Inject constructor(
 
     @Keep
     @Serializable
+    // GitHub omits these fields on some releases, so they need defaults to deserialize.
+    @Suppress("DataClassDefaultValues")
     data class ReleaseDto(
         @SerialName("tag_name")
         val tagName: String,
@@ -114,25 +116,30 @@ class AppUpdateChecker @Inject constructor(
             skippedVersion: String?,
         ): AppUpdate? {
             if (release.draft || release.prerelease) return null
-            val current = AppVersion.parse(currentVersionName) ?: return null
-            val latest = AppVersion.parse(release.tagName) ?: return null
-            if (latest <= current) return null
-            if (AppVersion.parse(skippedVersion) == latest) return null
-
-            val apk = release.assets.firstOrNull { it.name == RELEASE_APK_NAME }
-                ?: release.assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
-            val downloadUrl = apk?.downloadUrl?.takeIf { it.isHttps() }
-                ?: release.htmlUrl.takeIf { it.isHttps() }
-                ?: return null
-
-            return AppUpdate(
-                version = latest.toString(),
-                currentVersion = current.toString(),
-                downloadUrl = downloadUrl,
-            )
+            val current = AppVersion.parse(currentVersionName)
+            val latest = AppVersion.parse(release.tagName)?.takeIf { latest ->
+                current != null && latest > current && latest != AppVersion.parse(skippedVersion)
+            }
+            val downloadUrl = release.downloadUrl()
+            return if (current != null && latest != null && downloadUrl != null) {
+                AppUpdate(
+                    version = latest.toString(),
+                    currentVersion = current.toString(),
+                    downloadUrl = downloadUrl,
+                )
+            } else {
+                null
+            }
         }
 
-        private fun String.isHttps() = startsWith("https://")
+        /** The release's APK when it has one, otherwise the release page; https only. */
+        private fun ReleaseDto.downloadUrl(): String? {
+            val apk = assets.firstOrNull { it.name == RELEASE_APK_NAME }
+                ?: assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
+            return apk?.downloadUrl?.takeIf { it.isHttps() } ?: htmlUrl.takeIf { it.isHttps() }
+        }
+
+        private fun String.isHttps(): Boolean = startsWith("https://")
 
         private const val LATEST_RELEASE_URL =
             "https://api.github.com/repos/riyadmondol2006/ivy-wallet-M3/releases/latest"

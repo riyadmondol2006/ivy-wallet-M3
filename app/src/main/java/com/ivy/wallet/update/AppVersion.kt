@@ -30,8 +30,9 @@ class AppVersion private constructor(private val parts: List<Int>) : Comparable<
          */
         fun parse(raw: String?): AppVersion? {
             val match = VERSION_REGEX.find(raw?.trim().orEmpty()) ?: return null
-            val parts = match.groupValues[1].split('.').map { it.toIntOrNull() ?: return null }
-            return AppVersion(parts)
+            val parts = match.groupValues[1].split('.').map { it.toIntOrNull() }
+            // A part too large for an Int means this isn't a version we can compare.
+            return if (parts.all { it != null }) AppVersion(parts.filterNotNull()) else null
         }
     }
 }

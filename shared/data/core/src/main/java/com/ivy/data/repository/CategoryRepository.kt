@@ -71,7 +71,7 @@ class CategoryRepository @Inject constructor(
     }
 
     /** Drops cached items so the next read comes from the database. */
-    fun invalidateCache() = memo.invalidate()
+    fun invalidateCache(): Unit = memo.invalidate()
 
     suspend fun deleteAll(): Unit = memo.deleteAll(writeCategoryDao::deleteAll)
 }

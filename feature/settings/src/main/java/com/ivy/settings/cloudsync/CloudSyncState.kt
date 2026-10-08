@@ -30,7 +30,7 @@ data class CloudSyncState(
     val launchedFromOnboarding: Boolean,
     val onboardingRestore: OnboardingRestoreUi,
     val completion: CompletionSignal,
-    val quickAdd: QuickAddStatus = QuickAddStatus.Idle,
+    val quickAdd: QuickAddStatus,
 )
 
 sealed interface TestStatus {

@@ -37,11 +37,13 @@ object RedisConnectionString {
     /** Returns the address in [input], or null when it is blank or not a Redis address. */
     fun parse(input: String): RedisAddress? {
         val trimmed = input.trim()
-        if (trimmed.isEmpty()) return null
         // A pasted redis-cli command: take the URL after -u (or any redis:// URL in it).
-        SCHEME_URL.find(trimmed)?.let { return parseUrl(it.value) }
-        if (trimmed.contains("://") || trimmed.contains(' ')) return null
-        return parseHostPort(trimmed)
+        val url = SCHEME_URL.find(trimmed)?.value
+        return when {
+            url != null -> parseUrl(url)
+            trimmed.isEmpty() || trimmed.contains("://") || trimmed.contains(' ') -> null
+            else -> parseHostPort(trimmed)
+        }
     }
 
     /** True when [input] looks like a Redis connection string rather than a REST URL. */

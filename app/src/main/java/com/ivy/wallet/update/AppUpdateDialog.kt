@@ -16,6 +16,7 @@ import com.ivy.ui.R
  * version for good, and tapping outside or back only hides it until the next app start.
  */
 @Composable
+@Suppress("FunctionNaming")
 fun AppUpdateDialog(
     update: AppUpdate,
     onUpdate: () -> Unit,
