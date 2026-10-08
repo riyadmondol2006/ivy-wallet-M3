@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import com.ivy.data.sync.PushError
+import com.ivy.data.sync.RedisConnectionString
 import com.ivy.data.sync.SyncConfigDataSource
 import com.ivy.data.sync.SyncEndpointType
 import com.ivy.data.sync.SyncMode
@@ -38,6 +39,7 @@ class CloudSyncViewModel @Inject constructor(
     private val launchedFromOnboarding = mutableStateOf(false)
     private val onboardingRestore = mutableStateOf<OnboardingRestoreUi>(OnboardingRestoreUi.Hidden)
     private val completion = mutableStateOf(CompletionSignal.NONE)
+    private val quickAddStatus = mutableStateOf<QuickAddStatus>(QuickAddStatus.Idle)
 
     fun setLaunchedFromOnboarding(value: Boolean) {
         launchedFromOnboarding.value = value
@@ -72,6 +74,7 @@ class CloudSyncViewModel @Inject constructor(
             launchedFromOnboarding = launchedFromOnboarding.value,
             onboardingRestore = onboardingRestore.value,
             completion = completion.value,
+            quickAdd = quickAddStatus.value,
         )
     }
 
@@ -93,10 +96,7 @@ class CloudSyncViewModel @Inject constructor(
 
     override fun onEvent(event: CloudSyncEvent) {
         when (event) {
-            is CloudSyncEvent.UrlChanged -> {
-                url.value = event.url
-                invalidateTest()
-            }
+            is CloudSyncEvent.UrlChanged -> onUrlChanged(event.url)
 
             is CloudSyncEvent.TokenChanged -> {
                 token.value = event.token
@@ -108,6 +108,7 @@ class CloudSyncViewModel @Inject constructor(
                 invalidateTest()
             }
 
+            is CloudSyncEvent.QuickAdd -> quickAdd(event.connection)
             CloudSyncEvent.TestConnection -> testConnection()
             CloudSyncEvent.Save -> save()
             is CloudSyncEvent.SetMode -> setMode(event.mode)
@@ -122,6 +123,29 @@ class CloudSyncViewModel @Inject constructor(
 
             CloudSyncEvent.ConsumeCompletion -> completion.value = CompletionSignal.NONE
         }
+    }
+
+    /**
+     * A connection string pasted from the Upstash console (`redis-cli --tls -u redis://…` or a
+     * `redis(s)://user:password@host` URL) holds everything needed: switch to TCP, which works
+     * with any Redis, and split it into the URL and password fields. Only for a paste, so the
+     * field is never rewritten while someone types a URL by hand.
+     */
+    private fun onUrlChanged(input: String) {
+        val isPaste = input.length - url.value.length > 1
+        val pasted = if (isPaste && RedisConnectionString.isRedisConnectionString(input)) {
+            RedisConnectionString.parse(input)?.takeIf { it.password != null }
+        } else {
+            null
+        }
+        if (pasted != null) {
+            endpointType.value = SyncEndpointType.TCP
+            url.value = pasted.tlsUrl
+            token.value = pasted.password.orEmpty()
+        } else {
+            url.value = input
+        }
+        invalidateTest()
     }
 
     private fun invalidateTest() {
@@ -150,7 +174,38 @@ class CloudSyncViewModel @Inject constructor(
         )
     }
 
-    private fun save(): Unit = launchBusy {
+    /**
+     * Sets the database up from the one line the Upstash console shows
+     * (`redis-cli --tls -u redis://default:PASSWORD@host:6379`): fills in the TCP connection,
+     * tests it and saves it.
+     */
+    private fun quickAdd(connection: String): Unit = launchBusy {
+        val address = RedisConnectionString.parse(connection)?.takeIf { it.password != null }
+        if (address == null) {
+            quickAddStatus.value = QuickAddStatus.InvalidInput
+            return@launchBusy
+        }
+        endpointType.value = SyncEndpointType.TCP
+        url.value = address.tlsUrl
+        token.value = address.password.orEmpty()
+        quickAddStatus.value = QuickAddStatus.Connecting
+        testStatus.value = TestStatus.Testing
+        syncRepository.testConnection(endpointType.value, url.value, token.value).fold(
+            ifLeft = {
+                testStatus.value = TestStatus.Error(it)
+                quickAddStatus.value = QuickAddStatus.Failed(it)
+            },
+            ifRight = {
+                testStatus.value = TestStatus.Success
+                quickAddStatus.value = QuickAddStatus.Idle
+                saveConnection()
+            },
+        )
+    }
+
+    private fun save(): Unit = launchBusy { saveConnection() }
+
+    private suspend fun saveConnection() {
         val cleanUrl = url.value.trim().trimEnd('/')
         val cleanToken = token.value.trim()
         configDataSource.setConnection(cleanUrl, cleanToken, endpointType.value)

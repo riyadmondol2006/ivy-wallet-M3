@@ -20,9 +20,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.HasDefaultViewModelProviderFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlin.coroutines.cancellation.CancellationException
 
 @SuppressLint("ComposeCompositionLocalUsage")
@@ -58,15 +65,16 @@ fun NavigationRoot(
     navigation: Navigation,
     navGraph: @Composable (screen: Screen?) -> Unit
 ) {
+    val screenViewModels = rememberScreenViewModelStoreOwner()
     CompositionLocalProvider(
         LocalNavigation provides navigation,
+        LocalViewModelStoreOwner provides screenViewModels,
     ) {
-        val viewModelStore = LocalViewModelStoreOwner.current
         DisposableEffect(navigation.currentScreen) {
             onDispose {
                 // Destroy viewModels only for non-legacy screens
                 if (navigation.lastScreen?.isLegacy == false) {
-                    viewModelStore?.viewModelStore?.clear()
+                    screenViewModels.viewModelStore.clear()
                 }
             }
         }
@@ -143,6 +151,52 @@ fun NavigationRoot(
                 }
             }
         }
+    }
+}
+
+/**
+ * Keeps the screens' ViewModels in their own store, inside a holder that lives in the activity's
+ * store. Leaving a screen clears only this store: clearing the activity's store would also destroy
+ * activity-level ViewModels such as the root one, which then comes back uninitialised and leaves
+ * the app blank (e.g. after restoring a cloud backup during onboarding). The holder survives
+ * configuration changes, so screen ViewModels do too, as before.
+ */
+@Composable
+private fun rememberScreenViewModelStoreOwner(): ViewModelStoreOwner {
+    val parent = LocalViewModelStoreOwner.current
+        // Previews and screenshot tests have no owner; their screens don't use ViewModels.
+        ?: return remember {
+            object : ViewModelStoreOwner {
+                override val viewModelStore = ViewModelStore()
+            }
+        }
+    val holder: ScreenViewModelsHolder = viewModel(
+        viewModelStoreOwner = parent,
+        factory = viewModelFactory { initializer { ScreenViewModelsHolder() } },
+    )
+    return remember(parent, holder) {
+        object : ViewModelStoreOwner, HasDefaultViewModelProviderFactory {
+            override val viewModelStore: ViewModelStore = holder.store
+
+            // Screens are created by the activity's factory (Hilt), exactly as before.
+            override val defaultViewModelProviderFactory: ViewModelProvider.Factory
+                get() = (parent as? HasDefaultViewModelProviderFactory)
+                    ?.defaultViewModelProviderFactory
+                    ?: ViewModelProvider.NewInstanceFactory()
+
+            override val defaultViewModelCreationExtras: CreationExtras
+                get() = (parent as? HasDefaultViewModelProviderFactory)
+                    ?.defaultViewModelCreationExtras
+                    ?: CreationExtras.Empty
+        }
+    }
+}
+
+internal class ScreenViewModelsHolder : ViewModel() {
+    val store = ViewModelStore()
+
+    override fun onCleared() {
+        store.clear()
     }
 }
 

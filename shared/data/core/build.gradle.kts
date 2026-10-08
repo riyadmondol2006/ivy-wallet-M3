@@ -17,4 +17,6 @@ dependencies {
 
     testImplementation(projects.shared.data.modelTesting)
     androidTestImplementation(libs.bundles.integration.testing)
+    // hilt-work alone pulls in WorkManager 2.3.4, which crashes test processes on Android 12+.
+    androidTestImplementation(libs.androidx.work)
 }

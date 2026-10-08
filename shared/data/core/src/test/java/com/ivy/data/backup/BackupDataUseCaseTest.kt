@@ -3,6 +3,7 @@ package com.ivy.data.backup
 import com.ivy.base.TestDispatchersProvider
 import com.ivy.base.di.KotlinxSerializationModule
 import com.ivy.data.DataObserver
+import com.ivy.data.db.DbTransactionRunner
 import com.ivy.data.db.dao.fake.FakeAccountDao
 import com.ivy.data.db.dao.fake.FakeBudgetDao
 import com.ivy.data.db.dao.fake.FakeCategoryDao
@@ -20,6 +21,8 @@ import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
 import com.ivy.data.testResource
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -80,8 +83,17 @@ class BackupDataUseCaseTest {
             tagsReader = tagDao,
             tagsWriter = tagDao,
             tagAssociationReader = tagAssociationDao,
-            tagAssociationWriter = tagAssociationDao
+            tagAssociationWriter = tagAssociationDao,
+            categoryRepository = mockk(relaxed = true),
+            tagRepository = mockk(relaxed = true),
+            transactionRunner = passThroughTransactions,
         )
+    }
+
+    // The fakes have no real transactions; atomicity is covered on a device. Here we only check
+    // that the backup is parsed before anything is deleted.
+    private val passThroughTransactions = object : DbTransactionRunner {
+        override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
     }
 
     private suspend fun backupTestCase(backupVersion: String) {
@@ -217,5 +229,81 @@ class BackupDataUseCaseTest {
             it.creditLimitShared shouldBe false
             it.creditExchangeRate shouldBe null
         }
+    }
+
+    @Test
+    fun `replacing makes the local data an exact copy of the backup`() = runTest {
+        // given - a backup, and a device that has the same data plus items deleted elsewhere
+        val sourceAccounts = FakeAccountDao()
+        val sourceTransactions = FakeTransactionDao()
+        val source = newBackupDataUseCase(
+            accountDao = sourceAccounts,
+            transactionDao = sourceTransactions,
+        )
+        source.importJson(testResource("backups/450-150.json").readText(Charsets.UTF_16))
+        val backupJson = source.generateJsonBackup()
+
+        val targetAccounts = FakeAccountDao()
+        val targetTransactions = FakeTransactionDao()
+        val target = newBackupDataUseCase(
+            accountDao = targetAccounts,
+            transactionDao = targetTransactions,
+        )
+        target.importJson(backupJson)
+        val deletedElsewhere = AccountEntity(
+            name = "Deleted on the other phone",
+            currency = "USD",
+            color = 1,
+            id = UUID.randomUUID(),
+        )
+        targetAccounts.save(deletedElsewhere)
+
+        // when
+        target.replaceAllWithJson(backupJson)
+
+        // then
+        targetAccounts.findAll().map { it.id } shouldContainExactlyInAnyOrder
+            sourceAccounts.findAll().map { it.id }
+        targetTransactions.findAll().map { it.id } shouldContainExactlyInAnyOrder
+            sourceTransactions.findAll().map { it.id }
+        target.generateJsonBackup() shouldBe backupJson
+    }
+
+    @Test
+    fun `a broken backup never deletes local data`() = runTest {
+        val accounts = FakeAccountDao()
+        val useCase = newBackupDataUseCase(accountDao = accounts)
+        useCase.importJson(testResource("backups/450-150.json").readText(Charsets.UTF_16))
+        val before = accounts.findAll()
+
+        shouldThrowAny { useCase.replaceAllWithJson("{\"accounts\": [{\"broken\": ") }
+
+        accounts.findAll() shouldBe before
+    }
+
+    @Test
+    fun `cloud backups written by v1_0_1 and v1_0_8 restore with both strategies`() = runTest {
+        listOf("m3-v1.0.1-cloud", "m3-v1.0.8-cloud").forEach { name ->
+            val legacyJson = testResource("backups/$name.json").readText(Charsets.UTF_8)
+
+            val replaced = newBackupDataUseCase().replaceAllWithJson(legacyJson)
+            val merged = newBackupDataUseCase().importJson(legacyJson)
+
+            replaced.accountsImported shouldBe 2
+            replaced.categoriesImported shouldBe 2
+            replaced.transactionsImported shouldBe 1
+            merged shouldBe replaced
+        }
+    }
+
+    @Test
+    fun `file backups written by v1_0_1 still import`() = runTest {
+        val accounts = FakeAccountDao()
+        val legacyJson = testResource("backups/m3-v1.0.1-file.json").readText(Charsets.UTF_16)
+
+        val result = newBackupDataUseCase(accountDao = accounts).importJson(legacyJson)
+
+        result.transactionsImported shouldBe 1
+        accounts.findAll().map { it.name } shouldContainExactlyInAnyOrder listOf("Cash", "Bank")
     }
 }

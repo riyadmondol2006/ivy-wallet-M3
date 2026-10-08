@@ -1,7 +1,9 @@
 package com.ivy.data.di
 
 import android.content.Context
+import com.ivy.data.db.DbTransactionRunner
 import com.ivy.data.db.IvyRoomDatabase
+import com.ivy.data.db.RoomDbTransactionRunner
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.BudgetDao
 import com.ivy.data.db.dao.read.CategoryDao
@@ -44,6 +46,11 @@ object RoomDbModule {
         return IvyRoomDatabase.create(
             applicationContext = appContext,
         )
+    }
+
+    @Provides
+    fun provideDbTransactionRunner(db: IvyRoomDatabase): DbTransactionRunner {
+        return RoomDbTransactionRunner(db)
     }
 
     @Provides

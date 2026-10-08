@@ -2,8 +2,8 @@ package com.ivy.wallet.sync
 
 import android.content.Context
 import com.ivy.base.di.AppCoroutineScope
-import com.ivy.data.DataObserver
 import com.ivy.data.sync.AutoSyncGate
+import com.ivy.data.sync.LocalDataChanges
 import com.ivy.data.sync.PushError
 import com.ivy.data.sync.SyncConfigDataSource
 import com.ivy.data.sync.SyncMode
@@ -13,15 +13,20 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Watches local data changes and, when AUTO sync is enabled, pushes a fresh backup to the cloud
- * (debounced so a burst of edits results in a single upload). On failure it hands off to
- * [SyncWorker] for a network-aware retry. Started once from the Application.
+ * Watches local data changes, records that they are not in the cloud yet, and, when AUTO sync is
+ * enabled, pushes a fresh backup (debounced so a burst of edits results in a single upload). On
+ * failure it hands off to [SyncWorker] for a network-aware retry. Started once from the Application.
+ *
+ * Changes come from the database itself ([LocalDataChanges]), so every write counts: transactions,
+ * budgets, loans and planned payments included, whichever screen made them.
  *
  * The observer never does network work inside `collect`: events are forwarded into a conflated
  * channel and uploaded by a separate worker coroutine, so a slow upload can neither block
@@ -29,7 +34,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AutoSyncManager @Inject constructor(
-    private val dataObserver: DataObserver,
+    private val localDataChanges: LocalDataChanges,
     private val syncRepository: SyncRepository,
     private val configDataSource: SyncConfigDataSource,
     private val autoSyncGate: AutoSyncGate,
@@ -49,7 +54,10 @@ class AutoSyncManager @Inject constructor(
         if (started) return
         started = true
         scope.launch(errorHandler) {
-            dataObserver.writeEvents
+            localDataChanges.changes
+                // A pull is writing the cloud's data into the database; that isn't a local change.
+                .filter { !autoSyncGate.isSuppressed() }
+                .onEach { syncRepository.markLocalChange() }
                 .debounce(DEBOUNCE_MS)
                 .collect { pushRequests.trySend(Unit) }
         }

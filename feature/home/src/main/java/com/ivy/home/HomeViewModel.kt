@@ -311,12 +311,14 @@ class HomeViewModel @Inject constructor(
         val config = syncConfigDataSource.get()
         // Show the manual sync button whenever a database is configured (any sync mode).
         manualSyncVisible = config.isConfigured
-        remoteSyncPromptAt = if (config.mode != SyncMode.OFF && config.isConfigured) {
-            val status = syncRepository.checkRemote()
-            if (status.shouldPromptPull) status.meta?.updatedAt ?: 0L else 0L
+        val status = if (config.mode != SyncMode.OFF && config.isConfigured) {
+            syncRepository.checkRemote()
         } else {
-            0L
+            null
         }
+        remoteSyncPromptAt = status?.takeIf { it.shouldPromptPull }?.meta?.updatedAt ?: 0L
+        // This device has unsynced changes too: offer to merge, or to overwrite the cloud.
+        remoteSyncConflict = status?.isConflict == true
     }
 
     private suspend fun manualSync(force: Boolean) {
@@ -360,12 +362,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun dismissRemoteSync() {
-        val seenAt = remoteSyncPromptAt
+    // "Not now" only hides the prompt. Marking the cloud revision as seen would let this device's
+    // next push overwrite the other device's changes without asking.
+    private fun dismissRemoteSync() {
         hideRemoteSync()
-        if (seenAt > 0L) {
-            syncRepository.markRemoteSeen(seenAt)
-        }
     }
 
     private fun hideRemoteSync() {

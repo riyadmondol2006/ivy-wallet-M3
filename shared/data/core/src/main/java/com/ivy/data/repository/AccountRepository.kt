@@ -66,6 +66,9 @@ class AccountRepository @Inject constructor(
         writeAccountDao.deleteById(id.value)
     }
 
+    /** Drops cached items so the next read comes from the database. */
+    fun invalidateCache() = memo.invalidate()
+
     suspend fun deleteAll(): Unit = memo.deleteAll(
         deleteAllOperation = writeAccountDao::deleteAll
     )

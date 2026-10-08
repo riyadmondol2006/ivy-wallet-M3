@@ -7,6 +7,8 @@ sealed interface CloudSyncEvent {
     data class UrlChanged(val url: String) : CloudSyncEvent
     data class TokenChanged(val token: String) : CloudSyncEvent
     data class SetEndpointType(val type: SyncEndpointType) : CloudSyncEvent
+    /** Set up, test and save the database from one pasted connection line. */
+    data class QuickAdd(val connection: String) : CloudSyncEvent
     data object TestConnection : CloudSyncEvent
 
     /** Persist the tested connection. */

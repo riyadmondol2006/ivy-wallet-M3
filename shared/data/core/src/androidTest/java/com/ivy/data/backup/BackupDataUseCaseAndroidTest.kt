@@ -12,11 +12,18 @@ import com.ivy.base.di.KotlinxSerializationModule
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.data.DataObserver
 import com.ivy.data.db.IvyRoomDatabase
+import com.ivy.data.db.RoomDbTransactionRunner
 import com.ivy.data.file.FileSystem
 import com.ivy.data.repository.AccountRepository
+import com.ivy.data.repository.CategoryRepository
+import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.CurrencyRepository
 import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
+import com.ivy.data.repository.mapper.CategoryMapper
+import com.ivy.data.repository.mapper.TagMapper
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import kotlinx.coroutines.runBlocking
@@ -77,7 +84,24 @@ class BackupDataUseCaseAndroidTest {
             tagsReader = db.tagDao,
             tagAssociationReader = db.tagAssociationDao,
             tagsWriter = db.writeTagDao,
-            tagAssociationWriter = db.writeTagAssociationDao
+            tagAssociationWriter = db.writeTagAssociationDao,
+            categoryRepository = CategoryRepository(
+                mapper = CategoryMapper(),
+                writeCategoryDao = db.writeCategoryDao,
+                categoryDao = db.categoryDao,
+                dispatchersProvider = TestDispatchersProvider,
+                memoFactory = fakeRepositoryMemoFactory(),
+            ),
+            tagRepository = TagRepository(
+                mapper = TagMapper(),
+                tagDao = db.tagDao,
+                tagAssociationDao = db.tagAssociationDao,
+                writeTagDao = db.writeTagDao,
+                writeTagAssociationDao = db.writeTagAssociationDao,
+                dispatchersProvider = TestDispatchersProvider,
+                memoFactory = fakeRepositoryMemoFactory(),
+            ),
+            transactionRunner = RoomDbTransactionRunner(db),
         )
     }
 
@@ -89,6 +113,41 @@ class BackupDataUseCaseAndroidTest {
     @Test
     fun backup450_150() = runBlocking {
         backupTestCase("450-150")
+    }
+
+    @Test
+    fun replacingWithACloudBackupLeavesExactlyItsData() = runBlocking<Unit> {
+        // given - a database full of other data
+        useCase.importBackupFile(
+            copyTestResourceToInternalStorage("backups/450-150.zip"),
+            onProgress = {},
+        ).shouldBeSuccessful()
+        val cloudJson = InstrumentationRegistry.getInstrumentation().context.assets
+            .open("backups/m3-v1.0.1-cloud.json").bufferedReader().readText()
+
+        // when - a cloud backup written by v1.0.1 replaces it inside a real Room transaction
+        val result = useCase.replaceAllWithJson(cloudJson)
+
+        // then
+        result.transactionsImported shouldBe 1
+        db.accountDao.findAll().map { it.name } shouldContainExactlyInAnyOrder listOf("Cash", "Bank")
+        db.transactionDao.findAll().size shouldBe 1
+        db.categoryDao.findAll().size shouldBe 2
+    }
+
+    @Test
+    fun aBrokenCloudBackupLeavesTheDatabaseUntouched() = runBlocking<Unit> {
+        useCase.importBackupFile(
+            copyTestResourceToInternalStorage("backups/450-150.zip"),
+            onProgress = {},
+        ).shouldBeSuccessful()
+        val accountsBefore = db.accountDao.findAll()
+        val transactionsBefore = db.transactionDao.findAll().size
+
+        runCatching { useCase.replaceAllWithJson("{\"accounts\": [{\"name\": 1}]}") }
+
+        db.accountDao.findAll() shouldBe accountsBefore
+        db.transactionDao.findAll().size shouldBe transactionsBefore
     }
 
     private suspend fun backupTestCase(version: String) {

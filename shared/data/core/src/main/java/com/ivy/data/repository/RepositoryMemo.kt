@@ -111,6 +111,12 @@ class RepositoryMemo<T : Identifiable<TID>, TID : UniqueId> internal constructor
         }
     }
 
+    /** Forgets everything cached, e.g. after a backup was imported directly into the database. */
+    fun invalidate() {
+        _memo.clear()
+        findAllMemoized = false
+    }
+
     private fun memoize(items: List<T>) {
         items.forEach(::memoize)
     }

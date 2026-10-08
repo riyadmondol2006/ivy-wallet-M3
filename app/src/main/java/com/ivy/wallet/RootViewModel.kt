@@ -58,7 +58,14 @@ class RootViewModel @Inject constructor(
     private val _appLocked = MutableStateFlow<Boolean?>(null)
     val appLocked = _appLocked.readOnly()
 
+    private var started = false
+
     fun start(intent: Intent) {
+        // The activity calls this again when it's recreated (theme or other configuration
+        // change). The ViewModel survives that, so starting again would only navigate the user
+        // away from the screen they were on, back to Home.
+        if (started) return
+        started = true
         viewModelScope.launch {
             TestIdlingResource.increment()
 

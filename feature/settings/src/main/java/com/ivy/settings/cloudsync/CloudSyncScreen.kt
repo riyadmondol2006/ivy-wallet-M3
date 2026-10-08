@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
@@ -42,14 +43,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,6 +72,7 @@ import com.ivy.ui.component.IvyConfirmDialog
 import com.ivy.ui.sync.text
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.coroutines.launch
 
 private const val UpstashConsoleUrl = "https://console.upstash.com"
 
@@ -147,6 +154,11 @@ private fun CloudSyncUi(
         if (state.busy) {
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+
+        if (!state.savedConfigured) {
+            Spacer(Modifier.height(16.dp))
+            QuickAddCard(state = state, onEvent = onEvent)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -266,6 +278,111 @@ private fun CloudSyncUi(
     }
 }
 
+/**
+ * One-step setup: paste the line the Upstash console shows under "Connect"
+ * (`redis-cli --tls -u redis://default:PASSWORD@host:6379`) and connect.
+ */
+@Composable
+private fun QuickAddCard(state: CloudSyncState, onEvent: (CloudSyncEvent) -> Unit) {
+    var connection by rememberSaveable { mutableStateOf("") }
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.cloud_sync_quick_add_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.cloud_sync_quick_add_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = connection,
+                onValueChange = { connection = it },
+                placeholder = { Text("redis-cli --tls -u redis://…") },
+                singleLine = true,
+                visualTransformation = MaskConnectionPassword,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    autoCorrectEnabled = false,
+                ),
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                clipboard.getClipEntry()?.clipData
+                                    ?.takeIf { it.itemCount > 0 }
+                                    ?.getItemAt(0)?.text
+                                    ?.let { connection = it.toString().trim() }
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ContentPaste,
+                            contentDescription = stringResource(R.string.cloud_sync_quick_add_paste),
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = { onEvent(CloudSyncEvent.QuickAdd(connection)) },
+                    enabled = connection.isNotBlank() && !state.busy,
+                ) {
+                    Text(stringResource(R.string.cloud_sync_quick_add_connect))
+                }
+                Spacer(Modifier.width(12.dp))
+                when (val status = state.quickAdd) {
+                    QuickAddStatus.Connecting -> CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+
+                    QuickAddStatus.InvalidInput -> QuickAddError(
+                        stringResource(R.string.cloud_sync_quick_add_invalid)
+                    )
+
+                    is QuickAddStatus.Failed -> QuickAddError(status.message)
+                    QuickAddStatus.Idle -> Unit
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickAddError(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+    )
+}
+
+/** Shows the password inside a pasted `scheme://user:password@host` line as dots. */
+private val MaskConnectionPassword = VisualTransformation { text ->
+    val password = Regex("""://[^:@/\s]*:([^@\s]+)@""").find(text.text)?.groups?.get(1)
+    val masked = if (password == null) {
+        text
+    } else {
+        AnnotatedString(text.text.replaceRange(password.range, "•".repeat(password.value.length)))
+    }
+    // Same length as the input, so cursor positions map one to one.
+    TransformedText(masked, OffsetMapping.Identity)
+}
+
 @Composable
 private fun GuideCard(onOpenUpstash: () -> Unit) {
     Card(
@@ -294,6 +411,12 @@ private fun GuideCard(onOpenUpstash: () -> Unit) {
                     modifier = Modifier.padding(vertical = 2.dp),
                 )
             }
+            Text(
+                text = stringResource(R.string.cloud_sync_guide_paste_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp),
+            )
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onOpenUpstash) {
                 Text(stringResource(R.string.cloud_sync_open_upstash))

@@ -30,6 +30,7 @@ data class CloudSyncState(
     val launchedFromOnboarding: Boolean,
     val onboardingRestore: OnboardingRestoreUi,
     val completion: CompletionSignal,
+    val quickAdd: QuickAddStatus = QuickAddStatus.Idle,
 )
 
 sealed interface TestStatus {
@@ -70,4 +71,14 @@ enum class CompletionSignal {
 
     /** The user chose to start fresh → continue the normal onboarding steps. */
     RETURN_TO_ONBOARDING,
+}
+
+/** Progress of setting the database up from one pasted line. */
+sealed interface QuickAddStatus {
+    data object Idle : QuickAddStatus
+    data object Connecting : QuickAddStatus
+
+    /** The pasted text has no host or no password. */
+    data object InvalidInput : QuickAddStatus
+    data class Failed(val message: String) : QuickAddStatus
 }

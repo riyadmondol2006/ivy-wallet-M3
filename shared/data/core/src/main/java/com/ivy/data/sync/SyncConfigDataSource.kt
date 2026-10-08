@@ -49,6 +49,23 @@ class SyncConfigDataSource @Inject constructor(
         }
     }
 
+    /** Records that local data changed; keeps the time of the first unsynced change. */
+    suspend fun markLocalChange(at: Long) {
+        dataStore.edit { prefs ->
+            if ((prefs[LocalChangedAtKey] ?: 0L) == 0L) prefs[LocalChangedAtKey] = at
+        }
+    }
+
+    /**
+     * Forgets local changes once they are in the cloud. [since] is when the synced snapshot was
+     * read from the database: a change marked after it is newer than the cloud and is kept.
+     */
+    suspend fun clearLocalChange(since: Long) {
+        dataStore.edit { prefs ->
+            if ((prefs[LocalChangedAtKey] ?: 0L) <= since) prefs.remove(LocalChangedAtKey)
+        }
+    }
+
     suspend fun clearConnection() {
         dataStore.edit { prefs ->
             prefs.remove(EndpointUrlKey)
@@ -56,6 +73,7 @@ class SyncConfigDataSource @Inject constructor(
             prefs.remove(EndpointTypeKey)
             prefs[ModeKey] = SyncMode.OFF.name
             prefs.remove(LastSyncedUpdatedAtKey)
+            prefs.remove(LocalChangedAtKey)
         }
     }
 
@@ -80,6 +98,7 @@ class SyncConfigDataSource @Inject constructor(
         mode = this[ModeKey]?.let(::modeOrOff) ?: SyncMode.OFF,
         deviceId = this[DeviceIdKey] ?: "",
         lastSyncedUpdatedAt = this[LastSyncedUpdatedAtKey] ?: 0L,
+        localChangedAt = this[LocalChangedAtKey] ?: 0L,
     )
 
     private fun modeOrOff(name: String): SyncMode =
@@ -95,5 +114,6 @@ class SyncConfigDataSource @Inject constructor(
         private val ModeKey = stringPreferencesKey("sync_mode")
         private val DeviceIdKey = stringPreferencesKey("sync_device_id")
         private val LastSyncedUpdatedAtKey = longPreferencesKey("sync_last_updated_at")
+        private val LocalChangedAtKey = longPreferencesKey("sync_local_changed_at")
     }
 }

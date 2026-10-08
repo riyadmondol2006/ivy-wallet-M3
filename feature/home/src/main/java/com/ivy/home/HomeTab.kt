@@ -327,8 +327,8 @@ fun BoxWithConstraintsScope.HomeUi(
                 .format(Date(uiState.remoteSyncPromptAtMillis))
         }
         AlertDialog(
-            // Tapping outside only hides the prompt; it returns on the next Home start. Only
-            // "Not now" marks the remote revision as seen.
+            // Tapping outside or "Not now" hides the prompt; it returns on the next Home start
+            // until the change is pulled or overwritten.
             onDismissRequest = { onEvent(HomeEvent.HideRemoteSync) },
             title = { Text(stringResource(R.string.cloud_sync_pull_prompt_title)) },
             text = {
@@ -345,7 +345,15 @@ fun BoxWithConstraintsScope.HomeUi(
             },
             confirmButton = {
                 TextButton(onClick = { onEvent(HomeEvent.ConfirmRemoteSync) }) {
-                    Text(stringResource(R.string.cloud_sync_pull))
+                    Text(
+                        stringResource(
+                            if (uiState.remoteSyncConflict) {
+                                R.string.cloud_sync_merge
+                            } else {
+                                R.string.cloud_sync_pull
+                            }
+                        )
+                    )
                 }
             },
             dismissButton = {

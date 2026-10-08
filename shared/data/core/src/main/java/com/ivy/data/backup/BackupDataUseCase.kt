@@ -19,6 +19,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TagAssociationDao
 import com.ivy.data.db.dao.read.TagDao
 import com.ivy.data.db.dao.read.TransactionDao
+import com.ivy.data.db.DbTransactionRunner
 import com.ivy.data.db.dao.write.WriteBudgetDao
 import com.ivy.data.db.dao.write.WriteCategoryDao
 import com.ivy.data.db.dao.write.WriteLoanDao
@@ -30,6 +31,8 @@ import com.ivy.data.db.dao.write.WriteTagDao
 import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.file.FileSystem
 import com.ivy.data.repository.AccountRepository
+import com.ivy.data.repository.CategoryRepository
+import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.mapper.AccountMapper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.persistentListOf
@@ -72,7 +75,10 @@ class BackupDataUseCase @Inject constructor(
     private val tagsReader: TagDao,
     private val tagAssociationReader: TagAssociationDao,
     private val tagsWriter: WriteTagDao,
-    private val tagAssociationWriter: WriteTagAssociationDao
+    private val tagAssociationWriter: WriteTagAssociationDao,
+    private val categoryRepository: CategoryRepository,
+    private val tagRepository: TagRepository,
+    private val transactionRunner: DbTransactionRunner,
 ) {
     suspend fun exportToFile(
         zipFileUri: Uri
@@ -212,20 +218,61 @@ class BackupDataUseCase @Inject constructor(
 
         onProgress(0.4)
         insertDataToDb(completeData = ivyWalletCompleteData, onProgress = onProgress)
+        invalidateRepositoryCaches()
         onProgress(1.0)
 
         if (clearCacheDir) {
             clearCacheDir()
         }
 
-        return ImportResult(
-            rowsFound = ivyWalletCompleteData.transactions.size,
-            transactionsImported = ivyWalletCompleteData.transactions.size,
-            accountsImported = ivyWalletCompleteData.accounts.size,
-            categoriesImported = ivyWalletCompleteData.categories.size,
-            failedRows = persistentListOf()
-        )
+        return ivyWalletCompleteData.toImportResult()
     }
+
+    /**
+     * Makes the local data an exact copy of the backup in [jsonString], so deletions and edits made
+     * on another device apply here too (cloud sync). The backup is parsed before anything is
+     * touched, and the delete + insert run in one database transaction: if anything fails, the
+     * local data stays as it was. File imports keep merging through [importJson].
+     */
+    suspend fun replaceAllWithJson(jsonString: String): ImportResult =
+        withContext(dispatchersProvider.io) {
+            val completeData = json.decodeFromString<IvyWalletCompleteData>(jsonString)
+            transactionRunner.inTransaction {
+                deleteAllBackedUpData()
+                insertDataToDb(completeData = completeData)
+            }
+            invalidateRepositoryCaches()
+            completeData.toImportResult()
+        }
+
+    /** Deletes exactly what a backup contains; exchange rates and the user record are kept. */
+    private suspend fun deleteAllBackedUpData() {
+        tagAssociationWriter.deleteAll()
+        tagsWriter.deleteAll()
+        transactionWriter.deleteAll()
+        plannedPaymentRuleWriter.deleteAll()
+        loanRecordWriter.deleteAll()
+        loanWriter.deleteAll()
+        budgetWriter.deleteAll()
+        categoryWriter.deleteAll()
+        accountRepository.deleteAll()
+        settingsWriter.deleteAll()
+    }
+
+    // Imports write through the DAOs, so the repositories' in-memory caches are now stale.
+    private fun invalidateRepositoryCaches() {
+        accountRepository.invalidateCache()
+        categoryRepository.invalidateCache()
+        tagRepository.invalidateCache()
+    }
+
+    private fun IvyWalletCompleteData.toImportResult() = ImportResult(
+        rowsFound = transactions.size,
+        transactionsImported = transactions.size,
+        accountsImported = accounts.size,
+        categoriesImported = categories.size,
+        failedRows = persistentListOf()
+    )
 
     private suspend fun accommodateExistingAccountsAndCategories(jsonString: String?): String? {
         if (jsonString == null) return null

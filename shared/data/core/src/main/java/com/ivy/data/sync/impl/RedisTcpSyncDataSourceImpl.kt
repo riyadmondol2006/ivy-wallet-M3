@@ -5,7 +5,11 @@ import arrow.core.left
 import arrow.core.raise.catch
 import arrow.core.right
 import com.ivy.base.threading.DispatchersProvider
+import com.ivy.data.sync.RedisConnectionString
 import com.ivy.data.sync.RedisSyncDataSource
+import com.ivy.data.sync.RedisSyncDataSource.Companion.BACKUP_KEY
+import com.ivy.data.sync.RedisSyncDataSource.Companion.META_KEY
+import com.ivy.data.sync.RemoteSnapshot
 import com.ivy.data.sync.model.RemoteSyncMeta
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -14,7 +18,6 @@ import java.io.ByteArrayOutputStream
 import java.io.EOFException
 import java.io.OutputStream
 import java.net.InetSocketAddress
-import java.net.URI
 import javax.inject.Inject
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
@@ -24,8 +27,9 @@ import javax.net.ssl.SSLSocketFactory
  * the standard Redis endpoint over the REST API. Speaks a minimal subset of the RESP protocol
  * (AUTH/PING/GET/SET/DEL) directly over an [SSLSocket] — no third-party Redis client needed.
  *
- * The `url` is either a `rediss://[user]:[password]@host:port` URL or a bare `host:port`, and
- * `token` is the password (used when not embedded in the URL). Upstash TCP endpoints always use TLS.
+ * The `url` is anything [RedisConnectionString] reads (`rediss://…`, `redis://…`, a pasted
+ * `redis-cli --tls -u …` command or `host:port`), and `token` is the password, used when the URL
+ * has none. The connection always uses TLS, as Upstash requires.
  */
 class RedisTcpSyncDataSourceImpl @Inject constructor(
     private val json: Json,
@@ -41,23 +45,32 @@ class RedisTcpSyncDataSourceImpl @Inject constructor(
     override suspend fun getMeta(url: String, token: String): Either<String, RemoteSyncMeta?> =
         withConnection(url, token) { conn ->
             conn.command("GET", META_KEY).asBulk()
-                ?.let { json.decodeFromString<RemoteSyncMeta>(it) }
+                ?.let { RemoteSyncMeta.parseLenient(json, it) }
+                // A backup can exist without its meta record (see RemoteSnapshot).
+                ?: RemoteSyncMeta.unknown()
+                    .takeIf { conn.command("EXISTS", BACKUP_KEY).asInteger() == 1L }
         }
 
-    override suspend fun getBackup(url: String, token: String): Either<String, String?> =
+    override suspend fun getSnapshot(url: String, token: String): Either<String, RemoteSnapshot> =
         withConnection(url, token) { conn ->
-            conn.command("GET", BACKUP_KEY).asBulk()
+            val values = conn.command("MGET", BACKUP_KEY, META_KEY).asArray()
+            val storedBackup = values.getOrNull(0)?.asBulk()
+            RemoteSnapshot(
+                storedBackup = storedBackup,
+                meta = values.getOrNull(1)?.asBulk()?.let { RemoteSyncMeta.parseLenient(json, it) }
+                    ?: storedBackup?.let { RemoteSyncMeta.unknown() },
+            )
         }
 
     override suspend fun putBackup(
         url: String,
         token: String,
-        backupJson: String,
+        storedBackup: String,
         meta: RemoteSyncMeta,
     ): Either<String, Unit> = withConnection(url, token) { conn ->
         // Write both keys atomically so the backup and its meta record can never disagree.
         conn.command("MULTI").asStatus()
-        conn.command("SET", BACKUP_KEY, backupJson).asStatus()
+        conn.command("SET", BACKUP_KEY, storedBackup).asStatus()
         conn.command("SET", META_KEY, json.encodeToString(RemoteSyncMeta.serializer(), meta))
             .asStatus()
         val results = conn.command("EXEC").asArray()
@@ -77,13 +90,15 @@ class RedisTcpSyncDataSourceImpl @Inject constructor(
         block: (RespConnection) -> T,
     ): Either<String, T> = withContext(dispatchers.io) {
         catch({
-            val target = parseTarget(url, token)
+            val target = RedisConnectionString.parse(url)
+                ?: return@catch "Enter the Redis endpoint, e.g. rediss://host:6379".left()
+            val password = target.password ?: token.trim()
             openTlsSocket(target.host, target.port).use { socket ->
                 val conn = RespConnection(
                     input = BufferedInputStream(socket.inputStream),
                     output = socket.outputStream,
                 )
-                conn.authenticate(target.user, target.password)
+                conn.authenticate(target.user, password)
                 block(conn).right()
             }
         }) { e -> (e.message ?: "Redis connection error").left() }
@@ -91,39 +106,18 @@ class RedisTcpSyncDataSourceImpl @Inject constructor(
 
     private fun openTlsSocket(host: String, port: Int): SSLSocket {
         val socket = SSLSocketFactory.getDefault().createSocket() as SSLSocket
+        // A raw SSLSocket only checks the certificate chain. Also check that the certificate is
+        // for this host, or any valid certificate could intercept the password and the backup.
+        socket.sslParameters = socket.sslParameters.apply {
+            endpointIdentificationAlgorithm = "HTTPS"
+        }
         socket.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
         socket.soTimeout = READ_TIMEOUT_MS
         socket.startHandshake()
         return socket
     }
 
-    private fun parseTarget(url: String, token: String): RedisTarget {
-        val trimmed = url.trim()
-        return if (trimmed.startsWith("redis://") || trimmed.startsWith("rediss://")) {
-            val uri = URI(trimmed)
-            val userInfo = uri.userInfo?.split(":", limit = 2).orEmpty()
-            val user = userInfo.getOrNull(0)?.takeIf { it.isNotBlank() } ?: DEFAULT_USER
-            val password = userInfo.getOrNull(1)?.takeIf { it.isNotBlank() } ?: token.trim()
-            RedisTarget(uri.host, uri.port.takeIf { it > 0 } ?: DEFAULT_PORT, user, password)
-        } else {
-            val host = trimmed.substringBeforeLast(':')
-            val port = trimmed.substringAfterLast(':', "").toIntOrNull() ?: DEFAULT_PORT
-            RedisTarget(host, port, DEFAULT_USER, token.trim())
-        }
-    }
-
-    private data class RedisTarget(
-        val host: String,
-        val port: Int,
-        val user: String,
-        val password: String,
-    )
-
     companion object {
-        private const val BACKUP_KEY = "ivy_wallet_backup"
-        private const val META_KEY = "ivy_wallet_meta"
-        private const val DEFAULT_USER = "default"
-        private const val DEFAULT_PORT = 6379
         private const val CONNECT_TIMEOUT_MS = 15_000
         private const val READ_TIMEOUT_MS = 20_000
     }
@@ -223,6 +217,9 @@ private sealed interface RespReply {
 
     fun asStatus(): String = (this as? Status)?.value
         ?: error("Expected a Redis status reply but got $this")
+
+    fun asInteger(): Long = (this as? Integer)?.value
+        ?: error("Expected a Redis integer reply but got $this")
 
     fun asArray(): List<RespReply> = (this as? Array)?.items
         ?: error("Expected a Redis array reply but got $this")

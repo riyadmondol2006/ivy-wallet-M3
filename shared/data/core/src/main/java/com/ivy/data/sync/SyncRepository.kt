@@ -3,7 +3,6 @@ package com.ivy.data.sync
 import android.content.Context
 import android.content.pm.PackageManager
 import arrow.core.Either
-import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.raise.either
 import com.ivy.base.threading.DispatchersProvider
@@ -16,6 +15,8 @@ import com.ivy.data.sync.impl.RedisSyncDataSourceImpl
 import com.ivy.data.sync.impl.RedisTcpSyncDataSourceImpl
 import com.ivy.data.sync.model.RemoteSyncMeta
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -23,12 +24,17 @@ import javax.inject.Singleton
 
 /**
  * Orchestrates cloud backup/restore between the local database ([BackupDataUseCase]) and the user's
- * Upstash Redis ([RedisSyncDataSource]), using the saved [SyncConfigDataSource] connection.
+ * Redis database ([RedisSyncDataSource]), using the saved [SyncConfigDataSource] connection.
+ *
+ * The cloud holds one full backup. Pulling makes this device match it, unless this device has
+ * changes the cloud doesn't have: then both are merged and the result is pushed back, so neither
+ * side's changes are lost.
  *
  * Every public call catches exceptions and reports them on the left side, so callers never have
  * to guard against a crash from a malformed backup or a broken connection.
  */
 @Singleton
+@Suppress("LongParameterList")
 class SyncRepository @Inject constructor(
     private val backupDataUseCase: BackupDataUseCase,
     private val restDataSource: RedisSyncDataSourceImpl,
@@ -40,6 +46,12 @@ class SyncRepository @Inject constructor(
     private val dispatchers: DispatchersProvider,
     @ApplicationContext private val context: Context,
 ) {
+    /**
+     * Push and pull never overlap: a push that read the database before a pull replaced it would
+     * otherwise upload the old data over what was just pulled.
+     */
+    private val syncMutex = Mutex()
+
     private fun sourceFor(endpointType: SyncEndpointType): RedisSyncDataSource =
         if (endpointType == SyncEndpointType.TCP) tcpDataSource else restDataSource
 
@@ -62,8 +74,12 @@ class SyncRepository @Inject constructor(
      * silently overwrite another device's changes.
      */
     suspend fun push(force: Boolean = false): Either<PushError, Unit> = withContext(dispatchers.io) {
+        syncMutex.withLock { pushLocked(force) }
+    }
+
+    private suspend fun pushLocked(force: Boolean): Either<PushError, Unit> {
         val config = configDataSource.get()
-        if (!config.isConfigured) return@withContext PushError.Failed(NOT_CONFIGURED).left()
+        if (!config.isConfigured) return PushError.Failed(NOT_CONFIGURED).left()
 
         val redis = sourceFor(config.endpointType)
         val url = config.endpointUrl!!
@@ -71,53 +87,85 @@ class SyncRepository @Inject constructor(
 
         if (!force) {
             val remote = when (val meta = redis.getMeta(url, token)) {
-                is Either.Left -> return@withContext PushError.Failed(meta.value).left()
+                is Either.Left -> return PushError.Failed(meta.value).left()
                 is Either.Right -> meta.value
             }
             if (remote != null && remote.isNewerForeignRevision(config)) {
-                return@withContext PushError.RemoteNewer(remote).left()
+                return PushError.RemoteNewer(remote).left()
             }
         }
 
-        val updatedAt = System.currentTimeMillis()
-        Either.catch { backupDataUseCase.generateJsonBackup() }
-            .mapLeft<PushError> { e ->
-                Timber.e(e, "Cloud sync: generating the backup failed")
-                PushError.Failed(e.message ?: BACKUP_FAILED)
+        // Read before the snapshot is taken: a change marked after this is not in the upload.
+        val snapshotAt = System.currentTimeMillis()
+        val backupJson = try {
+            backupDataUseCase.generateJsonBackup()
+        } catch (e: Exception) {
+            Timber.e(e, "Cloud sync: generating the backup failed")
+            return PushError.Failed(e.message ?: BACKUP_FAILED).left()
+        }
+        val meta = RemoteSyncMeta(
+            deviceId = config.deviceId,
+            updatedAt = snapshotAt,
+            accounts = accountDao.findAll().size,
+            appVersion = appVersion(),
+        )
+        return redis.putBackup(url, token, CloudBackupCodec.encode(backupJson), meta)
+            .mapLeft<PushError> { PushError.Failed(it) }
+            .onRight {
+                configDataSource.setLastSyncedUpdatedAt(snapshotAt)
+                configDataSource.clearLocalChange(since = snapshotAt)
             }
-            .flatMap { backupJson ->
-                val meta = RemoteSyncMeta(
-                    deviceId = config.deviceId,
-                    updatedAt = updatedAt,
-                    accounts = accountDao.findAll().size,
-                    appVersion = appVersion(),
-                )
-                redis.putBackup(url, token, backupJson, meta).mapLeft { PushError.Failed(it) }
-            }
-            .onRight { configDataSource.setLastSyncedUpdatedAt(updatedAt) }
     }
 
-    /** Downloads the cloud backup and imports it into the local database. */
+    /**
+     * Brings the cloud backup into this device.
+     *
+     * Without local changes, this device becomes an exact copy of the cloud, so items deleted on
+     * another device are deleted here too. With local changes (or a device that already had data
+     * before it first synced), both sides are merged and the result is pushed back, so the cloud
+     * and this device end up with everything from both.
+     */
     suspend fun pull(): Either<String, ImportResult> = withContext(dispatchers.io) {
+        syncMutex.withLock { pullLocked() }
+    }
+
+    private suspend fun pullLocked(): Either<String, ImportResult> {
         val config = configDataSource.get()
-        if (!config.isConfigured) return@withContext NOT_CONFIGURED.left()
+        if (!config.isConfigured) return NOT_CONFIGURED.left()
 
         val redis = sourceFor(config.endpointType)
-        either {
-            val url = config.endpointUrl!!
-            val token = config.token!!
-            val backupJson = redis.getBackup(url, token).bind()
-                ?: raise(NO_BACKUP)
-            val meta = redis.getMeta(url, token).bind()
+        val url = config.endpointUrl!!
+        val token = config.token!!
+        val merge = hasLocalChanges(config)
+
+        return either {
+            val snapshot = redis.getSnapshot(url, token).bind()
+            val storedBackup = snapshot.storedBackup ?: raise(NO_BACKUP)
             val result = Either.catch {
+                val backupJson = CloudBackupCodec.decode(storedBackup)
                 autoSyncGate.suppressing(SUPPRESS_WINDOW_MS) {
-                    backupDataUseCase.importJson(backupJson)
+                    if (merge) {
+                        backupDataUseCase.importJson(backupJson)
+                    } else {
+                        backupDataUseCase.replaceAllWithJson(backupJson)
+                    }
                 }
             }.mapLeft { e ->
                 Timber.e(e, "Cloud sync: importing the backup failed")
                 "$IMPORT_FAILED ${e.message.orEmpty()}".trim()
             }.bind()
-            configDataSource.setLastSyncedUpdatedAt(meta?.updatedAt ?: config.lastSyncedUpdatedAt)
+
+            // The cloud revision is now part of this device's data.
+            snapshot.meta?.updatedAt?.let { configDataSource.setLastSyncedUpdatedAt(it) }
+            if (merge) {
+                // Upload the merged data so the other device gets this device's changes too. If it
+                // fails (e.g. offline), the local changes stay marked and are pushed later.
+                pushLocked(force = false).onLeft {
+                    Timber.w("Cloud sync: pushing the merged data failed: ${it.message}")
+                }
+            } else {
+                configDataSource.clearLocalChange(since = System.currentTimeMillis())
+            }
             // Other screens cache accounts/categories; tell them everything may have changed.
             dataObserver.post(DataWriteEvent.AllDataChange)
             result
@@ -137,6 +185,7 @@ class SyncRepository @Inject constructor(
                     meta = meta,
                     isFromOtherDevice = meta != null && meta.deviceId != config.deviceId,
                     isNewer = meta != null && meta.updatedAt != config.lastSyncedUpdatedAt,
+                    hasLocalChanges = hasLocalChanges(config),
                 )
             },
         )
@@ -146,17 +195,26 @@ class SyncRepository @Inject constructor(
     suspend fun deleteRemote(): Either<String, Unit> = withContext(dispatchers.io) {
         val config = configDataSource.get()
         if (!config.isConfigured) return@withContext NOT_CONFIGURED.left()
-        sourceFor(config.endpointType).deleteBackup(config.endpointUrl!!, config.token!!)
-            .onRight { configDataSource.setLastSyncedUpdatedAt(0L) }
+        syncMutex.withLock {
+            sourceFor(config.endpointType).deleteBackup(config.endpointUrl!!, config.token!!)
+                .onRight { configDataSource.setLastSyncedUpdatedAt(0L) }
+        }
+    }
+
+    /** Records that local data changed and is not in the cloud yet. */
+    suspend fun markLocalChange() {
+        if (configDataSource.get().isConfigured) {
+            configDataSource.markLocalChange(System.currentTimeMillis())
+        }
     }
 
     /**
-     * Marks the current remote revision as "seen" without pulling, so a dismissed prompt won't
-     * nag again for the same change.
+     * True when replacing this device's data with the cloud's would lose something: a change not
+     * pushed yet, or data this device had before it first synced with this database.
      */
-    suspend fun markRemoteSeen(updatedAt: Long) {
-        configDataSource.setLastSyncedUpdatedAt(updatedAt)
-    }
+    private suspend fun hasLocalChanges(config: SyncConfig): Boolean =
+        config.localChangedAt > 0L ||
+            (config.lastSyncedUpdatedAt == 0L && accountDao.findAll().isNotEmpty())
 
     private fun RemoteSyncMeta.isNewerForeignRevision(config: SyncConfig): Boolean =
         deviceId != config.deviceId && updatedAt != config.lastSyncedUpdatedAt
@@ -167,8 +225,8 @@ class SyncRepository @Inject constructor(
         endpointType == SyncEndpointType.HTTPS && !url.startsWith("https://", ignoreCase = true) ->
             HTTPS_REQUIRED
 
-        endpointType == SyncEndpointType.TCP && url.startsWith("redis://", ignoreCase = true) ->
-            TLS_REQUIRED
+        endpointType == SyncEndpointType.TCP && RedisConnectionString.parse(url) == null ->
+            REDIS_URL_REQUIRED
 
         else -> null
     }
@@ -187,9 +245,13 @@ class SyncRepository @Inject constructor(
         private const val URL_REQUIRED = "Enter the endpoint URL"
         private const val HTTPS_REQUIRED =
             "Use the https:// REST URL from the Upstash console (plain http is not allowed)"
-        private const val TLS_REQUIRED = "Use the rediss:// (TLS) endpoint, not redis://"
+        private const val REDIS_URL_REQUIRED =
+            "Enter a Redis endpoint such as rediss://host:6379, or paste the redis-cli command"
 
-        /** Keep auto-sync suppressed a bit longer than the push debounce after an import. */
-        private const val SUPPRESS_WINDOW_MS = 10_000L
+        /**
+         * Keeps change tracking quiet while a pull writes the database and briefly after, until
+         * Room has delivered the resulting table invalidations.
+         */
+        private const val SUPPRESS_WINDOW_MS = 3_000L
     }
 }
