@@ -3,18 +3,25 @@ package com.ivy.legacy.legacy.ui.theme.components
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.legacy.utils.convertLocalToUTC
 import com.ivy.legacy.utils.convertUTCToLocal
 import com.ivy.legacy.utils.formatNicely
 import com.ivy.legacy.utils.timeNowUTC
-import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -34,23 +41,43 @@ fun DateTimeRow(
     ) {
         Spacer(Modifier.width(24.dp))
 
-        IvyOutlinedButton(
+        DateTimeButton(
             text = dateTime.formatNicely(),
-            iconStart = R.drawable.ic_date,
+            icon = Icons.Outlined.CalendarToday,
             onClick = onEditDate
         )
 
         Spacer(Modifier.weight(1f))
 
-        IvyOutlinedButton(
+        DateTimeButton(
             text = with(timeFormatter) {
                 dateTime.toLocalTime().format()
             },
-            iconStart = R.drawable.ic_date,
+            icon = Icons.Outlined.Schedule,
             onClick = onEditTime
         )
 
         Spacer(Modifier.width(24.dp))
+    }
+}
+
+@Composable
+private fun DateTimeButton(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+        )
+        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+        Text(text = text)
     }
 }
 

@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,7 +62,6 @@ import com.ivy.navigation.Navigation
 import com.ivy.navigation.navigation
 import com.ivy.wallet.ui.theme.components.ActionsRow
 import com.ivy.wallet.ui.theme.components.CloseButton
-import com.ivy.wallet.ui.theme.gradientCutBackgroundTop
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -335,11 +333,8 @@ fun ModalActionsRow(
                         )
                     }
                 }
-                .gradientCutBackgroundTop(
-                    pure = modalContainerColor(),
-                    density = LocalDensity.current,
-                    endY = 16.dp
-                )
+                // Solid M3 action bar (the old gradient fade made content look cut off).
+                .background(modalContainerColor())
                 .padding(top = 8.dp, bottom = 12.dp)
                 .padding(bottom = navBarPadding)
                 .zIndex(1100f),

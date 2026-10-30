@@ -213,7 +213,7 @@ fun IconNameRow(
         val view = LocalView.current
         IvyNameTextField(
             modifier = Modifier
-                .padding(start = 28.dp, end = 36.dp)
+                .padding(start = 16.dp, end = 24.dp)
                 .focusRequester(nameFocus),
             underlineModifier = Modifier.padding(start = 24.dp, end = 32.dp),
             value = nameTextFieldValue,

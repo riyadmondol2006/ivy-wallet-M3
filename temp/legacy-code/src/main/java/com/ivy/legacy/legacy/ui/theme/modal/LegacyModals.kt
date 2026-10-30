@@ -37,7 +37,7 @@ fun ModalNameInput(
     val view = LocalView.current
     IvyNameTextField(
         modifier = modifier
-            .padding(start = 32.dp, end = 36.dp)
+            .padding(horizontal = 24.dp)
             .focusRequester(nameFocus),
         underlineModifier = Modifier.padding(start = 32.dp, end = 32.dp),
         value = textFieldValue,

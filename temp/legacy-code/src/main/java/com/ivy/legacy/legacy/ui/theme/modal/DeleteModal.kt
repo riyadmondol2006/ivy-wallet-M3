@@ -146,7 +146,7 @@ fun BoxWithConstraintsScope.DeleteConfirmationModal(
 
         IvyNameTextField(
             modifier = Modifier
-                .padding(start = 28.dp, end = 36.dp),
+                .padding(horizontal = 24.dp),
             underlineModifier = Modifier.padding(start = 24.dp, end = 32.dp),
             value = deletionTextFieldValue,
             hint = hint,

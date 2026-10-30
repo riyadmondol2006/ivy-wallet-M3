@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,7 +34,7 @@ fun IvyOutlinedButton(
     minWidth: Dp = Dp.Unspecified,
     minHeight: Dp = Dp.Unspecified,
     iconTint: Color = UI.colors.pureInverse,
-    borderColor: Color = UI.colors.medium,
+    borderColor: Color = MaterialTheme.colorScheme.outline,
     textColor: Color = UI.colors.pureInverse,
     padding: Dp = 12.dp,
     enabled: Boolean = true,
@@ -46,7 +45,7 @@ fun IvyOutlinedButton(
         enabled = enabled,
         modifier = modifier.defaultMinSize(minWidth = minWidth, minHeight = minHeight),
         shape = RoundedCornerShape(percent = 50),
-        border = BorderStroke(2.dp, borderColor),
+        border = BorderStroke(1.dp, borderColor),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = if (solidBackground) MaterialTheme.colorScheme.surface else Color.Transparent,
             contentColor = textColor,
@@ -57,7 +56,7 @@ fun IvyOutlinedButton(
             IvyIcon(icon = iconStart, tint = if (enabled) iconTint else iconTint.copy(alpha = DisabledAlpha))
             Spacer(Modifier.width(8.dp))
         }
-        Text(text = text, fontWeight = FontWeight.Bold)
+        Text(text = text)
     }
 }
 
@@ -70,7 +69,7 @@ fun IvyOutlinedButtonFillMaxWidth(
     @DrawableRes iconStart: Int?,
     solidBackground: Boolean = false,
     iconTint: Color = UI.colors.pureInverse,
-    borderColor: Color = UI.colors.medium,
+    borderColor: Color = MaterialTheme.colorScheme.outline,
     textColor: Color = UI.colors.pureInverse,
     padding: Dp = 16.dp,
     onClick: () -> Unit,
@@ -79,7 +78,7 @@ fun IvyOutlinedButtonFillMaxWidth(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(percent = 50),
-        border = BorderStroke(2.dp, borderColor),
+        border = BorderStroke(1.dp, borderColor),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = if (solidBackground) MaterialTheme.colorScheme.surface else Color.Transparent,
             contentColor = textColor,
@@ -90,7 +89,7 @@ fun IvyOutlinedButtonFillMaxWidth(
             IvyIcon(icon = iconStart, tint = iconTint)
             Spacer(Modifier.width(8.dp))
         }
-        Text(text = text, fontWeight = FontWeight.Bold)
+        Text(text = text)
     }
 }
 
