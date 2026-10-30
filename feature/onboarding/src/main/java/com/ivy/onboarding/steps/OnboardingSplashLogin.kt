@@ -82,8 +82,8 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
         label = "logoWidth"
     ) {
         when (it) {
-            OnboardingState.SPLASH -> 113.dp
-            else -> 76.dp
+            OnboardingState.SPLASH -> 96.dp
+            else -> 64.dp
         }
     }
 

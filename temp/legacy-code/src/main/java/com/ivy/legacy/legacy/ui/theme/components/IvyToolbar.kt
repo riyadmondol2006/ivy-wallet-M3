@@ -1,14 +1,14 @@
 package com.ivy.wallet.ui.theme.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
-import com.ivy.wallet.ui.theme.gradientCutBackgroundBottom
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 enum class BackButtonType {
@@ -27,8 +27,9 @@ fun IvyToolbar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .gradientCutBackgroundBottom(UI.colors.pure, paddingBottom = paddingBottom)
-            .padding(top = paddingTop),
+            // Opaque M3 surface so sticky toolbars don't show scrolled content through them.
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(top = paddingTop, bottom = paddingBottom),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(Modifier.width(20.dp))

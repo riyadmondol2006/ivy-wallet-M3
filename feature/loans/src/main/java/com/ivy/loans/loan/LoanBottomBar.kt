@@ -1,50 +1,32 @@
 package com.ivy.loans.loan
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PendingActions
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.legacy.ivyWalletCtx
-import com.ivy.legacy.utils.navigationBarInset
-import com.ivy.legacy.utils.toDensityPx
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Blue
-import com.ivy.wallet.ui.theme.components.IvyIcon
-import kotlin.math.roundToInt
-
-val FAB_BUTTON_SIZE = 56.dp
-const val ZINDEX = 200f
 
 @Composable
 internal fun BoxWithConstraintsScope.LoanBottomBar(
@@ -52,99 +34,53 @@ internal fun BoxWithConstraintsScope.LoanBottomBar(
     selectTab: (LoanTab) -> Unit,
     onAdd: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .align(Alignment.BottomCenter)
-            .background(MaterialTheme.colorScheme.surface)
-            .navigationBarsPadding(),
-        verticalAlignment = Alignment.CenterVertically
+            .align(Alignment.BottomCenter),
+        horizontalAlignment = Alignment.End
     ) {
-        Tab(
-            icon = R.drawable.ic_custom_loan_s,
-            name = "Pending",
-            selected = tab == LoanTab.PENDING,
-            selectedColor = MaterialTheme.colorScheme.primary
+        FloatingActionButton(
+            onClick = onAdd,
+            modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
         ) {
-            selectTab(LoanTab.PENDING)
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = stringResource(R.string.add)
+            )
         }
 
-        Spacer(Modifier.width(FAB_BUTTON_SIZE))
-
-        Tab(
-            icon = R.drawable.ic_custom_loan_s,
-            name = "Completed",
-            selected = tab == LoanTab.COMPLETED,
-            selectedColor = MaterialTheme.colorScheme.tertiary
-        ) {
-            selectTab(LoanTab.COMPLETED)
+        NavigationBar {
+            LoanTabItem(
+                icon = Icons.Outlined.PendingActions,
+                name = "Pending",
+                selected = tab == LoanTab.PENDING,
+                onClick = { selectTab(LoanTab.PENDING) }
+            )
+            LoanTabItem(
+                icon = Icons.Outlined.TaskAlt,
+                name = "Completed",
+                selected = tab == LoanTab.COMPLETED,
+                onClick = { selectTab(LoanTab.COMPLETED) }
+            )
         }
-    }
-
-    val ivyContext = ivyWalletCtx()
-    val fabStartX = ivyContext.screenWidth / 2 - FAB_BUTTON_SIZE.toDensityPx() / 2
-    val fabStartY = ivyContext.screenHeight - navigationBarInset() -
-            30.dp.toDensityPx() - FAB_BUTTON_SIZE.toDensityPx()
-
-    FloatingActionButton(
-        onClick = onAdd,
-        modifier = Modifier
-            .layout { measurable, constraints ->
-                val placeable = measurable.measure(constraints)
-                layout(placeable.width, placeable.height) {
-                    placeable.place(
-                        x = fabStartX.roundToInt(),
-                        y = fabStartY.roundToInt()
-                    )
-                }
-            }
-            .size(FAB_BUTTON_SIZE)
-            .zIndex(ZINDEX),
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_add),
-            contentDescription = stringResource(R.string.add)
-        )
     }
 }
 
 @Composable
-private fun RowScope.Tab(
-    @DrawableRes icon: Int,
+private fun RowScope.LoanTabItem(
+    icon: ImageVector,
     name: String,
     selected: Boolean,
-    selectedColor: Color,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .weight(1f)
-            .clip(UI.shapes.rFull)
-            .clickable(onClick = onClick)
-            .padding(top = 12.dp, bottom = 16.dp)
-            .testTag(name.lowercase()),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IvyIcon(
-            icon = icon,
-            tint = if (selected) selectedColor else UI.colors.pureInverse
-        )
-
-        if (selected) {
-            Spacer(modifier = Modifier.width(4.dp))
-
-            Text(
-                text = name,
-                style = UI.typo.c.style(
-                    fontWeight = FontWeight.Bold,
-                    color = selectedColor
-                )
-            )
-        }
-    }
+    NavigationBarItem(
+        modifier = Modifier.testTag(name.lowercase()),
+        selected = selected,
+        onClick = onClick,
+        icon = { Icon(imageVector = icon, contentDescription = null) },
+        label = { Text(text = name) }
+    )
 }
 
 @Preview

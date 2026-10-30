@@ -3,6 +3,8 @@ package com.ivy.onboarding.components
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
@@ -10,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,7 +40,8 @@ fun Suggestions(
             .padding(horizontal = 24.dp),
         items = items,
         horizontalMarginBetweenItems = 8.dp,
-        verticalMarginBetweenRows = 12.dp
+        // AssistChip already reserves a 48dp touch target around its 32dp body.
+        verticalMarginBetweenRows = 0.dp
     ) {
         when (it) {
             is CreateAccountData -> {
@@ -73,7 +75,7 @@ private fun Suggestion(
         label = { Text(text = name) },
         leadingIcon = {
             Icon(
-                painter = painterResource(id = R.drawable.ic_plus),
+                imageVector = Icons.Rounded.Add,
                 contentDescription = null,
                 modifier = Modifier.size(AssistChipDefaults.IconSize)
             )
@@ -90,7 +92,7 @@ private fun AddNewButton(
         label = { Text(text = stringResource(R.string.add_new)) },
         leadingIcon = {
             Icon(
-                painter = painterResource(id = R.drawable.ic_plus),
+                imageVector = Icons.Rounded.Add,
                 contentDescription = null,
                 modifier = Modifier.size(AssistChipDefaults.IconSize)
             )

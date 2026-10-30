@@ -1,9 +1,9 @@
 package com.ivy.settings
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,9 +14,37 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.BrightnessAuto
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.Contrast
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.CurrencyExchange
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.EventRepeat
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.TableChart
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -29,18 +57,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Theme
 import com.ivy.data.sync.SyncMode
-import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.style
-import com.ivy.design.l1_buildingBlocks.IconScale
-import com.ivy.design.l1_buildingBlocks.IvyIconScaled
 import com.ivy.design.utils.thenIf
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletPreview
@@ -200,10 +224,8 @@ private fun BoxWithConstraintsScope.UI(
                         nav.navigateTo(ReleasesScreen)
                     },
                     text = "${rootScreen.buildVersionName} (${rootScreen.buildVersionCode})",
-                    style = UI.typo.nC.style(
-                        color = UI.colors.gray,
-                        fontWeight = FontWeight.Bold
-                    )
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(Modifier.width(32.dp))
@@ -246,14 +268,13 @@ private fun BoxWithConstraintsScope.UI(
 
             val nav = navigation()
             SettingsDefaultButton(
-                icon = R.drawable.ic_vue_security_shield,
+                icon = Icons.Outlined.CloudSync,
                 text = stringResource(R.string.cloud_sync),
                 description = when (cloudSyncMode) {
                     SyncMode.AUTO -> stringResource(R.string.cloud_sync_mode_auto)
                     SyncMode.MANUAL -> stringResource(R.string.cloud_sync_mode_manual)
                     SyncMode.OFF -> stringResource(R.string.cloud_sync_not_set_up)
-                },
-                iconPadding = 8.dp
+                }
             ) {
                 nav.navigateTo(CloudSyncScreen(launchedFromOnboarding = false))
             }
@@ -272,9 +293,8 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
 
             SettingsDefaultButton(
-                icon = R.drawable.ic_vue_security_shield,
-                text = stringResource(R.string.backup_data),
-                iconPadding = 8.dp
+                icon = Icons.Outlined.Backup,
+                text = stringResource(R.string.backup_data)
             ) {
                 onBackupData()
             }
@@ -282,7 +302,7 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
 
             SettingsPrimaryButton(
-                icon = R.drawable.ic_export_csv,
+                icon = Icons.Outlined.FileDownload,
                 text = stringResource(R.string.import_data),
                 backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary),
                 textColor = MaterialTheme.colorScheme.onPrimary
@@ -302,10 +322,10 @@ private fun BoxWithConstraintsScope.UI(
 
             AppThemeButton(
                 icon = when (theme) {
-                    Theme.LIGHT -> R.drawable.home_more_menu_light_mode
-                    Theme.DARK -> R.drawable.home_more_menu_dark_mode
-                    Theme.AMOLED_DARK -> R.drawable.home_more_menu_amoled_dark_mode
-                    Theme.AUTO -> R.drawable.home_more_menu_auto_mode
+                    Theme.LIGHT -> Icons.Outlined.LightMode
+                    Theme.DARK -> Icons.Outlined.DarkMode
+                    Theme.AMOLED_DARK -> Icons.Outlined.Contrast
+                    Theme.AUTO -> Icons.Outlined.BrightnessAuto
                 },
                 label = when (theme) {
                     Theme.LIGHT -> stringResource(R.string.light_mode)
@@ -332,8 +352,7 @@ private fun BoxWithConstraintsScope.UI(
 
             if (languageOptionVisible) {
                 SettingsDefaultButton(
-                    icon = R.drawable.ic_vue_location_global,
-                    iconPadding = 6.dp,
+                    icon = Icons.Outlined.Language,
                     text = stringResource(R.string.language),
                     description = Locale.getDefault().displayName
                 ) {
@@ -344,7 +363,7 @@ private fun BoxWithConstraintsScope.UI(
             }
 
             SettingsDefaultButton(
-                icon = R.drawable.ic_currency,
+                icon = Icons.Outlined.CurrencyExchange,
                 text = stringResource(R.string.exchange_rates),
             ) {
                 nav.navigateTo(ExchangeRatesScreen)
@@ -365,7 +384,7 @@ private fun BoxWithConstraintsScope.UI(
                 onSetLockApp = onSetTreatTransfersAsIncExp,
                 text = stringResource(R.string.transfers_as_income_expense),
                 description = stringResource(R.string.transfers_as_income_expense_description),
-                icon = R.drawable.ic_custom_transfer_m
+                icon = Icons.Outlined.SwapHoriz
             )
 
             Spacer(Modifier.height(12.dp))
@@ -378,7 +397,7 @@ private fun BoxWithConstraintsScope.UI(
                     onSetShowNotifications(enabled)
                 },
                 text = stringResource(R.string.show_notifications),
-                icon = R.drawable.ic_notification_m
+                icon = Icons.Outlined.Notifications
             )
 
             Spacer(Modifier.height(12.dp))
@@ -390,7 +409,7 @@ private fun BoxWithConstraintsScope.UI(
                     onSetPlannedPaymentReminders(enabled)
                 },
                 text = stringResource(R.string.planned_payment_reminders),
-                icon = R.drawable.ic_planned_payments
+                icon = Icons.Outlined.EventRepeat
             )
         }
 
@@ -403,7 +422,7 @@ private fun BoxWithConstraintsScope.UI(
                 lockApp = lockApp,
                 onSetLockApp = onSetLockApp,
                 text = stringResource(R.string.lock_app),
-                icon = R.drawable.ic_custom_fingerprint_m
+                icon = Icons.Outlined.Fingerprint
             )
 
             Spacer(Modifier.height(12.dp))
@@ -413,7 +432,7 @@ private fun BoxWithConstraintsScope.UI(
                 onSetLockApp = onSetHideCurrentBalance,
                 text = stringResource(R.string.hide_balance),
                 description = stringResource(R.string.hide_balance_description),
-                icon = R.drawable.ic_hide_m
+                icon = Icons.Outlined.VisibilityOff
             )
 
             Spacer(Modifier.height(12.dp))
@@ -423,7 +442,7 @@ private fun BoxWithConstraintsScope.UI(
                 onSetLockApp = onSetHideIncome,
                 text = stringResource(R.string.hide_income),
                 description = stringResource(R.string.hide_income_description),
-                icon = R.drawable.ic_hide_m
+                icon = Icons.Outlined.VisibilityOff
             )
         }
 
@@ -439,7 +458,7 @@ private fun BoxWithConstraintsScope.UI(
                 onSetLockApp = onSetCreditCards,
                 text = stringResource(R.string.enable_credit_cards),
                 description = stringResource(R.string.enable_credit_cards_description),
-                icon = R.drawable.ic_vue_money_card
+                icon = Icons.Outlined.CreditCard
             )
 
             Spacer(Modifier.height(12.dp))
@@ -470,7 +489,7 @@ private fun BoxWithConstraintsScope.UI(
 
             val rootScreen = rootScreen()
             SettingsPrimaryButton(
-                icon = R.drawable.ic_custom_family_m,
+                icon = Icons.Outlined.Share,
                 text = stringResource(R.string.share_ivy_wallet),
                 backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primaryContainer),
                 textColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -481,8 +500,7 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
 
             SettingsPrimaryButton(
-                icon = R.drawable.github_logo,
-                iconPadding = 10.dp,
+                icon = ImageVector.vectorResource(R.drawable.github_logo),
                 text = stringResource(R.string.ivy_wallet_is_opensource),
                 backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHighest),
                 textColor = MaterialTheme.colorScheme.onSurface
@@ -494,7 +512,7 @@ private fun BoxWithConstraintsScope.UI(
 
             // Open-source licence notices must stay reachable from the app.
             SettingsDefaultButton(
-                icon = R.drawable.ic_custom_document_m,
+                icon = Icons.Outlined.Description,
                 text = stringResource(R.string.attributions)
             ) {
                 nav.navigateTo(AttributionsScreen)
@@ -510,7 +528,7 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(16.dp))
 
             SettingsPrimaryButton(
-                icon = R.drawable.ic_delete,
+                icon = Icons.Outlined.DeleteForever,
                 text = stringResource(R.string.delete_all_user_data),
                 backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.errorContainer),
                 textColor = MaterialTheme.colorScheme.onErrorContainer
@@ -522,7 +540,7 @@ private fun BoxWithConstraintsScope.UI(
                 Spacer(Modifier.height(12.dp))
 
                 SettingsPrimaryButton(
-                    icon = R.drawable.ic_delete,
+                    icon = Icons.Outlined.CloudOff,
                     text = stringResource(R.string.delete_cloud_backup),
                     backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.errorContainer),
                     textColor = MaterialTheme.colorScheme.onErrorContainer
@@ -618,25 +636,22 @@ private fun StartDateOfMonth(
     SettingsButtonRow(
         onClick = onClick
     ) {
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
 
-        IvyIconScaled(
-            icon = R.drawable.ic_custom_calendar_m,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconScale = IconScale.M,
-            padding = 2.dp
-        )
+        SettingsIcon(icon = Icons.Outlined.CalendarMonth)
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
 
         Text(
-            modifier = Modifier.padding(vertical = 18.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 18.dp),
             text = stringResource(R.string.start_date_of_month),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.width(12.dp))
 
         Text(
             text = startDateOfMonth.toString(),
@@ -655,16 +670,11 @@ private fun CustomFeatures(
     SettingsButtonRow(
         onClick = onClick
     ) {
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
 
-        IvyIconScaled(
-            icon = R.drawable.ic_custom_programming_m,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconScale = IconScale.M,
-            padding = 0.dp
-        )
+        SettingsIcon(icon = Icons.Outlined.Tune)
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(Modifier.width(16.dp))
 
         Text(
             modifier = Modifier.padding(vertical = 18.dp),
@@ -677,7 +687,7 @@ private fun CustomFeatures(
 
 @Composable
 private fun AppThemeButton(
-    @DrawableRes icon: Int,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit
 ) {
@@ -686,7 +696,6 @@ private fun AppThemeButton(
         text = label,
         backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
         textColor = MaterialTheme.colorScheme.onSurface,
-        iconPadding = 6.dp,
         description = stringResource(R.string.tap_to_switch_theme),
         onClick = onClick
     )
@@ -697,7 +706,7 @@ private fun AppSwitch(
     lockApp: Boolean,
     onSetLockApp: (Boolean) -> Unit,
     text: String,
-    icon: Int,
+    icon: ImageVector,
     description: String = "",
 ) {
     SettingsButtonRow(
@@ -707,12 +716,7 @@ private fun AppSwitch(
     ) {
         Spacer(Modifier.width(16.dp))
 
-        IvyIconScaled(
-            icon = icon,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconScale = IconScale.M,
-            padding = 0.dp
-        )
+        SettingsIcon(icon = icon)
 
         Spacer(Modifier.width(16.dp))
 
@@ -772,7 +776,7 @@ private fun AccountCard(
                 .testTag("settings_profile_card"),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(Modifier.width(24.dp))
+            Spacer(Modifier.width(16.dp))
 
             Text(
                 text = stringResource(R.string.account_uppercase),
@@ -787,7 +791,7 @@ private fun AccountCard(
             name = nameLocalAccount,
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -799,12 +803,9 @@ private fun AccountCardLocalAccount(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(20.dp))
-        IvyIconScaled(
-            icon = R.drawable.ic_local_account,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconScale = IconScale.M
-        )
+        Spacer(Modifier.width(16.dp))
+
+        SettingsIcon(icon = Icons.Outlined.AccountCircle)
 
         Spacer(Modifier.width(16.dp))
 
@@ -826,9 +827,8 @@ private fun ExportCSV(
     onExportToCSV: () -> Unit
 ) {
     SettingsDefaultButton(
-        icon = R.drawable.ic_vue_pc_printer,
+        icon = Icons.Outlined.TableChart,
         text = stringResource(R.string.export_to_csv),
-        iconPadding = 6.dp,
         description = stringResource(R.string.do_not_use_for_backup_purposes)
     ) {
         onExportToCSV()
@@ -837,11 +837,10 @@ private fun ExportCSV(
 
 @Composable
 private fun SettingsPrimaryButton(
-    @DrawableRes icon: Int,
+    icon: ImageVector,
     text: String,
     backgroundGradient: Gradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainer),
     textColor: Color = MaterialTheme.colorScheme.onSurface,
-    iconPadding: Dp = 0.dp,
     description: String? = null,
     onClick: () -> Unit
 ) {
@@ -851,12 +850,7 @@ private fun SettingsPrimaryButton(
     ) {
         Spacer(Modifier.width(16.dp))
 
-        IvyIconScaled(
-            icon = icon,
-            tint = textColor,
-            iconScale = IconScale.M,
-            padding = iconPadding
-        )
+        SettingsIcon(icon = icon, tint = textColor)
 
         Spacer(Modifier.width(16.dp))
 
@@ -908,44 +902,6 @@ private fun SettingsButtonRow(
 }
 
 @Composable
-private fun AccountCardButton(
-    @DrawableRes icon: Int,
-    text: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(UI.shapes.rFull)
-            .background(UI.colors.pure, UI.shapes.rFull)
-            .clickable {
-                onClick()
-            },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(12.dp))
-
-        IvyIconScaled(
-            icon = icon,
-            iconScale = IconScale.M
-        )
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            modifier = Modifier
-                .padding(vertical = 10.dp),
-            text = text,
-            style = UI.typo.b2.style(
-                fontWeight = FontWeight.Bold,
-                color = UI.colors.pureInverse
-            )
-        )
-
-        Spacer(Modifier.width(24.dp))
-    }
-}
-
-@Composable
 private fun CurrencyButton(
     currency: String,
     onClick: () -> Unit
@@ -963,12 +919,7 @@ private fun CurrencyButton(
     ) {
         Spacer(Modifier.width(16.dp))
 
-        IvyIconScaled(
-            icon = R.drawable.ic_currency,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconScale = IconScale.M,
-            padding = 0.dp
-        )
+        SettingsIcon(icon = Icons.Outlined.Payments)
 
         Spacer(Modifier.width(16.dp))
 
@@ -989,13 +940,31 @@ private fun CurrencyButton(
 
         Spacer(Modifier.width(12.dp))
 
-        IvyIconScaled(
-            icon = R.drawable.ic_arrow_right,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconScale = IconScale.M
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(Modifier.width(20.dp))
+        Spacer(Modifier.width(16.dp))
+    }
+}
+
+@Composable
+private fun SettingsIcon(
+    icon: ImageVector,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    Box(
+        modifier = Modifier.size(48.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            modifier = Modifier.size(24.dp),
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint
+        )
     }
 }
 
@@ -1018,9 +987,8 @@ private fun SettingsSectionDivider(
 
 @Composable
 private fun SettingsDefaultButton(
-    @DrawableRes icon: Int,
+    icon: ImageVector,
     text: String,
-    iconPadding: Dp = 0.dp,
     description: String? = null,
     onClick: () -> Unit,
 ) {
@@ -1029,7 +997,6 @@ private fun SettingsDefaultButton(
         text = text,
         backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
         textColor = MaterialTheme.colorScheme.onSurface,
-        iconPadding = iconPadding,
         description = description
     ) {
         onClick()
