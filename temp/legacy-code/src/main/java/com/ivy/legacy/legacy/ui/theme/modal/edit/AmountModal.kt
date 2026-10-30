@@ -293,7 +293,7 @@ private fun formatNumber(number: String): String? {
     val amountDouble = number.amountToDoubleOrNull()
 
     if (newDecimalCount <= 2 && amountDouble != null) {
-        val intPart = truncate(amountDouble).toInt()
+        val intPart = truncate(amountDouble).toLong()
         val decimalFormatted = if (decimalPartString != null) {
             "${localDecimalSeparator()}$decimalPartString"
         } else {

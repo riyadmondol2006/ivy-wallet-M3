@@ -122,16 +122,16 @@ private fun formatShortenedNumber(
 
 fun hasSignificantDecimalPart(number: Double): Boolean {
     // TODO: Review, might cause trouble when integrating crypto
-    val intPart = number.toInt()
-    return abs(number - intPart) >= 0.009
+    // truncate, not toInt(): Int tops out at 2,147,483,647 and would corrupt larger amounts.
+    return abs(number - truncate(number)) >= 0.009
 }
 
 fun shouldShortAmount(amount: Double): Boolean {
     return abs(amount) >= N_100K
 }
 
-fun formatInt(number: Int): String {
-    return DecimalFormat("#,###,###,###").format(number)
+fun formatInt(number: Long): String {
+    return DecimalFormat("#,###").format(number)
 }
 
 fun decimalPartFormatted(currency: String, value: Double): String {
@@ -182,7 +182,8 @@ fun formatInputAmount(
     val decimalCountOkay = IvyCurrency.fromCode(currency)?.isCrypto == true ||
             decimalCount <= decimalCountMax
     if (amountDouble != null && decimalCountOkay) {
-        val intPart = truncate(amountDouble).toInt()
+        // Long, not Int: amounts above 2,147,483,647 (common in e.g. VND/IDR) must not overflow.
+        val intPart = truncate(amountDouble).toLong()
         val decimalPartFormatted = if (decimalPartString != null) {
             "${localDecimalSeparator()}$decimalPartString"
         } else {
@@ -201,7 +202,8 @@ So, this function append negative sign in that case
  */
 fun integerPartFormatted(value: Double): String {
     val preciseValue = value.toBigDecimal()
-    val formattedValue = DecimalFormat("###,###").format(preciseValue.toInt())
+    // BigInteger keeps every digit; toInt() overflowed above 2,147,483,647.
+    val formattedValue = DecimalFormat("###,###").format(preciseValue.toBigInteger())
     return if (value > -1.0 && value < 0.0) {
         "-$formattedValue"
     } else {

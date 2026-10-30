@@ -92,19 +92,22 @@ fun BoxScope.IvyModal(
         }
     }
 
-    // Material 3 bottom-sheet motion: springs instead of fixed-duration tweens.
-    val keyboardShownInsetDp by animateDpAsState(
+    // Material 3 bottom-sheet motion: springs instead of fixed-duration tweens. A spring settling
+    // on 0dp overshoots below zero, and negative padding/height crashes layout, so clamp both.
+    val keyboardShownInsetAnimated by animateDpAsState(
         targetValue = densityScope {
             if (keyboardShown) keyboardOnlyWindowInsets().bottom.toDp() else 0.dp
         },
         animationSpec = IvyMotion.spatialSpring(Dp.VisibilityThreshold)
     )
-    val navBarPadding by animateDpAsState(
+    val navBarPaddingAnimated by animateDpAsState(
         targetValue = densityScope {
             if (keyboardShown) 0.dp else navigationBarInsets().bottom.toDp()
         },
         animationSpec = IvyMotion.spatialSpring(Dp.VisibilityThreshold)
     )
+    val keyboardShownInsetDp = keyboardShownInsetAnimated.coerceAtLeast(0.dp)
+    val navBarPadding = navBarPaddingAnimated.coerceAtLeast(0.dp)
     val blurAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = IvyMotion.effectsSpring(),
