@@ -9,8 +9,12 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import com.ivy.design.system.colors.ColorShades
 import com.ivy.design.system.colors.IvyColors
 
@@ -57,6 +61,33 @@ fun IvyMaterial3Theme(
         colorScheme = colorScheme,
         typography = IvyExpressiveTypography,
         shapes = IvyExpressiveShapes,
+    ) {
+        CompactDensity(enabled = IvyThemeController.compactUi, content = content)
+    }
+}
+
+/** How much smaller everything is drawn in compact mode (dp and sp alike). */
+private const val CompactScale = 0.88f
+
+/** True once an outer theme has already scaled the density, so nested themes don't shrink it again. */
+@Suppress("CompositionLocalAllowlist") // private guard; nothing outside this file reads it
+private val LocalCompactApplied = staticCompositionLocalOf { false }
+
+/**
+ * Compact mode scales the density for everything below, so every screen (including legacy ones
+ * with fixed sizes) gets tighter spacing, smaller components and smaller text in proportion.
+ * Layouts measure in this density too, so nothing overlaps or clips.
+ */
+@Composable
+private fun CompactDensity(enabled: Boolean, content: @Composable () -> Unit) {
+    val alreadyApplied = LocalCompactApplied.current
+    val scale = enabled && !alreadyApplied
+    val density = LocalDensity.current
+    // Same composition structure whether compact or not, so toggling it keeps screen state
+    // (scroll positions, open screens) instead of rebuilding everything below.
+    CompositionLocalProvider(
+        LocalDensity provides if (scale) Density(density.density * CompactScale, density.fontScale) else density,
+        LocalCompactApplied provides (alreadyApplied || scale),
         content = content,
     )
 }

@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.ivy.ui.R
 
 /**
- * Self-contained Material 3 "Appearance" control: a system-color (Material You) switch plus an
- * accent-color picker. Reads/writes [IvyThemeController], so changes re-theme the whole app live.
+ * Self-contained Material 3 "Appearance" control: a system-color (Material You) switch, a compact
+ * UI switch and an accent-color picker. Reads/writes [IvyThemeController], so changes re-theme the whole app live.
  * Drop it into any settings list as a single item.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -83,6 +83,26 @@ fun AppearanceCard(
                     onCheckedChange = { IvyThemeController.setUseDynamicColor(context, it) },
                 )
             }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.compact_ui),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.compact_ui_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = IvyThemeController.compactUi,
+                onCheckedChange = { IvyThemeController.setCompactUi(context, it) },
+            )
         }
 
         AnimatedVisibility(visible = !useDynamic) {

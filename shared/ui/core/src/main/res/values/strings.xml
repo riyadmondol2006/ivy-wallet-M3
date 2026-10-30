@@ -650,6 +650,8 @@
     <string name="appearance">Appearance</string>
     <string name="use_system_color">Use system color</string>
     <string name="material_you_from_wallpaper">Material You from your wallpaper</string>
+    <string name="compact_ui">Compact UI</string>
+    <string name="compact_ui_description">Smaller spacing and text across the app to fit more on screen</string>
     <string name="accent_color">Accent color</string>
     <string name="selected">Selected</string>
     <string name="credit_include_in_balance_help">Card debt reduces your total balance and card spending counts in your expenses.</string>

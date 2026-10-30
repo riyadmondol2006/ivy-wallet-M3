@@ -33,6 +33,7 @@ object IvyThemeController {
     private const val PREFS = "ivy_theme_prefs"
     private const val KEY_DYNAMIC = "use_dynamic_color"
     private const val KEY_ACCENT = "accent"
+    private const val KEY_COMPACT = "compact_ui"
 
     /** When true (and on Android 12+), the scheme is generated from the wallpaper (Material You). */
     var useDynamicColor by mutableStateOf(true)
@@ -40,6 +41,10 @@ object IvyThemeController {
 
     /** The accent used when [useDynamicColor] is false (or below Android 12). */
     var accent by mutableStateOf(IvyAccent.Purple)
+        private set
+
+    /** When true, the whole UI is drawn smaller (spacing, components and text) to fit more. */
+    var compactUi by mutableStateOf(false)
         private set
 
     @Volatile
@@ -52,6 +57,7 @@ object IvyThemeController {
         accent = runCatching {
             IvyAccent.valueOf(prefs.getString(KEY_ACCENT, IvyAccent.Purple.name)!!)
         }.getOrDefault(IvyAccent.Purple)
+        compactUi = prefs.getBoolean(KEY_COMPACT, false)
         loaded = true
     }
 
@@ -65,11 +71,17 @@ object IvyThemeController {
         persist(context)
     }
 
+    fun setCompactUi(context: Context, value: Boolean) {
+        compactUi = value
+        persist(context)
+    }
+
     private fun persist(context: Context) {
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(KEY_DYNAMIC, useDynamicColor)
             .putString(KEY_ACCENT, accent.name)
+            .putBoolean(KEY_COMPACT, compactUi)
             .apply()
     }
 }
