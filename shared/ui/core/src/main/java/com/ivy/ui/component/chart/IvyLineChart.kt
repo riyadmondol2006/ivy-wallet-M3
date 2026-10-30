@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -19,6 +21,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -61,6 +64,11 @@ fun IvyLineChart(
     val tooltipStyle: TextStyle = MaterialTheme.typography.labelMedium
     val textMeasurer = rememberTextMeasurer()
 
+    // The tap detector outlives recompositions (keyed on values), so read the latest selection.
+    val currentSelectedIndex by rememberUpdatedState(selectedIndex)
+    val currentOnSelect by rememberUpdatedState(onSelect)
+    val currentFormatValue by rememberUpdatedState(formatValue)
+
     val progress = remember { Animatable(0f) }
     LaunchedEffect(values) {
         progress.snapTo(0f)
@@ -74,9 +82,12 @@ fun IvyLineChart(
             .pointerInput(values) {
                 detectTapGestures { tap ->
                     if (values.size < 2) return@detectTapGestures
-                    val stepX = size.width.toFloat() / (values.size - 1)
-                    val index = (tap.x / stepX).roundToInt().coerceIn(0, values.lastIndex)
-                    onSelect(if (index == selectedIndex) null else index)
+                    // Points start after the value labels, exactly as they're drawn below.
+                    val chartLeft = labelWidth(values, textMeasurer, currentFormatValue, labelStyle) +
+                        GridLabelGap.toPx()
+                    val stepX = (size.width - chartLeft) / (values.size - 1)
+                    val index = ((tap.x - chartLeft) / stepX).roundToInt().coerceIn(0, values.lastIndex)
+                    currentOnSelect(if (index == currentSelectedIndex) null else index)
                 }
             },
     ) {
@@ -84,12 +95,7 @@ fun IvyLineChart(
         val min = values.min()
         val max = values.max()
         val span = (max - min).takeIf { it > 0f } ?: 1f
-        val labelWidth = GridLines.let { lines ->
-            (0 until lines).maxOf { i ->
-                textMeasurer.measure(formatValue(min + span * i / (lines - 1)), labelStyle).size.width
-            }
-        } + GridLabelGap.toPx()
-        val chartLeft = labelWidth
+        val chartLeft = labelWidth(values, textMeasurer, formatValue, labelStyle) + GridLabelGap.toPx()
         val chartWidth = size.width - chartLeft
         val topPad = tooltipStyle.fontSize.toPx() * 2
         val chartHeight = size.height - topPad - labelStyle.fontSize.toPx()
@@ -152,5 +158,19 @@ fun IvyLineChart(
         val tooltipX = (point.x - tooltip.size.width / 2f).coerceIn(chartLeft, size.width - tooltip.size.width)
         val tooltipY = (point.y - TooltipGap.toPx() - tooltip.size.height).coerceAtLeast(0f)
         drawText(tooltip, tooltipColor, Offset(tooltipX, tooltipY))
+    }
+}
+
+/** Width of the widest gridline value label, in px. Shared by drawing and tap hit-testing. */
+private fun labelWidth(
+    values: List<Float>,
+    textMeasurer: TextMeasurer,
+    formatValue: (Float) -> String,
+    labelStyle: TextStyle,
+): Int {
+    val min = values.min()
+    val span = (values.max() - min).takeIf { it > 0f } ?: 1f
+    return (0 until GridLines).maxOf { i ->
+        textMeasurer.measure(formatValue(min + span * i / (GridLines - 1)), labelStyle).size.width
     }
 }

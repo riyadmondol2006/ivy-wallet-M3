@@ -15,16 +15,24 @@ class PlannedDueSummaryTest {
     private val today = LocalDate.of(2026, 10, 5)
     private val toLocalDate: (Instant) -> LocalDate = { it.atZone(ZoneOffset.UTC).toLocalDate() }
 
-    private fun due(date: LocalDate, amount: Double, paid: Boolean = false) = TransactionEntity(
-        accountId = UUID.randomUUID(),
-        type = TransactionType.EXPENSE,
+    private val account = UUID.randomUUID()
+
+    private fun due(
+        date: LocalDate,
+        amount: Double,
+        paid: Boolean = false,
+        type: TransactionType = TransactionType.EXPENSE,
+        accountId: UUID = account,
+    ) = TransactionEntity(
+        accountId = accountId,
+        type = type,
         amount = amount,
         dateTime = if (paid) date.atStartOfDay().toInstant(ZoneOffset.UTC) else null,
         dueDate = date.atStartOfDay().toInstant(ZoneOffset.UTC),
     )
 
     @Test
-    fun `buckets due today and overdue and sums both`() {
+    fun `buckets due today and overdue and sums expenses per account`() {
         val summary = plannedDueSummary(
             dueTransactions = listOf(
                 due(today, 100.0),
@@ -37,7 +45,7 @@ class PlannedDueSummaryTest {
 
         assertEquals(1, summary.dueToday)
         assertEquals(2, summary.overdue)
-        assertEquals(130.0, summary.totalAmount, 0.001)
+        assertEquals(mapOf(account to 130.0), summary.expensesByAccount)
     }
 
     @Test
@@ -52,6 +60,22 @@ class PlannedDueSummaryTest {
         )
 
         assertTrue(summary.isEmpty)
-        assertEquals(0.0, summary.totalAmount, 0.001)
+        assertTrue(summary.expensesByAccount.isEmpty())
+    }
+
+    @Test
+    fun `income is counted as due but not added to the expense total`() {
+        val other = UUID.randomUUID()
+        val summary = plannedDueSummary(
+            dueTransactions = listOf(
+                due(today, 100.0),
+                due(today, 5_000.0, type = TransactionType.INCOME, accountId = other),
+            ),
+            today = today,
+            toLocalDate = toLocalDate,
+        )
+
+        assertEquals(2, summary.dueToday)
+        assertEquals(mapOf(account to 100.0), summary.expensesByAccount)
     }
 }

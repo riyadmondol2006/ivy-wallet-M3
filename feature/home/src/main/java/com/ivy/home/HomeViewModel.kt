@@ -14,6 +14,7 @@ import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.db.entity.PlannedPaymentRuleEntity
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
@@ -646,27 +647,32 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun skipPlanned(transaction: Transaction) {
+        val rules = plannedPaymentsLogic.oneTimeRulesOf(listOf(transaction))
         plannedPaymentsLogic.payOrGetLegacy(
             transaction = transaction,
             skipTransaction = true
         ) {
             reload()
-            offerUndoSkip(listOf(transaction))
+            offerUndoSkip(listOf(transaction), rules)
         }
     }
 
     private suspend fun skipAllPlanned(transactions: List<Transaction>) {
+        val rules = plannedPaymentsLogic.oneTimeRulesOf(transactions)
         plannedPaymentsLogic.payOrGetLegacy(
             transactions = transactions,
             skipTransaction = true
         ) {
             reload()
-            offerUndoSkip(transactions)
+            offerUndoSkip(transactions, rules)
         }
     }
 
-    /** Skipping deletes the planned instance; Undo writes the original rows back. */
-    private fun offerUndoSkip(skipped: List<Transaction>) {
+    /**
+     * Skipping deletes the planned instance (and a one-time rule with it); Undo writes the original
+     * rows and rules back.
+     */
+    private fun offerUndoSkip(skipped: List<Transaction>, rules: List<PlannedPaymentRuleEntity>) {
         if (skipped.isEmpty()) return
         val message = if (skipped.size == 1) {
             stringRes(R.string.planned_payment_skipped)
@@ -674,6 +680,7 @@ class HomeViewModel @Inject constructor(
             stringRes(R.string.planned_payments_skipped, skipped.size.toString())
         }
         undoDelete.offer(message) {
+            plannedPaymentsLogic.restoreRules(rules)
             skipped.forEach { trn -> trn.toDomain(transactionMapper)?.let { transactionRepository.save(it) } }
             reload()
         }

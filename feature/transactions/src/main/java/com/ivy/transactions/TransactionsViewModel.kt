@@ -14,6 +14,7 @@ import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.db.entity.PlannedPaymentRuleEntity
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.model.AccountId
@@ -809,6 +810,7 @@ class TransactionsViewModel @Inject constructor(
 
     private fun skipTransaction(screen: TransactionsScreen, transaction: Transaction) {
         viewModelScope.launch {
+            val rules = plannedPaymentsLogic.oneTimeRulesOf(listOf(transaction))
             plannedPaymentsLogic.payOrGetLegacy(
                 transaction = transaction,
                 skipTransaction = true
@@ -817,13 +819,14 @@ class TransactionsViewModel @Inject constructor(
                     screen = screen,
                     reset = false
                 )
-                offerUndoSkip(screen, listOf(transaction))
+                offerUndoSkip(screen, listOf(transaction), rules)
             }
         }
     }
 
     private fun skipTransactions(screen: TransactionsScreen, transactions: List<Transaction>) {
         viewModelScope.launch {
+            val rules = plannedPaymentsLogic.oneTimeRulesOf(transactions)
             plannedPaymentsLogic.payOrGetLegacy(
                 transactions = transactions,
                 skipTransaction = true
@@ -832,13 +835,20 @@ class TransactionsViewModel @Inject constructor(
                     screen = screen,
                     reset = false
                 )
-                offerUndoSkip(screen, transactions)
+                offerUndoSkip(screen, transactions, rules)
             }
         }
     }
 
-    /** Skipping deletes the planned instance; Undo writes the original rows back. */
-    private fun offerUndoSkip(screen: TransactionsScreen, skipped: List<Transaction>) {
+    /**
+     * Skipping deletes the planned instance (and a one-time rule with it); Undo writes the original
+     * rows and rules back.
+     */
+    private fun offerUndoSkip(
+        screen: TransactionsScreen,
+        skipped: List<Transaction>,
+        rules: List<PlannedPaymentRuleEntity>,
+    ) {
         if (skipped.isEmpty()) return
         val message = if (skipped.size == 1) {
             stringRes(R.string.planned_payment_skipped)
@@ -846,6 +856,7 @@ class TransactionsViewModel @Inject constructor(
             stringRes(R.string.planned_payments_skipped, skipped.size.toString())
         }
         undoDelete.offer(message) {
+            plannedPaymentsLogic.restoreRules(rules)
             skipped.forEach { trn -> trn.toDomain(transactionMapper)?.let { transactionRepository.save(it) } }
             start(screen = screen, reset = false)
         }

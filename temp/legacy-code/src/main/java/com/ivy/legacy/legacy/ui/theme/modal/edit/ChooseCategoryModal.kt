@@ -11,8 +11,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -176,9 +188,14 @@ private fun CategoryButton(
     onDeselect: () -> Unit,
 ) {
     val categoryColor = category.color.value.toComposeColor()
+    val shape = FilterChipDefaults.shape
 
-    FilterChip(
+    // A FilterChip look-alike: FilterChip's own clickable swallows taps, so it can't also
+    // support long-press (edit). One combinedClickable handles both gestures here.
+    Surface(
         modifier = Modifier
+            .height(FilterChipDefaults.Height)
+            .clip(shape)
             .combinedClickable(
                 onClick = {
                     if (selected) {
@@ -189,16 +206,16 @@ private fun CategoryButton(
                 },
                 onLongClick = onLongClick
             )
+            .semantics { this.selected = selected }
             .testTag("choose_category_button"),
-        selected = selected,
-        onClick = {
-            // Tap handling is driven by the outer combinedClickable so that
-            // long-press (edit) is supported. This is intentionally a no-op.
-        },
-        label = {
-            Text(text = category.name.value)
-        },
-        leadingIcon = {
+        shape = shape,
+        color = if (selected) categoryColor.copy(alpha = 0.2f) else Color.Transparent,
+        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 8.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             ItemIconS(
                 modifier = Modifier.size(FilterChipDefaults.IconSize),
                 iconName = category.icon?.id,
@@ -207,16 +224,25 @@ private fun CategoryButton(
                     Icon(
                         modifier = Modifier.size(FilterChipDefaults.IconSize),
                         painter = painterResource(id = R.drawable.ic_custom_category_s),
-                        contentDescription = category.name.value,
+                        contentDescription = null,
                         tint = categoryColor
                     )
                 }
             )
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = categoryColor.copy(alpha = 0.2f)
-        )
-    )
+
+            Spacer(Modifier.width(8.dp))
+
+            Text(
+                text = category.name.value,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    }
 }
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -233,7 +259,8 @@ fun AddNewButton(
         },
         leadingIcon = {
             Icon(
-                painter = painterResource(id = R.drawable.ic_plus),
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                imageVector = Icons.Rounded.Add,
                 contentDescription = stringResource(R.string.add_new)
             )
         }

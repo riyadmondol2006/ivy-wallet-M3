@@ -211,9 +211,14 @@ fun CreditCardData.currentCycle(today: LocalDate): CreditCardCycle? {
     val statementDay = primary.account.creditStatementDay
     val dueDay = primary.account.creditDueDay
     if (statementDay == null || dueDay == null) return null
-    var statement = today.withDayOfMonthSafe(statementDay)
-    if (statement.isAfter(today)) statement = today.minusMonths(1).withDayOfMonthSafe(statementDay)
+    val statement = latestStatementDate(today, statementDay)
     return CreditCardCycle(statementDate = statement, dueDate = dueDateAfter(statement, dueDay))
+}
+
+/** The most recent statement closing date on or before [today] for a card closing on [statementDay]. */
+fun latestStatementDate(today: LocalDate, statementDay: Int): LocalDate {
+    val sameMonth = today.withDayOfMonthSafe(statementDay)
+    return if (sameMonth.isAfter(today)) today.minusMonths(1).withDayOfMonthSafe(statementDay) else sameMonth
 }
 
 /** The first statement closing date strictly after [today], or null when no cycle is set. */
@@ -231,11 +236,23 @@ fun CreditCardData.daysUntilDue(today: LocalDate): Long? =
 val CreditCardData.owesMoney: Boolean
     get() = accounts.any { it.balance < 0.0 }
 
+/**
+ * True when the latest closed statement still has an unpaid amount. Purchases made after the
+ * statement closed belong to the next statement, so they don't make the current one due.
+ * Falls back to the current balance when the statement amount isn't known.
+ */
+val CreditCardData.owesOnStatement: Boolean
+    get() = if (accounts.any { it.statementOwed != null }) {
+        accounts.any { (it.statementOwed ?: 0.0) > 0.0 }
+    } else {
+        owesMoney
+    }
+
 fun CreditCardData.dueStatus(today: LocalDate): CreditDueStatus? {
     val cycle = currentCycle(today) ?: return null
     val days = ChronoUnit.DAYS.between(today, cycle.dueDate)
     return when {
-        !owesMoney -> nextStatementDate(today)?.let(CreditDueStatus::NextStatement)
+        !owesOnStatement -> nextStatementDate(today)?.let(CreditDueStatus::NextStatement)
         days < 0 -> CreditDueStatus.Overdue(cycle.dueDate)
         else -> CreditDueStatus.DueIn(days, cycle.dueDate)
     }

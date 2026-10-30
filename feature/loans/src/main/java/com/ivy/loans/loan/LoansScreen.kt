@@ -137,7 +137,7 @@ private fun BoxWithConstraintsScope.UI(
             }
 
             item {
-                Spacer(Modifier.height(150.dp)) // scroll hack
+                Spacer(Modifier.height(168.dp)) // clears the bottom NavigationBar + FAB
             }
         }
 
@@ -152,7 +152,7 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.weight(1f))
         }
 
-        Spacer(Modifier.height(150.dp)) // scroll hack
+        Spacer(Modifier.height(168.dp)) // clears the bottom NavigationBar + FAB
     }
 
     LoanBottomBar(

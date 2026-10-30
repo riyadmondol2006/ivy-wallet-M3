@@ -7,7 +7,6 @@ import com.ivy.data.model.Account
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.legacy.domain.pure.transaction.AccountValueFunctions
-import com.ivy.legacy.utils.atEndOfDay
 import com.ivy.wallet.domain.action.account.CalcAccBalanceAct
 import com.ivy.wallet.domain.action.exchange.ExchangeAct
 import com.ivy.wallet.domain.pure.exchange.ExchangeData
@@ -42,7 +41,9 @@ class BalanceHistoryAct @Inject constructor(
         val deltasByDay = with(timeConverter) {
             transactionRepository.findAllBetween(
                 startDate = from.atStartOfDay().toUTC(),
-                endDate = today.atEndOfDay().toUTC(),
+                // Stop at "now", like the current balances: a later-today transaction isn't in
+                // today's balance yet, so it mustn't be subtracted from the earlier days either.
+                endDate = timeProvider.utcNow(),
             ).groupBy { it.time.toLocalDate() }
         }.mapValues { (_, transactions) ->
             accounts.associate { account ->
@@ -67,7 +68,7 @@ class BalanceHistoryAct @Inject constructor(
                 data = ExchangeData(baseCurrency = baseCurrency, fromCurrency = Some(account.asset.code)),
                 amount = BigDecimal.ONE,
             ),
-        ).getOrNull() ?: BigDecimal.ONE
+        ).getOrNull() ?: BigDecimal.ZERO // same as the headline balance when a rate is missing
 }
 
 /** Convenience for callers that only have UUIDs. */

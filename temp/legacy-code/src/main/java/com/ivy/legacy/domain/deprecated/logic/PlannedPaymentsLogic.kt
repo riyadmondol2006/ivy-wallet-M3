@@ -8,6 +8,7 @@ import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
+import com.ivy.data.db.entity.PlannedPaymentRuleEntity
 import com.ivy.data.model.IntervalType
 import com.ivy.data.model.TransactionId
 import com.ivy.data.repository.TransactionRepository
@@ -155,6 +156,21 @@ class PlannedPaymentsLogic @Inject constructor(
 
             null -> amountBaseCurrency
         }
+    }
+
+    /**
+     * The one-time rules that paying or skipping [transactions] deletes. Capture them first so an
+     * Undo can put them back with [restoreRules].
+     */
+    suspend fun oneTimeRulesOf(transactions: List<Transaction>): List<PlannedPaymentRuleEntity> = ioThread {
+        transactions.mapNotNull { it.recurringRuleId }
+            .distinct()
+            .mapNotNull { plannedPaymentRuleDao.findById(it) }
+            .filter { it.oneTime }
+    }
+
+    suspend fun restoreRules(rules: List<PlannedPaymentRuleEntity>) {
+        if (rules.isNotEmpty()) ioThread { plannedPaymentRuleWriter.saveMany(rules) }
     }
 
     @Deprecated("Uses legacy Transaction")

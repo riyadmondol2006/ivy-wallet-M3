@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -173,8 +175,8 @@ fun BoxWithConstraintsScope.EditBottomSheet(
 //                shadowRadius = 24.dp
 //            )
             .border(
-                width = 2.dp,
-                color = UI.colors.medium,
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
                 shape = UI.shapes.r2Top
             )
             .background(UI.colors.pure, UI.shapes.r2Top)
@@ -363,7 +365,7 @@ private fun BottomBar(
 //            .gradientCutBackground()
             .padding(bottom = 12.dp)
             .padding(bottom = navBarPadding),
-        lineColor = UI.colors.medium
+        lineColor = Color.Transparent
     ) {
         Spacer(Modifier.width(24.dp))
 
