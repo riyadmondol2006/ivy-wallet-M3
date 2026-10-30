@@ -114,7 +114,7 @@ fun BoxWithConstraintsScope.BottomBar(
         // looks tiny inside the FAB.
         Icon(
             imageVector = Icons.Rounded.Add,
-            contentDescription = "fab_add",
+            contentDescription = stringResource(R.string.add_transaction),
         )
     }
 

@@ -214,7 +214,7 @@
     <string name="one_time_payments">One-time payments</string>
     <string name="recurring_payments">Recurring payments</string>
     <string name="no_planned_payments">No planned payments</string>
-    <string name="no_planned_payments_description">You don\'t have any planned payments.\nTap the \'⚡\' button at the bottom to add one.</string>
+    <string name="no_planned_payments_description">You don\'t have any planned payments.\nTap \"Add payment\" at the bottom to add one.</string>
     <string name="planned_payments_inline">Planned payments</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
@@ -650,6 +650,17 @@
     <string name="appearance">Appearance</string>
     <string name="use_system_color">Use system color</string>
     <string name="material_you_from_wallpaper">Material You from your wallpaper</string>
+    <string name="choose_date">Choose date</string>
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
+    <string name="refresh_rate">Refresh rate</string>
+    <string name="accent_purple">Purple</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_pink">Pink</string>
+    <string name="accent_red">Red</string>
+    <string name="accent_yellow">Yellow</string>
     <string name="compact_ui">Compact UI</string>
     <string name="compact_ui_description">Smaller spacing and text across the app to fit more on screen</string>
     <string name="accent_color">Accent color</string>

@@ -1,6 +1,7 @@
 package com.ivy.budgets
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,15 +24,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ivy.budgets.model.DisplayBudget
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.legacy.legacy.ui.theme.components.BudgetBattery
-import com.ivy.legacy.utils.clickableNoIndication
 import com.ivy.legacy.utils.format
-import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
@@ -259,9 +259,8 @@ private fun BudgetItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickableNoIndication(rememberInteractionSource()) {
-                onClick()
-            },
+            // Standard ripple + button semantics so a tap visibly opens the budget.
+            .clickable(role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(

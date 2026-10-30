@@ -378,6 +378,7 @@ private fun BottomBar(
         CircleButton(
             modifier = Modifier.rotate(expandRotation),
             icon = R.drawable.ic_expand_more,
+            contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
         ) {
             setInternalExpanded(!internalExpanded || keyboardShown)
             hideKeyboard(rootView)

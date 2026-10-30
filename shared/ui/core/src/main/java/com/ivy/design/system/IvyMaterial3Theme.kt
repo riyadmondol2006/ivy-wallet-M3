@@ -3,6 +3,7 @@ package com.ivy.design.system
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -12,9 +13,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
 import com.ivy.design.system.colors.ColorShades
 import com.ivy.design.system.colors.IvyColors
 
@@ -83,12 +89,30 @@ private fun CompactDensity(enabled: Boolean, content: @Composable () -> Unit) {
     val alreadyApplied = LocalCompactApplied.current
     val scale = enabled && !alreadyApplied
     val density = LocalDensity.current
+    val viewConfiguration = LocalViewConfiguration.current
+    val minInteractive = LocalMinimumInteractiveComponentSize.current
     // Same composition structure whether compact or not, so toggling it keeps screen state
     // (scroll positions, open screens) instead of rebuilding everything below.
     CompositionLocalProvider(
         LocalDensity provides if (scale) Density(density.density * CompactScale, density.fontScale) else density,
+        // Touch targets must stay 48dp on the physical screen: in the scaled density that's
+        // 48 / CompactScale "dp". Both the M3 layout minimum and the hit-test minimum are enlarged.
+        LocalMinimumInteractiveComponentSize provides if (scale) minInteractive / CompactScale else minInteractive,
+        LocalViewConfiguration provides if (scale) {
+            CompactViewConfiguration(viewConfiguration)
+        } else {
+            viewConfiguration
+        },
         LocalCompactApplied provides (alreadyApplied || scale),
         content = content,
+    )
+}
+
+/** Same as [base], but its minimum touch target keeps its physical size under compact density. */
+private class CompactViewConfiguration(base: ViewConfiguration) : ViewConfiguration by base {
+    override val minimumTouchTargetSize: DpSize = DpSize(
+        width = base.minimumTouchTargetSize.width / CompactScale,
+        height = base.minimumTouchTargetSize.height / CompactScale,
     )
 }
 
@@ -127,6 +151,71 @@ private fun ColorScheme.withTonalDark(isTrueBlack: Boolean): ColorScheme {
     )
 }
 
+// region Contrast helpers --------------------------------------------------------------------------
+// The accent swatches are picked for looks, not legibility (bright yellow, green, blue, red). The
+// static schemes pass them through these so filled-button labels and accent-coloured text both
+// reach WCAG 4.5:1.
+
+private val ReadableDark = Color(0xFF1B1B1F)
+private const val MinTextContrast = 4.5f
+
+/** WCAG 2.x contrast-ratio offset (accounts for viewing flare). */
+private const val LuminanceFlare = 0.05f
+
+private fun contrast(a: Color, b: Color): Float {
+    val la = a.luminance() + LuminanceFlare
+    val lb = b.luminance() + LuminanceFlare
+    return maxOf(la, lb) / minOf(la, lb)
+}
+
+/**
+ * Content colour for text/icons on [background]: white or a soft near-black when they reach
+ * WCAG 4.5:1, pure black as the last resort, else whichever contrasts most.
+ */
+fun readableContentColor(background: Color): Color {
+    val candidates = listOf(Color.White, ReadableDark, Color.Black)
+    return candidates.firstOrNull { contrast(it, background) >= MinTextContrast }
+        ?: candidates.maxBy { contrast(it, background) }
+}
+
+private fun readableOn(background: Color): Color = readableContentColor(background)
+
+/** [tint] when it is legible on [background], otherwise plain white/near-black. */
+private fun readableTint(tint: Color, background: Color): Color =
+    if (contrast(tint, background) >= MinTextContrast) tint else readableOn(background)
+
+/**
+ * [color] itself when it reads as text on [background] (4.5:1), otherwise the closest version of
+ * it nudged towards white (dark backgrounds) or black (light ones) that does.
+ */
+private fun readableShade(color: Color, background: Color): Color {
+    if (contrast(color, background) >= MinTextContrast) return color
+    val target = if (background.luminance() < HalfLuminance) Color.White else Color.Black
+    return (1..ShadeSteps).asSequence()
+        .map { step -> lerp(color, target, step.toFloat() / ShadeSteps) }
+        .firstOrNull { contrast(it, background) >= MinTextContrast }
+        ?: target
+}
+
+/**
+ * The lightest shade from [from] downwards that is readable as text (4.5:1, like M3's tone-40
+ * primary) on the darkest static light surface; primary is used for text and icons as well as
+ * fills. Falls back to a darkened extraDark when even that isn't enough (yellow).
+ */
+private fun ColorShades.onLightSurface(from: Color = primary): Color =
+    listOf(primary, kindaDark, dark, extraDark)
+        .dropWhile { it != from }
+        .ifEmpty { listOf(from, dark, extraDark) }
+        .firstOrNull { contrast(it, LightSurfaceContainerHighest) >= MinTextContrast }
+        ?: readableShade(extraDark, LightSurfaceContainerHighest)
+
+/** [color], lightened if needed, so it reads as text on the brightest static dark surface. */
+private fun onDarkSurface(color: Color): Color = readableShade(color, DarkSurfaceContainerHighest)
+
+private const val HalfLuminance = 0.5f
+private const val ShadeSteps = 20
+// endregion
+
 // region Static fallback schemes (API < 31) ------------------------------------------------------
 // Seeded from IvyColors but expressed as full M3 tonal schemes. No pure-black backgrounds unless
 // the AMOLED opt-in is active.
@@ -143,28 +232,28 @@ private val DarkSurfaceContainerHigh = Color(0xFF292532)
 private val DarkSurfaceContainerHighest = Color(0xFF34303D)
 
 private fun ivyLightColorScheme(accent: ColorShades): ColorScheme = lightColorScheme(
-    primary = accent.primary,
-    onPrimary = Color.White,
+    primary = accent.onLightSurface(),
+    onPrimary = readableOn(accent.onLightSurface()),
     primaryContainer = accent.extraLight,
-    onPrimaryContainer = accent.extraDark,
-    inversePrimary = accent.light,
+    onPrimaryContainer = readableTint(accent.extraDark, accent.extraLight),
+    inversePrimary = readableShade(accent.light, IvyColors.DarkGray),
 
-    secondary = accent.kindaDark,
-    onSecondary = Color.White,
+    secondary = accent.onLightSurface(from = accent.kindaDark),
+    onSecondary = readableOn(accent.onLightSurface(from = accent.kindaDark)),
     secondaryContainer = accent.light,
-    onSecondaryContainer = accent.extraDark,
+    onSecondaryContainer = readableTint(accent.extraDark, accent.light),
 
     // Income lives on tertiary.
-    tertiary = IvyColors.Green.primary,
-    onTertiary = Color.White,
+    tertiary = IvyColors.Green.onLightSurface(),
+    onTertiary = readableOn(IvyColors.Green.onLightSurface()),
     tertiaryContainer = IvyColors.Green.extraLight,
-    onTertiaryContainer = IvyColors.Green.extraDark,
+    onTertiaryContainer = readableTint(IvyColors.Green.extraDark, IvyColors.Green.extraLight),
 
     // Expense lives on error.
-    error = IvyColors.Red.primary,
-    onError = Color.White,
+    error = IvyColors.Red.onLightSurface(),
+    onError = readableOn(IvyColors.Red.onLightSurface()),
     errorContainer = IvyColors.Red.extraLight,
-    onErrorContainer = IvyColors.Red.extraDark,
+    onErrorContainer = readableTint(IvyColors.Red.extraDark, IvyColors.Red.extraLight),
 
     background = IvyColors.White,
     onBackground = IvyColors.Black,
@@ -181,6 +270,8 @@ private fun ivyLightColorScheme(accent: ColorShades): ColorScheme = lightColorSc
     surfaceContainer = LightSurfaceContainer,
     surfaceContainerHigh = LightSurfaceContainerHigh,
     surfaceContainerHighest = LightSurfaceContainerHighest,
+    // Pin the darkest light surface to the one accent text is contrast-checked against.
+    surfaceDim = LightSurfaceContainerHighest,
 
     outline = IvyColors.Gray,
     outlineVariant = IvyColors.LightGray,
@@ -188,28 +279,28 @@ private fun ivyLightColorScheme(accent: ColorShades): ColorScheme = lightColorSc
 )
 
 private fun ivyDarkColorScheme(accent: ColorShades, isTrueBlack: Boolean): ColorScheme = darkColorScheme(
-    primary = accent.light,
-    onPrimary = accent.extraDark,
+    primary = onDarkSurface(accent.light),
+    onPrimary = readableTint(accent.extraDark, onDarkSurface(accent.light)),
     primaryContainer = accent.dark,
-    onPrimaryContainer = accent.extraLight,
-    inversePrimary = accent.primary,
+    onPrimaryContainer = readableTint(accent.extraLight, accent.dark),
+    inversePrimary = readableShade(accent.primary, IvyColors.ExtraLightGray),
 
-    secondary = accent.kindaLight,
-    onSecondary = accent.extraDark,
+    secondary = onDarkSurface(accent.kindaLight),
+    onSecondary = readableTint(accent.extraDark, onDarkSurface(accent.kindaLight)),
     secondaryContainer = accent.kindaDark,
-    onSecondaryContainer = accent.extraLight,
+    onSecondaryContainer = readableTint(accent.extraLight, accent.kindaDark),
 
     // Income lives on tertiary.
-    tertiary = IvyColors.Green.kindaLight,
-    onTertiary = IvyColors.Green.extraDark,
+    tertiary = onDarkSurface(IvyColors.Green.kindaLight),
+    onTertiary = readableTint(IvyColors.Green.extraDark, onDarkSurface(IvyColors.Green.kindaLight)),
     tertiaryContainer = IvyColors.Green.dark,
-    onTertiaryContainer = IvyColors.Green.extraLight,
+    onTertiaryContainer = readableTint(IvyColors.Green.extraLight, IvyColors.Green.dark),
 
     // Expense lives on error.
-    error = IvyColors.Red.kindaLight,
-    onError = IvyColors.Red.extraDark,
+    error = onDarkSurface(IvyColors.Red.kindaLight),
+    onError = readableTint(IvyColors.Red.extraDark, onDarkSurface(IvyColors.Red.kindaLight)),
     errorContainer = IvyColors.Red.dark,
-    onErrorContainer = IvyColors.Red.extraLight,
+    onErrorContainer = readableTint(IvyColors.Red.extraLight, IvyColors.Red.dark),
 
     // Deep tonal "midnight-plum" surfaces instead of true black.
     background = if (isTrueBlack) IvyColors.TrueBlack else MidnightPlum,
@@ -227,6 +318,8 @@ private fun ivyDarkColorScheme(accent: ColorShades, isTrueBlack: Boolean): Color
     surfaceContainer = DarkSurfaceContainer,
     surfaceContainerHigh = DarkSurfaceContainerHigh,
     surfaceContainerHighest = DarkSurfaceContainerHighest,
+    // Pin the brightest dark surface to the one accent text is contrast-checked against.
+    surfaceBright = DarkSurfaceContainerHighest,
 
     outline = IvyColors.Gray,
     outlineVariant = IvyColors.DarkGray,

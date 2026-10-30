@@ -14,7 +14,7 @@ fun IvyIcon(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int,
     tint: Color = UI.colors.pureInverse,
-    contentDescription: String = "icon"
+    contentDescription: String? = null
 ) {
     Icon(
         modifier = modifier,

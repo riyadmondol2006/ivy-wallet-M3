@@ -190,7 +190,7 @@
     <string name="one_time_payments">Thanh toán một lần</string>
     <string name="recurring_payments">Thanh toán định kỳ</string>
     <string name="no_planned_payments">Không có khoản thanh toán theo kế hoạch</string>
-    <string name="no_planned_payments_description">Bạn chưa có bất kỳ khoản thanh toán nào theo kế hoạch.\nNhấn vào nút \'⚡\' ở cuối để thêm một khoản thanh toán.</string>
+    <string name="no_planned_payments_description">Bạn chưa có bất kỳ khoản thanh toán nào theo kế hoạch.\nNhấn vào nút \'+\' ở cuối để thêm một khoản thanh toán.</string>
     <string name="planned_payments_inline">Thanh toán theo kế hoạch</string>
     <string name="today">Hôm nay</string>
     <string name="yesterday">Hôm qua</string>

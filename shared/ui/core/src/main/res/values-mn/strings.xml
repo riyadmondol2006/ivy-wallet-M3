@@ -190,7 +190,7 @@
     <string name="one_time_payments">Нэг удаагийн гүйлгээнүүд</string>
     <string name="recurring_payments">Давтамжит гүйлгээнүүд</string>
     <string name="no_planned_payments">Төлөвлөгөөт гүйлгээ байхгүй</string>
-    <string name="no_planned_payments_description">Танд төлөвлөгөөт гүйлгээ алга байна.\nДоор байрлах \'⚡\' товч дээр дарж нэмэх боломжтой.</string>
+    <string name="no_planned_payments_description">Танд төлөвлөгөөт гүйлгээ алга байна.\nДоор байрлах \'+\' товч дээр дарж нэмэх боломжтой.</string>
     <string name="planned_payments_inline">Төлөвлөгөөт гүйлгээ</string>
     <string name="today">Өнөөдөр</string>
     <string name="yesterday">Өчигдөр</string>

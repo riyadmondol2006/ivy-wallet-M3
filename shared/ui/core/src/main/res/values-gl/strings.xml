@@ -193,7 +193,7 @@
     <string name="one_time_payments">Pagos únicos</string>
     <string name="recurring_payments">Pagos recorrentes</string>
     <string name="no_planned_payments">Non hai pagos previstos</string>
-    <string name="no_planned_payments_description">Non ten ningún pago previsto.\nPulse o botón \'⚡\' da parte inferior para engadir un.</string>
+    <string name="no_planned_payments_description">Non ten ningún pago previsto.\nPulse o botón \'+\' da parte inferior para engadir un.</string>
     <string name="planned_payments_inline">Pagos previstos</string>
     <string name="today">Hoxe</string>
     <string name="yesterday">Onte</string>

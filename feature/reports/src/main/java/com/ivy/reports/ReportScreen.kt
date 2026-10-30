@@ -126,6 +126,8 @@ private fun BoxWithConstraintsScope.UI(
     ) {
         stickyHeader {
             Toolbar(
+                // Nothing to export until a filter produced a report (or while it's generating).
+                exportEnabled = state.filter != null && !state.loading,
                 onExport = {
                     onEventHandler.invoke(ReportScreenEvent.OnExport(context = context))
                 },
@@ -147,77 +149,81 @@ private fun BoxWithConstraintsScope.UI(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Spacer(Modifier.height(8.dp))
+            // Before a filter is applied there is no report yet: show the "No filter" prompt only,
+            // not a row of zero figures.
+            if (state.filter != null) {
+                Spacer(Modifier.height(8.dp))
 
-            BalanceRow(
-                modifier = Modifier
-                    .padding(start = 16.dp),
-                textColor = MaterialTheme.colorScheme.onSurface,
-                currency = state.baseCurrency,
-                balance = state.balance,
-                balanceAmountPrefix = when {
-                    state.balance > 0 -> "+"
-                    else -> null
-                }
-            )
-
-            Spacer(Modifier.height(20.dp))
-
-            IncomeExpensesCards(
-                history = state.history,
-                currency = state.baseCurrency,
-                income = state.income,
-                expenses = state.expenses,
-                hasAddButtons = false,
-                itemColor = MaterialTheme.colorScheme.surface,
-                incomeHeaderCardClicked = {
-                    if (state.transactions.isNotEmpty()) {
-                        nav.navigateTo(
-                            PieChartStatisticScreen(
-                                type = TransactionType.INCOME,
-                                transactions = legacyTransactions.toImmutableList(),
-                                accountList = state.accountIdFilters,
-                                treatTransfersAsIncomeExpense = state.treatTransfersAsIncExp
-                            )
-                        )
-                    }
-                },
-                expenseHeaderCardClicked = {
-                    if (state.transactions.isNotEmpty()) {
-                        nav.navigateTo(
-                            PieChartStatisticScreen(
-                                type = TransactionType.EXPENSE,
-                                transactions = legacyTransactions.toImmutableList(),
-                                accountList = state.accountIdFilters,
-                                treatTransfersAsIncomeExpense = state.treatTransfersAsIncExp
-                            )
-                        )
-                    }
-                }
-            )
-
-            if (state.showTransfersAsIncExpCheckbox) {
-                IvyCheckboxWithText(
+                BalanceRow(
                     modifier = Modifier
-                        .padding(16.dp),
-                    text = stringResource(R.string.transfers_as_income_expense),
-                    checked = state.treatTransfersAsIncExp
-                ) {
-                    onEventHandler.invoke(
-                        ReportScreenEvent.OnTreatTransfersAsIncomeExpense(
-                            transfersAsIncomeExpense = it
+                        .padding(start = 16.dp),
+                    textColor = MaterialTheme.colorScheme.onSurface,
+                    currency = state.baseCurrency,
+                    balance = state.balance,
+                    balanceAmountPrefix = when {
+                        state.balance > 0 -> "+"
+                        else -> null
+                    }
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                IncomeExpensesCards(
+                    history = state.history,
+                    currency = state.baseCurrency,
+                    income = state.income,
+                    expenses = state.expenses,
+                    hasAddButtons = false,
+                    itemColor = MaterialTheme.colorScheme.surface,
+                    incomeHeaderCardClicked = {
+                        if (state.transactions.isNotEmpty()) {
+                            nav.navigateTo(
+                                PieChartStatisticScreen(
+                                    type = TransactionType.INCOME,
+                                    transactions = legacyTransactions.toImmutableList(),
+                                    accountList = state.accountIdFilters,
+                                    treatTransfersAsIncomeExpense = state.treatTransfersAsIncExp
+                                )
+                            )
+                        }
+                    },
+                    expenseHeaderCardClicked = {
+                        if (state.transactions.isNotEmpty()) {
+                            nav.navigateTo(
+                                PieChartStatisticScreen(
+                                    type = TransactionType.EXPENSE,
+                                    transactions = legacyTransactions.toImmutableList(),
+                                    accountList = state.accountIdFilters,
+                                    treatTransfersAsIncomeExpense = state.treatTransfersAsIncExp
+                                )
+                            )
+                        }
+                    }
+                )
+
+                if (state.showTransfersAsIncExpCheckbox) {
+                    IvyCheckboxWithText(
+                        modifier = Modifier
+                            .padding(16.dp),
+                        text = stringResource(R.string.transfers_as_income_expense),
+                        checked = state.treatTransfersAsIncExp
+                    ) {
+                        onEventHandler.invoke(
+                            ReportScreenEvent.OnTreatTransfersAsIncomeExpense(
+                                transfersAsIncomeExpense = it
+                            )
                         )
-                    )
+                    }
+                } else {
+                    Spacer(Modifier.height(32.dp))
                 }
-            } else {
-                Spacer(Modifier.height(32.dp))
+
+                TransactionsDividerLine(
+                    paddingHorizontal = 0.dp
+                )
+
+                Spacer(Modifier.height(4.dp))
             }
-
-            TransactionsDividerLine(
-                paddingHorizontal = 0.dp
-            )
-
-            Spacer(Modifier.height(4.dp))
         }
 
         if (state.filter != null) {
@@ -359,6 +365,7 @@ private fun NoFilterEmptyState(
 
 @Composable
 private fun Toolbar(
+    exportEnabled: Boolean,
     onExport: () -> Unit,
     onFilter: () -> Unit
 ) {
@@ -378,7 +385,8 @@ private fun Toolbar(
             textColor = MaterialTheme.colorScheme.tertiary,
             solidBackground = true,
             padding = 8.dp,
-            iconStart = R.drawable.ic_export_csv
+            iconStart = R.drawable.ic_export_csv,
+            enabled = exportEnabled
         ) {
             onExport()
         }

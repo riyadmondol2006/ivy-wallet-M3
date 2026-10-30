@@ -11,11 +11,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,6 +75,8 @@ private fun BoxWithConstraintsScope.UI(
         amountModalVisible = true
     }
 
+    var bottomBarHeightPx by remember { mutableIntStateOf(0) }
+
     ColumnRoot {
         SpacerVer(height = 16.dp)
         SearchField(onSearch = { onEvent(RatesEvent.Search(it)) })
@@ -96,7 +101,8 @@ private fun BoxWithConstraintsScope.UI(
                 )
             }
             item(key = "last_item_spacer") {
-                SpacerVer(height = 480.dp)
+                // Clear the bottom action bar (measured, incl. the navigation bar) plus a small gap.
+                SpacerVer(height = with(LocalDensity.current) { bottomBarHeightPx.toDp() } + 16.dp)
             }
         }
     }
@@ -107,7 +113,8 @@ private fun BoxWithConstraintsScope.UI(
 
     ExchangeRatesBottomBar(
         onClose = { nav.back() },
-        onAddRate = { addRateModalVisible = true }
+        onAddRate = { addRateModalVisible = true },
+        modifier = Modifier.onSizeChanged { bottomBarHeightPx = it.height },
     )
 
     AddRateModal(

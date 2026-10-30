@@ -191,7 +191,7 @@
     <string name="one_time_payments">Pagamenti una tantum</string>
     <string name="recurring_payments">Pagamenti ricorrenti</string>
     <string name="no_planned_payments">Nessun pagamento pianificato</string>
-    <string name="no_planned_payments_description">Non hai nessun pagamento pianificato.\nPremi il tasto \'⚡\' in basso per aggiungerne uno.</string>
+    <string name="no_planned_payments_description">Non hai nessun pagamento pianificato.\nPremi il tasto \'+\' in basso per aggiungerne uno.</string>
     <string name="planned_payments_inline">Pagamenti pianificati</string>
     <string name="today">Oggi</string>
     <string name="yesterday">Ieri</string>

@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -31,6 +33,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.ivy.ui.R
 
@@ -65,7 +70,14 @@ fun AppearanceCard(
 
         if (dynamicSupported) {
             Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.toggleable(
+                    value = IvyThemeController.useDynamicColor,
+                    role = Role.Switch,
+                    onValueChange = { IvyThemeController.setUseDynamicColor(context, it) },
+                ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.use_system_color),
@@ -80,13 +92,20 @@ fun AppearanceCard(
                 }
                 Switch(
                     checked = IvyThemeController.useDynamicColor,
-                    onCheckedChange = { IvyThemeController.setUseDynamicColor(context, it) },
+                    onCheckedChange = null,
                 )
             }
         }
 
         Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.toggleable(
+                value = IvyThemeController.compactUi,
+                role = Role.Switch,
+                onValueChange = { IvyThemeController.setCompactUi(context, it) },
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.compact_ui),
@@ -101,7 +120,7 @@ fun AppearanceCard(
             }
             Switch(
                 checked = IvyThemeController.compactUi,
-                onCheckedChange = { IvyThemeController.setCompactUi(context, it) },
+                onCheckedChange = null,
             )
         }
 
@@ -115,12 +134,14 @@ fun AppearanceCard(
                 )
                 Spacer(Modifier.height(12.dp))
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     IvyAccent.entries.forEach { option ->
                         AccentSwatch(
                             color = option.shades.primary,
+                            name = stringResource(option.nameRes),
                             selected = option == accent,
                             onClick = {
                                 // Choosing an accent implies turning off dynamic color.
@@ -138,31 +159,52 @@ fun AppearanceCard(
 @Composable
 private fun AccentSwatch(
     color: Color,
+    name: String,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
     val ring = MaterialTheme.colorScheme.onSurface
+    // 48dp touch target (a radio option named after its colour) around a 44dp swatch.
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(48.dp)
             .clip(CircleShape)
-            .background(color)
-            .then(
-                if (selected) {
-                    Modifier.border(3.dp, ring, CircleShape)
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick),
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .semantics { contentDescription = name },
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) {
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = stringResource(R.string.selected),
-                tint = if (color.luminance() > 0.5f) Color.Black else Color.White,
-            )
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(color)
+                .then(
+                    if (selected) {
+                        Modifier.border(3.dp, ring, CircleShape)
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = if (color.luminance() > 0.5f) Color.Black else Color.White,
+                )
+            }
         }
     }
 }
+
+private val IvyAccent.nameRes: Int
+    get() = when (this) {
+        IvyAccent.Purple -> R.string.accent_purple
+        IvyAccent.Blue -> R.string.accent_blue
+        IvyAccent.Green -> R.string.accent_green
+        IvyAccent.Orange -> R.string.accent_orange
+        IvyAccent.Pink -> R.string.accent_pink
+        IvyAccent.Red -> R.string.accent_red
+        IvyAccent.Yellow -> R.string.accent_yellow
+    }

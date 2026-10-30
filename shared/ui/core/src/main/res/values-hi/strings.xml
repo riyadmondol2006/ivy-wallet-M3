@@ -382,7 +382,7 @@
     <string name="one_time_payments">एकमुश्त भुगतान</string>
     <string name="recurring_payments">आवर्ती भुगतान</string>
     <string name="no_planned_payments">कोई नियोजित भुगतान नहीं</string>
-    <string name="no_planned_payments_description">आपके पास कोई नियोजित भुगतान नहीं है। \nएक जोड़ने के लिए नीचे दिए गए \'⚡\' बटन दबाएं।</string>
+    <string name="no_planned_payments_description">आपके पास कोई नियोजित भुगतान नहीं है। \nएक जोड़ने के लिए नीचे दिए गए \'+\' बटन दबाएं।</string>
     <string name="planned_payments_inline">नियोजित भुगतान</string>
     <string name="today">आज</string>
     <string name="yesterday">बिता हुआ दिन</string>

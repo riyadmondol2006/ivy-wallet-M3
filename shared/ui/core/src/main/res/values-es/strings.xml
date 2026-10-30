@@ -190,7 +190,7 @@
     <string name="one_time_payments">Pagos únicos</string>
     <string name="recurring_payments">Pagos recurrentes</string>
     <string name="no_planned_payments">Sin pagos planificados</string>
-    <string name="no_planned_payments_description">No tiene ningún pago planificado.\nPresione la parte inferior \'⚡\' en la parte inferior para agregar uno.</string>
+    <string name="no_planned_payments_description">No tiene ningún pago planificado.\nPresione la parte inferior \'+\' en la parte inferior para agregar uno.</string>
     <string name="planned_payments_inline">Pagos planificados</string>
     <string name="today">Hoy</string>
     <string name="yesterday">Ayer</string>

@@ -190,7 +190,7 @@
     <string name="one_time_payments">一次性付款</string>
     <string name="recurring_payments">定期付款</string>
     <string name="no_planned_payments">无计划支付</string>
-    <string name="no_planned_payments_description">您没有任何计划支付。\n点击底部的“⚡”按钮添加一个。</string>
+    <string name="no_planned_payments_description">您没有任何计划支付。\n点击底部的“+”按钮添加一个。</string>
     <string name="planned_payments_inline">计划支付</string>
     <string name="today">今天</string>
     <string name="yesterday">昨天</string>

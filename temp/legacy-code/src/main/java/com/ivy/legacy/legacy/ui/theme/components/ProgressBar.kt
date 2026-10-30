@@ -1,52 +1,40 @@
 package com.ivy.wallet.ui.theme.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ivy.design.l0_system.UI
 import com.ivy.legacy.IvyWalletComponentPreview
-import com.ivy.wallet.ui.theme.*
+import com.ivy.wallet.ui.theme.Gray
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
+/**
+ * Determinate Material 3 progress bar (kept under its old name so existing callers migrate for free).
+ * [percent] is clamped to 0..1 and NaN/infinite values (e.g. a zero total) show as empty.
+ * [positiveProgress] is kept for source compatibility; the bar now always uses the primary colour.
+ */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun ProgressBar(
     modifier: Modifier = Modifier,
-    notFilledColor: Color = UI.colors.pure,
+    notFilledColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     positiveProgress: Boolean = true,
     percent: Double
 ) {
-    Spacer(
-        modifier = modifier
-            .clip(UI.shapes.r4)
-            .background(notFilledColor)
-            .drawBehind {
-                drawRect(
-                    color = when {
-                        percent <= 0.25 -> {
-                            if (positiveProgress) Red else Green
-                        }
-                        percent <= 0.50 -> {
-                            if (positiveProgress) Orange else Ivy
-                        }
-                        percent <= 0.75 -> {
-                            if (positiveProgress) Ivy else Orange
-                        }
-                        else -> if (positiveProgress) Green else Red
-                    },
-                    size = size.copy(
-                        width = (size.width * percent).toFloat()
-                    )
-                )
-            },
+    val progress = percent.takeIf { it.isFinite() }?.toFloat()?.coerceIn(0f, 1f) ?: 0f
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.primary,
+        trackColor = notFilledColor,
+        strokeCap = StrokeCap.Round,
+        drawStopIndicator = {},
     )
 }
 

@@ -41,6 +41,7 @@ import com.ivy.base.model.processByType
 import com.ivy.data.model.LoanType
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.l0_system.UI
+import com.ivy.design.system.readableContentColor
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
@@ -398,13 +399,12 @@ private fun LoanInfoCard(
 
     onAddRecord: () -> Unit
 ) {
-    val backgroundColor = if (isDarkColor(loan.color)) {
-        MediumBlack.copy(alpha = 0.9f)
-    } else {
-        MediumWhite.copy(alpha = 0.9f)
-    }
-
-    val contrastColor = findContrastTextColor(backgroundColor)
+    // Theme surface + on-surface roles so every text on the card matches its background; the
+    // loan's own colour stays on the account chip (with its own contrasting content colour).
+    val backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val contrastColor = MaterialTheme.colorScheme.onSurface
+    val loanColor = loan.color.toComposeColor()
+    val onLoanColor = readableContentColor(loanColor)
     val percentPaid = amountPaid / loanTotalAmount
     val loanPercentPaid = loanAmountPaid / loanTotalAmount
     val leftToPay = loanTotalAmount - amountPaid
@@ -432,16 +432,16 @@ private fun LoanInfoCard(
             if (selectedLoanAccount != null) {
                 IvyButton(
                     modifier = Modifier.padding(end = 16.dp, top = 12.dp),
-                    backgroundGradient = Gradient.solid(loan.color.toComposeColor()),
+                    backgroundGradient = Gradient.solid(loanColor),
                     hasGlow = false,
-                    iconTint = contrastColor,
+                    iconTint = onLoanColor,
                     text = selectedLoanAccount.name,
                     iconStart = getCustomIconIdS(
                         iconName = selectedLoanAccount.icon,
                         defaultIcon = R.drawable.ic_custom_account_s
                     ),
                     textStyle = UI.typo.c.style(
-                        color = contrastColor,
+                        color = onLoanColor,
                         fontWeight = FontWeight.ExtraBold
                     ),
                     padding = 8.dp,
@@ -597,9 +597,9 @@ private fun LoanInfoCard(
                 .align(Alignment.CenterHorizontally),
             text = stringResource(R.string.add_record),
             shadowAlpha = 0.1f,
-            backgroundGradient = Gradient.solid(contrastColor),
+            backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary),
             textStyle = UI.typo.b2.style(
-                color = findContrastTextColor(contrastColor),
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold
             ),
             wrapContentMode = false

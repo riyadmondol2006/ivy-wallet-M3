@@ -190,7 +190,7 @@
     <string name="one_time_payments">المدفوعات لمرة واحدة</string>
     <string name="recurring_payments">الدفعات متكررة</string>
     <string name="no_planned_payments">لا توجد مدفوعات مخططة</string>
-    <string name="no_planned_payments_description">لا يوجد لديك دفعات مخططة.\n اضغط على \'⚡\' في الاسفل لإضافة واحدة.</string>
+    <string name="no_planned_payments_description">لا يوجد لديك دفعات مخططة.\n اضغط على \'+\' في الاسفل لإضافة واحدة.</string>
     <string name="planned_payments_inline">الدفعات المخططة</string>
     <string name="today">اليوم</string>
     <string name="yesterday">أمس</string>

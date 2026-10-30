@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Theme
@@ -709,10 +711,14 @@ private fun AppSwitch(
     icon: ImageVector,
     description: String = "",
 ) {
+    // One accessible control: the whole row toggles and announces label + on/off state.
     SettingsButtonRow(
-        onClick = {
-            onSetLockApp(!lockApp)
-        }
+        onClick = null,
+        modifier = Modifier.toggleable(
+            value = lockApp,
+            role = Role.Switch,
+            onValueChange = onSetLockApp,
+        ),
     ) {
         Spacer(Modifier.width(16.dp))
 
@@ -745,7 +751,7 @@ private fun AppSwitch(
 
         Switch(
             checked = lockApp,
-            onCheckedChange = onSetLockApp
+            onCheckedChange = null
         )
 
         Spacer(Modifier.width(16.dp))
@@ -880,6 +886,7 @@ private fun SettingsPrimaryButton(
 @Composable
 private fun SettingsButtonRow(
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
     backgroundGradient: Gradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
     content: @Composable RowScope.() -> Unit
 ) {
@@ -890,6 +897,7 @@ private fun SettingsButtonRow(
             .clip(MaterialTheme.shapes.large)
             // Flat M3 tonal surface (no legacy gradient sheen / colored shadow).
             .background(backgroundGradient.startColor, MaterialTheme.shapes.large)
+            .then(modifier)
             .thenIf(onClick != null) {
                 clickable {
                     onClick?.invoke()

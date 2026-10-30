@@ -191,7 +191,7 @@
     <string name="one_time_payments">Jednorazowa płatność</string>
     <string name="recurring_payments">Płatności cykliczne</string>
     <string name="no_planned_payments">Brak zaplanowanych płatności`</string>
-    <string name="no_planned_payments_description">Nie masz żadnych zaplanowanych płatności.\nDotknij przycisk \'⚡\' na dole, aby dodać.</string>
+    <string name="no_planned_payments_description">Nie masz żadnych zaplanowanych płatności.\nDotknij przycisk \'+\' na dole, aby dodać.</string>
     <string name="planned_payments_inline">Zaplanowane płatności</string>
     <string name="today">Dzisiaj</string>
     <string name="yesterday">Wczoraj</string>

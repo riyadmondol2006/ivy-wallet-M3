@@ -193,7 +193,7 @@
     <string name="one_time_payments">一次性交易</string>
     <string name="recurring_payments">定期交易</string>
     <string name="no_planned_payments">沒有計畫付款</string>
-    <string name="no_planned_payments_description">您沒有任何計畫付款。\n點擊底部的「⚡「按鈕即可新增。</string>
+    <string name="no_planned_payments_description">您沒有任何計畫付款。\n點擊底部的「+「按鈕即可新增。</string>
     <string name="planned_payments_inline">計畫付款</string>
     <string name="today">今天</string>
     <string name="yesterday">昨天</string>

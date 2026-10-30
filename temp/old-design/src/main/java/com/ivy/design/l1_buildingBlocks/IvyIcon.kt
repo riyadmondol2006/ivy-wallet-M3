@@ -23,7 +23,7 @@ fun IvyIcon(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int,
     tint: Color = UI.colors.pureInverse,
-    contentDescription: String = "icon"
+    contentDescription: String? = null
 ) {
     Icon(
         modifier = modifier,
@@ -45,7 +45,7 @@ fun IvyIconScaled(
         IconScale.M -> 4.dp
         IconScale.L -> 4.dp
     },
-    contentDescription: String = "icon"
+    contentDescription: String? = null
 ) {
     Image(
         modifier = modifier

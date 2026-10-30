@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,8 +33,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -107,7 +113,8 @@ fun BoxWithConstraintsScope.AmountModal(
                     .testTag("btn_calculator")
                     .padding(all = 4.dp),
                 icon = R.drawable.ic_custom_calculator_m,
-                tint = UI.colors.pureInverse
+                tint = UI.colors.pureInverse,
+                contentDescription = stringResource(R.string.calculator)
             )
 
             Spacer(Modifier.width(16.dp))
@@ -195,31 +202,30 @@ fun AmountCurrency(
     amount: String,
     currency: String,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.weight(1f))
-
-        Text(
-            text = amount.ifBlank { "0" },
-            style = UI.typo.nH2.style(
-                fontWeight = FontWeight.Bold,
-                color = UI.colors.pureInverse
-            )
-        )
-        Spacer(Modifier.width(4.dp))
-        Text(
-            text = currency,
-            style = UI.typo.nH2.style(
-                fontWeight = FontWeight.Normal,
-                color = UI.colors.pureInverse
-            )
-        )
-
-        Spacer(Modifier.weight(1f))
-    }
+    val style = UI.typo.nH2.style(
+        fontWeight = FontWeight.Bold,
+        color = UI.colors.pureInverse
+    ).copy(textAlign = TextAlign.Center)
+    // One line that shrinks to fit long amounts; if even the smallest size can't fit, the start
+    // is elided so the digits being typed stay visible.
+    BasicText(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        text = buildAnnotatedString {
+            append(amount.ifBlank { "0" })
+            if (currency.isNotEmpty()) {
+                withStyle(SpanStyle(fontWeight = FontWeight.Normal)) { append(" $currency") }
+            }
+        },
+        style = style,
+        maxLines = 1,
+        overflow = TextOverflow.StartEllipsis,
+        autoSize = TextAutoSize.StepBased(minFontSize = AmountMinFontSize, maxFontSize = style.fontSize),
+    )
 }
+
+private val AmountMinFontSize = 18.sp
 
 @Composable
 fun AmountInput(
@@ -421,7 +427,8 @@ fun AmountKeyboard(
                 .padding(all = 24.dp)
                 .testTag("key_del"),
             icon = R.drawable.ic_backspace,
-            tint = Red
+            tint = Red,
+            contentDescription = stringResource(R.string.delete)
         )
 
         FourthRowExtra?.invoke(this)

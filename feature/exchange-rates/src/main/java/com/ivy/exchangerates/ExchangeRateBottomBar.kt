@@ -25,9 +25,10 @@ import com.ivy.ui.component.IvyBottomActionBar
 @Composable
 internal fun BoxWithConstraintsScope.ExchangeRatesBottomBar(
     onClose: () -> Unit,
-    onAddRate: () -> Unit
+    onAddRate: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    IvyBottomActionBar(onNavigateBack = onClose) {
+    IvyBottomActionBar(onNavigateBack = onClose, modifier = modifier) {
         Button(
             onClick = onAddRate,
             modifier = Modifier.weight(1f)

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
 import com.ivy.legacy.IvyWalletComponentPreview
+import com.ivy.legacy.legacy.ui.theme.components.iconActionLabel
 import com.ivy.ui.R
 import com.ivy.ui.component.IvyCloseButton
 import com.ivy.wallet.ui.theme.Gradient
@@ -37,7 +38,7 @@ fun CloseButton(
 fun CircleButton(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int,
-    contentDescription: String = "icon",
+    contentDescription: String? = null,
     backgroundColor: Color = UI.colors.pure,
     borderColor: Color = UI.colors.medium,
     tint: Color? = UI.colors.pureInverse,
@@ -52,7 +53,7 @@ fun CircleButton(
     ) {
         Icon(
             painter = painterResource(id = icon),
-            contentDescription = contentDescription,
+            contentDescription = contentDescription ?: iconActionLabel(icon),
             tint = tint ?: Color.Unspecified,
         )
     }
@@ -63,7 +64,7 @@ fun CircleButton(
 fun CircleButtonFilled(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int,
-    contentDescription: String = "icon",
+    contentDescription: String? = null,
     backgroundColor: Color = UI.colors.medium,
     tint: Color? = UI.colors.pureInverse,
     clickAreaPadding: Dp = 8.dp,
@@ -77,7 +78,7 @@ fun CircleButtonFilled(
     ) {
         Icon(
             painter = painterResource(id = icon),
-            contentDescription = contentDescription,
+            contentDescription = contentDescription ?: iconActionLabel(icon),
             tint = tint ?: Color.Unspecified,
         )
     }
@@ -88,7 +89,7 @@ fun CircleButtonFilled(
 fun CircleButtonFilledGradient(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int,
-    contentDescription: String = "icon",
+    contentDescription: String? = null,
     iconPadding: Dp = 8.dp,
     backgroundGradient: Gradient = Gradient.solid(UI.colors.medium),
     tint: Color? = UI.colors.pureInverse,
@@ -104,7 +105,7 @@ fun CircleButtonFilledGradient(
     ) {
         Icon(
             painter = painterResource(id = icon),
-            contentDescription = contentDescription,
+            contentDescription = contentDescription ?: iconActionLabel(icon),
             tint = tint ?: Color.Unspecified,
         )
     }

@@ -190,7 +190,7 @@
     <string name="one_time_payments">ಒಂದು ಬಾರಿಮಾಡುವ ಪಾವತಿಗಳು</string>
     <string name="recurring_payments">ಮರುಕಳಿಸುವ ಪಾವತಿಗಳು</string>
     <string name="no_planned_payments">ಯಾವುದೇ ಯೋಜಿತ ಪಾವತಿಗಳಿಲ್ಲ</string>
-    <string name="no_planned_payments_description">ನೀವು ಯಾವುದೇ ಯೋಜಿತ ಪಾವತಿಗಳನ್ನು ಹೊಂದಿಲ್ಲ.\nಒಂದನ್ನು ಸೇರಿಸಲು ಕೆಳಭಾಗದಲ್ಲಿರುವ \'⚡\' ಬಟನ್ ಅನ್ನು ಒತ್ತಿರಿ.</string>
+    <string name="no_planned_payments_description">ನೀವು ಯಾವುದೇ ಯೋಜಿತ ಪಾವತಿಗಳನ್ನು ಹೊಂದಿಲ್ಲ.\nಒಂದನ್ನು ಸೇರಿಸಲು ಕೆಳಭಾಗದಲ್ಲಿರುವ \'+\' ಬಟನ್ ಅನ್ನು ಒತ್ತಿರಿ.</string>
     <string name="planned_payments_inline">ಯೋಜಿತ ಪಾವತಿಗಳು</string>
     <string name="today">ಇಂದು</string>
     <string name="yesterday">ನಿನ್ನೆ</string>

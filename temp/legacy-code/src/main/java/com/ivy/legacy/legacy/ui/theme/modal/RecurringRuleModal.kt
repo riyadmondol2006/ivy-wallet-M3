@@ -337,7 +337,8 @@ private fun DateRow(
             backgroundPadding = 4.dp,
             icon = R.drawable.ic_calendar,
             backgroundGradient = Gradient.solid(UI.colors.pureInverse),
-            tint = UI.colors.pure
+            tint = UI.colors.pure,
+            contentDescription = stringResource(R.string.choose_date)
         ) {
             ivyContext.pickDate(dateTime.toLocalDate(), onDatePicked)
         }

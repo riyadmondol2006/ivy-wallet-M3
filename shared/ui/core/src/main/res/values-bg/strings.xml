@@ -190,7 +190,7 @@
     <string name="one_time_payments">Еднократно плащане</string>
     <string name="recurring_payments">Повтарящо се плащане</string>
     <string name="no_planned_payments">Няма планирани плащания</string>
-    <string name="no_planned_payments_description">Нямате планирани плащания.\nНатиснете \'⚡\' отдолу, за да добавите такова.</string>
+    <string name="no_planned_payments_description">Нямате планирани плащания.\nНатиснете \'+\' отдолу, за да добавите такова.</string>
     <string name="planned_payments_inline">Планирани плащания</string>
     <string name="today">Днес</string>
     <string name="yesterday">Вчера</string>

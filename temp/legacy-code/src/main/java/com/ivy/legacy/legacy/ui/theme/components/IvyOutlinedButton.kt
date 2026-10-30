@@ -38,10 +38,12 @@ fun IvyOutlinedButton(
     borderColor: Color = UI.colors.medium,
     textColor: Color = UI.colors.pureInverse,
     padding: Dp = 12.dp,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.defaultMinSize(minWidth = minWidth, minHeight = minHeight),
         shape = RoundedCornerShape(percent = 50),
         border = BorderStroke(2.dp, borderColor),
@@ -52,12 +54,14 @@ fun IvyOutlinedButton(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = padding),
     ) {
         if (iconStart != null) {
-            IvyIcon(icon = iconStart, tint = iconTint)
+            IvyIcon(icon = iconStart, tint = if (enabled) iconTint else iconTint.copy(alpha = DisabledAlpha))
             Spacer(Modifier.width(8.dp))
         }
         Text(text = text, fontWeight = FontWeight.Bold)
     }
 }
+
+private const val DisabledAlpha = 0.38f
 
 @Composable
 fun IvyOutlinedButtonFillMaxWidth(

@@ -190,7 +190,7 @@
     <string name="one_time_payments">Одноразовые платежи</string>
     <string name="recurring_payments">Повторяющиеся платежи</string>
     <string name="no_planned_payments">Нет запланированных платежей</string>
-    <string name="no_planned_payments_description">У вас нет ни одного запланированного платежа.\nНажмите кнопку \'⚡\' внизу, чтобы добавить.</string>
+    <string name="no_planned_payments_description">У вас нет ни одного запланированного платежа.\nНажмите кнопку \'+\' внизу, чтобы добавить.</string>
     <string name="planned_payments_inline">Запланированные платежи</string>
     <string name="today">Сегодня</string>
     <string name="yesterday">Вчера</string>

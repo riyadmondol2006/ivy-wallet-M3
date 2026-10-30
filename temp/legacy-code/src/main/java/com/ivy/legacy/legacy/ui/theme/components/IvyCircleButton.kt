@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ivy.legacy.IvyWalletComponentPreview
+import com.ivy.legacy.legacy.ui.theme.components.iconActionLabel
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientRed
@@ -36,6 +37,7 @@ fun IvyCircleButton(
     tint: Color? = null,
     enabled: Boolean = true,
     hasShadow: Boolean = true,
+    contentDescription: String? = null,
     onClick: () -> Unit
 ) {
     val colors = if (backgroundGradient == null) {
@@ -55,7 +57,7 @@ fun IvyCircleButton(
     ) {
         Icon(
             painter = painterResource(id = icon),
-            contentDescription = "circle button",
+            contentDescription = contentDescription ?: iconActionLabel(icon),
             tint = tint ?: LocalContentColor.current,
         )
     }

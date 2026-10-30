@@ -191,7 +191,7 @@
     <string name="one_time_payments">Pembayaran sekali waktu</string>
     <string name="recurring_payments">Pembayaran berulang</string>
     <string name="no_planned_payments">Tidak ada pembayaran terencana</string>
-    <string name="no_planned_payments_description">Anda tidak memiliki pembayaran terencana apa pun.\nTekan tombol \'⚡\' di bagian bawah untuk menambahkannya.</string>
+    <string name="no_planned_payments_description">Anda tidak memiliki pembayaran terencana apa pun.\nTekan tombol \'+\' di bagian bawah untuk menambahkannya.</string>
     <string name="planned_payments_inline">Pembayaran terencana</string>
     <string name="today">Hari Ini</string>
     <string name="yesterday">Kemarin</string>
