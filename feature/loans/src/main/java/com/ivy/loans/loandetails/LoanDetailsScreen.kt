@@ -21,10 +21,22 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Icon
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.AssistChip
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
@@ -41,7 +53,6 @@ import com.ivy.base.model.processByType
 import com.ivy.data.model.LoanType
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.l0_system.UI
-import com.ivy.design.system.readableContentColor
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
@@ -67,22 +78,15 @@ import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.ui.time.TimeFormatter
 import com.ivy.wallet.domain.data.IvyCurrency
-import com.ivy.wallet.ui.theme.Gradient
-import com.ivy.wallet.ui.theme.MediumBlack
-import com.ivy.wallet.ui.theme.MediumWhite
 import com.ivy.wallet.ui.theme.components.BalanceRow
-import com.ivy.wallet.ui.theme.components.ItemIconMDefaultIcon
-import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.components.ProgressBar
 import com.ivy.wallet.ui.theme.components.getCustomIconIdS
-import com.ivy.wallet.ui.theme.dynamicContrast
-import com.ivy.wallet.ui.theme.findContrastTextColor
-import com.ivy.wallet.ui.theme.isDarkColor
 import com.ivy.wallet.ui.theme.modal.DeleteModal
 import com.ivy.wallet.ui.theme.modal.LoanModal
 import com.ivy.wallet.ui.theme.modal.LoanRecordModal
 import com.ivy.wallet.ui.theme.modal.ProgressModal
+import com.ivy.legacy.legacy.ui.theme.components.ItemAvatar
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
@@ -112,7 +116,7 @@ private fun BoxWithConstraintsScope.UI(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(itemColor)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         val listState = rememberLazyListState()
 
@@ -120,9 +124,7 @@ private fun BoxWithConstraintsScope.UI(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(top = 16.dp)
-                .clip(UI.shapes.r1Top)
-                .background(MaterialTheme.colorScheme.surface),
+                .padding(top = 8.dp),
             state = listState,
         ) {
             item {
@@ -156,14 +158,7 @@ private fun BoxWithConstraintsScope.UI(
             }
 
             item {
-                // Rounded corners top effect
-                Spacer(
-                    Modifier
-                        .height(32.dp)
-                        .fillMaxWidth()
-                        .background(itemColor) // itemColor is displayed below the clip
-                        .background(MaterialTheme.colorScheme.surface, UI.shapes.r1Top)
-                )
+                Spacer(Modifier.height(16.dp))
             }
 
             if (state.loan != null) {
@@ -274,18 +269,14 @@ private fun Header(
     selectedLoanAccount: Account? = null,
     onAddRecord: () -> Unit
 ) {
-    val contrastColor = findContrastTextColor(itemColor)
+    // Theme surface + on-surface text; the loan's colour lives on its avatar only.
+    val contrastColor = MaterialTheme.colorScheme.onSurface
+    setStatusBarDarkTextCompat(darkText = MaterialTheme.colorScheme.surface.luminance() > HalfLuminance)
 
-    val darkColor = isDarkColor(itemColor)
-    setStatusBarDarkTextCompat(darkText = !darkColor)
-
-    Column(
-        modifier = Modifier.background(itemColor)
-    ) {
-        Spacer(Modifier.height(20.dp))
+    Column {
+        Spacer(Modifier.height(8.dp))
 
         ItemStatisticToolbar(
-            contrastColor = contrastColor,
             onEdit = onEditLoan,
             onDelete = onDeleteLoan
         )
@@ -295,6 +286,7 @@ private fun Header(
         LoanItem(
             loan = loan,
             contrastColor = contrastColor,
+            itemColor = itemColor,
         ) {
             onEditLoan()
         }
@@ -314,7 +306,6 @@ private fun Header(
         Spacer(Modifier.height(20.dp))
 
         LoanInfoCard(
-            loan = loan,
             baseCurrency = baseCurrency,
             amountPaid = amountPaid,
             loanAmountPaid = loanAmountPaid,
@@ -331,24 +322,25 @@ private fun Header(
 private fun LoanItem(
     loan: Loan,
     contrastColor: Color,
+    itemColor: Color,
 
     onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
-            .padding(start = 22.dp)
+            .padding(start = 24.dp, bottom = 8.dp)
             .clickableNoIndication(rememberInteractionSource()) {
                 onClick()
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ItemIconMDefaultIcon(
+        ItemAvatar(
             iconName = loan.icon,
-            defaultIcon = R.drawable.ic_custom_loan_m,
-            tint = contrastColor
+            defaultIcon = R.drawable.ic_custom_loan_s,
+            color = itemColor
         )
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(12.dp))
 
         Column {
             Row(
@@ -368,7 +360,7 @@ private fun LoanItem(
                 Text(
                     text = loan.humanReadableType(),
                     style = UI.typo.c.style(
-                        color = loan.color.toComposeColor().dynamicContrast()
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
@@ -390,7 +382,6 @@ private fun LoanItem(
 @Suppress("LongMethod")
 @Composable
 private fun LoanInfoCard(
-    loan: Loan,
     baseCurrency: String,
     loanTotalAmount: Double,
     amountPaid: Double,
@@ -399,12 +390,9 @@ private fun LoanInfoCard(
 
     onAddRecord: () -> Unit
 ) {
-    // Theme surface + on-surface roles so every text on the card matches its background; the
-    // loan's own colour stays on the account chip (with its own contrasting content colour).
+    // Theme surface + on-surface roles so every text on the card matches its background.
     val backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
     val contrastColor = MaterialTheme.colorScheme.onSurface
-    val loanColor = loan.color.toComposeColor()
-    val onLoanColor = readableContentColor(loanColor)
     val percentPaid = amountPaid / loanTotalAmount
     val loanPercentPaid = loanAmountPaid / loanTotalAmount
     val leftToPay = loanTotalAmount - amountPaid
@@ -430,22 +418,9 @@ private fun LoanInfoCard(
                 )
             )
             if (selectedLoanAccount != null) {
-                IvyButton(
-                    modifier = Modifier.padding(end = 16.dp, top = 12.dp),
-                    backgroundGradient = Gradient.solid(loanColor),
-                    hasGlow = false,
-                    iconTint = onLoanColor,
-                    text = selectedLoanAccount.name,
-                    iconStart = getCustomIconIdS(
-                        iconName = selectedLoanAccount.icon,
-                        defaultIcon = R.drawable.ic_custom_account_s
-                    ),
-                    textStyle = UI.typo.c.style(
-                        color = onLoanColor,
-                        fontWeight = FontWeight.ExtraBold
-                    ),
-                    padding = 8.dp,
-                    iconEdgePadding = 10.dp
+                AccountChip(
+                    modifier = Modifier.padding(end = 16.dp, top = 8.dp),
+                    account = selectedLoanAccount,
                 ) {
                     nav.navigateTo(
                         TransactionsScreen(
@@ -590,21 +565,20 @@ private fun LoanInfoCard(
 
         Spacer(Modifier.height(24.dp))
 
-        IvyButton(
+        Button(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .align(Alignment.CenterHorizontally),
-            text = stringResource(R.string.add_record),
-            shadowAlpha = 0.1f,
-            backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.primary),
-            textStyle = UI.typo.b2.style(
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold
-            ),
-            wrapContentMode = false
+            onClick = onAddRecord,
         ) {
-            onAddRecord()
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+            Text(text = stringResource(R.string.add_record))
         }
 
         Spacer(Modifier.height(12.dp))
@@ -655,22 +629,7 @@ private fun LoanRecordItem(
         if (account != null || loanRecord.interest) {
             Row(Modifier.padding(16.dp)) {
                 if (account != null) {
-                    IvyButton(
-                        backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
-                        hasGlow = false,
-                        iconTint = MaterialTheme.colorScheme.onSurface,
-                        text = account.name,
-                        iconStart = getCustomIconIdS(
-                            iconName = account.icon,
-                            defaultIcon = R.drawable.ic_custom_account_s
-                        ),
-                        textStyle = UI.typo.c.style(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.ExtraBold
-                        ),
-                        padding = 8.dp,
-                        iconEdgePadding = 10.dp
-                    ) {
+                    AccountChip(account = account) {
                         nav.navigateTo(
                             TransactionsScreen(
                                 accountId = account.id,
@@ -681,29 +640,11 @@ private fun LoanRecordItem(
                 }
 
                 if (loanRecord.interest) {
-                    // Spacer(modifier = Modifier.width(8.dp))
-
-                    val textIconColor = if (isDarkColor(loan.color)) MediumWhite else MediumBlack
-
-                    IvyButton(
+                    RecordTag(
                         modifier = Modifier.padding(start = 8.dp),
-                        backgroundGradient = Gradient.solid(loan.color.toComposeColor()),
-                        hasGlow = false,
-                        iconTint = textIconColor,
                         text = stringResource(R.string.interest),
-                        iconStart = getCustomIconIdS(
-                            iconName = "currency",
-                            defaultIcon = R.drawable.ic_currency
-                        ),
-                        textStyle = UI.typo.c.style(
-                            color = textIconColor,
-                            fontWeight = FontWeight.ExtraBold
-                        ),
-                        padding = 8.dp,
-                        iconEdgePadding = 10.dp
-                    ) {
-                        // do Nothing
-                    }
+                        icon = R.drawable.ic_currency,
+                    )
                 }
             }
         } else {
@@ -789,21 +730,14 @@ private fun InitialRecordItem(
             .background(MaterialTheme.colorScheme.surfaceContainer, UI.shapes.r4)
             .testTag("loan_record_item")
     ) {
-        IvyButton(
+        RecordTag(
             modifier = Modifier.padding(16.dp),
-            backgroundGradient = Gradient.solid(MaterialTheme.colorScheme.surfaceContainerHigh),
             text = stringResource(id = R.string.initial_loan_record),
-            iconTint = MaterialTheme.colorScheme.onSurface,
-            iconStart = getCustomIconIdS(
+            icon = getCustomIconIdS(
                 iconName = loan.icon,
                 defaultIcon = R.drawable.ic_custom_loan_s
             ),
-            textStyle = UI.typo.c.style(
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.ExtraBold
-            ),
-            padding = 8.dp,
-        ) {}
+        )
 
         val timeFormatter = LocalTimeFormatter.current
 
@@ -844,6 +778,57 @@ private fun InitialRecordItem(
             amount = amount
         )
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+/** M3 assist chip that opens the account the loan money moves through. */
+@Composable
+private fun AccountChip(
+    account: Account,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    AssistChip(
+        modifier = modifier,
+        onClick = onClick,
+        label = { Text(text = account.name) },
+        leadingIcon = {
+            Icon(
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                painter = painterResource(
+                    getCustomIconIdS(iconName = account.icon, defaultIcon = R.drawable.ic_custom_account_s)
+                ),
+                contentDescription = null,
+            )
+        },
+    )
+}
+
+/** Small tonal, non-interactive label (e.g. "Interest", "Starting record"). */
+@Composable
+private fun RecordTag(
+    text: String,
+    @DrawableRes icon: Int,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                painter = painterResource(icon),
+                contentDescription = null,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = text, style = MaterialTheme.typography.labelLarge)
+        }
     }
 }
 
@@ -985,3 +970,5 @@ fun LoanDetailScreenUiTest(isDark: Boolean) {
     }
     Preview_Records(theme)
 }
+
+private const val HalfLuminance = 0.5f

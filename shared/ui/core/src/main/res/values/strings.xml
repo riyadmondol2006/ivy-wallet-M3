@@ -311,6 +311,7 @@
     <string name="crypto">Crypto</string>
     <string name="exchange_rate">Exchange rate</string>
     <string name="choose_color">Select a color</string>
+    <string name="color_option">Color %1$d</string>
     <string name="reorder">Reorder</string>
     <string name="reorder_hint">Drag the handle to change the order</string>
     <string name="keyword">Keyword</string>

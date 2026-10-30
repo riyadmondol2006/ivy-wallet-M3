@@ -2,9 +2,6 @@ package com.ivy.wallet.ui.theme.modal
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +14,16 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,19 +31,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.base.model.LoanRecordType
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.design.api.LocalTimeConverter
-import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
-import com.ivy.design.utils.thenIf
 import com.ivy.frp.test.TestingContext
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
@@ -52,8 +55,6 @@ import com.ivy.wallet.domain.deprecated.logic.model.CreateLoanRecordData
 import com.ivy.wallet.domain.deprecated.logic.model.EditLoanRecordData
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyCheckboxWithText
-import com.ivy.wallet.ui.theme.components.IvyIcon
-import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.edit.AccountModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 import com.ivy.wallet.ui.theme.modal.edit.AmountModal
@@ -217,10 +218,8 @@ fun BoxWithConstraintsScope.LoanRecordModal(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.associated_account),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(Modifier.height(16.dp))
@@ -252,10 +251,8 @@ fun BoxWithConstraintsScope.LoanRecordModal(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.loan_record_type),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(Modifier.height(16.dp))
@@ -473,42 +470,19 @@ private fun LoanRecordType(
         } else {
             stringResource(id = R.string.decrease_loan) to R.drawable.ic_donate_minus
         }
-    val selected = selectedRecordType == loanRecordType
-    val medium = UI.colors.medium
-    val rFull = UI.shapes.rFull
-    val selectedColor = UI.colors.green1
-    Row(
-        modifier = modifier
-            .clip(UI.shapes.rFull)
-            .thenIf(!selected) {
-                border(2.dp, medium, rFull)
-            }
-            .thenIf(selected) {
-                background(selectedColor, rFull)
-            }
-            .clickable(onClick = { onClick(loanRecordType) }),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(12.dp))
-
-        ItemIconSDefaultIcon(
-            defaultIcon = iconDrawable,
-            iconName = null,
-            tint = UI.colors.pureInverse
-        )
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            modifier = Modifier.padding(vertical = 10.dp),
-            text = text,
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
+    FilterChip(
+        modifier = modifier,
+        selected = selectedRecordType == loanRecordType,
+        onClick = { onClick(loanRecordType) },
+        label = { Text(text = text) },
+        leadingIcon = {
+            Icon(
+                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                painter = painterResource(iconDrawable),
+                contentDescription = null,
             )
-        )
-        Spacer(Modifier.width(24.dp))
-    }
+        },
+    )
 }
 
 @Composable
@@ -571,7 +545,6 @@ private fun AccountsRow(
     }
 }
 
-@SuppressLint("ComposeContentEmitterReturningValues", "ComposeMultipleContentEmitters")
 @Composable
 private fun Account(
     account: Account,
@@ -579,83 +552,39 @@ private fun Account(
     testTag: String,
     onClick: () -> Unit
 ) {
-    val accountColor = account.color.toComposeColor()
-    val textColor =
-        if (selected) findContrastTextColor(accountColor) else UI.colors.pureInverse
-
-    val medium = UI.colors.medium
-    val rFull = UI.shapes.rFull
-
-    Row(
-        modifier = Modifier
-            .clip(UI.shapes.rFull)
-            .thenIf(!selected) {
-                border(2.dp, medium, rFull)
-            }
-            .thenIf(selected) {
-                background(accountColor, rFull)
-            }
-            .clickable(onClick = onClick)
-            .testTag(testTag),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(12.dp))
-
-        ItemIconSDefaultIcon(
-            iconName = account.icon,
-            defaultIcon = R.drawable.ic_custom_account_s,
-            tint = textColor
-        )
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            modifier = Modifier.padding(vertical = 10.dp),
-            text = account.name,
-            style = UI.typo.b2.style(
-                color = textColor,
-                fontWeight = FontWeight.ExtraBold
+    FilterChip(
+        modifier = Modifier.testTag(testTag),
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text = account.name) },
+        leadingIcon = {
+            ItemIconSDefaultIcon(
+                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                iconName = account.icon,
+                defaultIcon = R.drawable.ic_custom_account_s,
+                tint = account.color.toComposeColor()
             )
-        )
-
-        Spacer(Modifier.width(24.dp))
-    }
+        },
+    )
 
     Spacer(Modifier.width(8.dp))
 }
 
-@SuppressLint("ComposeContentEmitterReturningValues", "ComposeMultipleContentEmitters")
 @Composable
 private fun AddAccount(
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .clip(UI.shapes.rFull)
-            .border(2.dp, UI.colors.medium, UI.shapes.rFull)
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(12.dp))
-
-        IvyIcon(
-            icon = R.drawable.ic_plus,
-            tint = UI.colors.pureInverse
-        )
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            modifier = Modifier.padding(vertical = 10.dp),
-            text = stringResource(R.string.add_account),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
+    AssistChip(
+        onClick = onClick,
+        label = { Text(text = stringResource(R.string.add_account)) },
+        leadingIcon = {
+            Icon(
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                imageVector = Icons.Rounded.Add,
+                contentDescription = null,
             )
-        )
-
-        Spacer(Modifier.width(24.dp))
-    }
+        },
+    )
 
     Spacer(Modifier.width(8.dp))
 }

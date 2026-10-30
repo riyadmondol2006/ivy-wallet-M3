@@ -1,12 +1,7 @@
 package com.ivy.wallet.ui.theme.modal
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +12,18 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,20 +31,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.data.model.LoanType
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.design.api.LocalTimeConverter
-import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.domain.legacy.ui.IvyColorPicker
 import com.ivy.frp.test.TestingContext
@@ -49,20 +52,14 @@ import com.ivy.legacy.utils.getDefaultFIATCurrency
 import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.legacy.utils.selectEndTextFieldValue
-import com.ivy.design.utils.thenIf
 import com.ivy.legacy.legacy.ui.theme.modal.ModalNameInput
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.domain.deprecated.logic.model.CreateLoanData
-import com.ivy.wallet.ui.theme.GradientIvy
-import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Ivy
-import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyCheckboxWithText
-import com.ivy.wallet.ui.theme.components.IvyIcon
-import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.edit.AccountModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 import com.ivy.wallet.ui.theme.modal.edit.AmountModal
@@ -238,10 +235,8 @@ fun BoxWithConstraintsScope.LoanModal(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.note),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -260,10 +255,8 @@ fun BoxWithConstraintsScope.LoanModal(
         Text(
             modifier = Modifier.padding(horizontal = 32.dp),
             text = stringResource(R.string.associated_account),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
-            )
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(Modifier.height(16.dp))
@@ -447,47 +440,20 @@ private fun Account(
     testTag: String,
     onClick: () -> Unit
 ) {
-    val accountColor = account.color.toComposeColor()
-    val textColor =
-        if (selected) findContrastTextColor(accountColor) else UI.colors.pureInverse
-
-    val medium = UI.colors.medium
-    val rFull = UI.shapes.rFull
-
-    Row(
-        modifier = Modifier
-            .clip(UI.shapes.rFull)
-            .thenIf(!selected) {
-                border(2.dp, medium, rFull)
-            }
-            .thenIf(selected) {
-                background(accountColor, rFull)
-            }
-            .clickable(onClick = onClick)
-            .testTag(testTag),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(12.dp))
-
-        ItemIconSDefaultIcon(
-            iconName = account.icon,
-            defaultIcon = R.drawable.ic_custom_account_s,
-            tint = textColor
-        )
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            modifier = Modifier.padding(vertical = 10.dp),
-            text = account.name,
-            style = UI.typo.b2.style(
-                color = textColor,
-                fontWeight = FontWeight.ExtraBold
+    FilterChip(
+        modifier = Modifier.testTag(testTag),
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text = account.name) },
+        leadingIcon = {
+            ItemIconSDefaultIcon(
+                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                iconName = account.icon,
+                defaultIcon = R.drawable.ic_custom_account_s,
+                tint = account.color.toComposeColor()
             )
-        )
-
-        Spacer(Modifier.width(24.dp))
-    }
+        },
+    )
 
     Spacer(Modifier.width(8.dp))
 }
@@ -496,33 +462,17 @@ private fun Account(
 private fun AddAccount(
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .clip(UI.shapes.rFull)
-            .border(2.dp, UI.colors.medium, UI.shapes.rFull)
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(12.dp))
-
-        IvyIcon(
-            icon = R.drawable.ic_plus,
-            tint = UI.colors.pureInverse
-        )
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            modifier = Modifier.padding(vertical = 10.dp),
-            text = stringResource(R.string.add_account),
-            style = UI.typo.b2.style(
-                color = UI.colors.pureInverse,
-                fontWeight = FontWeight.ExtraBold
+    AssistChip(
+        onClick = onClick,
+        label = { Text(text = stringResource(R.string.add_account)) },
+        leadingIcon = {
+            Icon(
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                imageVector = Icons.Rounded.Add,
+                contentDescription = null,
             )
-        )
-
-        Spacer(Modifier.width(24.dp))
-    }
+        },
+    )
 
     Spacer(Modifier.width(8.dp))
 }
@@ -536,69 +486,30 @@ private fun ColumnScope.LoanTypePicker(
     Text(
         modifier = Modifier.padding(horizontal = 32.dp),
         text = stringResource(R.string.loan_type),
-        style = UI.typo.b2.style(
-            color = UI.colors.pureInverse,
-            fontWeight = FontWeight.ExtraBold
-        )
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface
     )
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(12.dp))
 
-    Row(
+    val options = listOf(
+        LoanType.BORROW to stringResource(R.string.borrow_money),
+        LoanType.LEND to stringResource(R.string.lend_money),
+    )
+    SingleChoiceSegmentedButtonRow(
         modifier = Modifier
             .padding(horizontal = 24.dp)
             .fillMaxWidth()
-            .background(UI.colors.medium, UI.shapes.r2),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(8.dp))
-
-        SelectorButton(
-            selected = type == LoanType.BORROW,
-            label = stringResource(R.string.borrow_money)
-        ) {
-            onTypeSelected(LoanType.BORROW)
+        options.forEachIndexed { index, (option, label) ->
+            SegmentedButton(
+                selected = type == option,
+                onClick = { onTypeSelected(option) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                label = { Text(text = label) },
+            )
         }
-
-        Spacer(Modifier.width(8.dp))
-
-        SelectorButton(
-            selected = type == LoanType.LEND,
-            label = stringResource(R.string.lend_money)
-        ) {
-            onTypeSelected(LoanType.LEND)
-        }
-
-        Spacer(Modifier.width(8.dp))
     }
-}
-
-@Composable
-private fun RowScope.SelectorButton(
-    selected: Boolean,
-    label: String,
-    onClick: () -> Unit
-) {
-    val rFull = UI.shapes.rFull
-    Text(
-        modifier = Modifier
-            .weight(1f)
-            .clip(UI.shapes.rFull)
-            .clickable {
-                onClick()
-            }
-            .padding(vertical = 8.dp)
-            .thenIf(selected) {
-                background(GradientIvy.asHorizontalBrush(), rFull)
-            }
-            .padding(vertical = 8.dp),
-        text = label,
-        style = UI.typo.b2.style(
-            color = if (selected) White else Gray,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
-        )
-    )
 }
 
 private fun save(

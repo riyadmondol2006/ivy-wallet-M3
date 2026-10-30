@@ -3,70 +3,87 @@ package com.ivy.legacy.ui.component
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.ivy.base.legacy.stringRes
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Transparent
-import com.ivy.wallet.ui.theme.components.CircleButton
-import com.ivy.wallet.ui.theme.components.DeleteButton
-import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
 
+/**
+ * Material 3 top bar for the account / category / loan detail screens: close on the left, a
+ * tonal Edit button and an error-tonal delete icon button on the right.
+ */
 @SuppressLint("ComposeModifierMissing")
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun ItemStatisticToolbar(
-    contrastColor: Color,
     onEdit: () -> Unit,
     showEditButton: Boolean = true,
     showDeleteButton: Boolean = true,
     onDelete: () -> Unit,
 ) {
     Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(24.dp))
-
         val nav = navigation()
-        CircleButton(
+        IconButton(
             modifier = Modifier.testTag("toolbar_close"),
-            icon = R.drawable.ic_dismiss,
-            borderColor = contrastColor,
-            tint = contrastColor,
-            backgroundColor = Transparent
+            onClick = { nav.back() },
         ) {
-            nav.back()
+            Icon(imageVector = Icons.Rounded.Close, contentDescription = stringResource(R.string.close))
         }
 
         Spacer(Modifier.weight(1f))
 
         if (showEditButton) {
-            IvyOutlinedButton(
-                iconStart = R.drawable.ic_edit,
-                text = stringRes(R.string.edit),
-                borderColor = contrastColor,
-                iconTint = contrastColor,
-                textColor = contrastColor,
-                solidBackground = false
+            FilledTonalButton(
+                onClick = onEdit,
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
             ) {
-                onEdit()
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                Text(text = stringResource(R.string.edit))
             }
         }
-
-        Spacer(Modifier.width(16.dp))
 
         if (showDeleteButton) {
-            DeleteButton {
-                onDelete()
+            Spacer(Modifier.width(8.dp))
+            FilledTonalIconButton(
+                onClick = onDelete,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
+            ) {
+                Icon(imageVector = Icons.Outlined.DeleteOutline, contentDescription = stringResource(R.string.delete))
             }
         }
 
-        Spacer(Modifier.width(24.dp))
+        Spacer(Modifier.width(8.dp))
     }
 }

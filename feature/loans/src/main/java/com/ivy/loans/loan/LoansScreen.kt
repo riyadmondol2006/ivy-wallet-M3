@@ -1,6 +1,5 @@
 package com.ivy.loans.loan
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -17,9 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.style.TextOverflow
+import com.ivy.legacy.legacy.ui.theme.components.ItemAvatar
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -51,14 +51,11 @@ import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.CircleButtonFilled
-import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.components.ProgressBar
 import com.ivy.wallet.ui.theme.components.ReorderButton
 import com.ivy.wallet.ui.theme.components.ReorderItemLabel
 import com.ivy.wallet.ui.theme.components.ReorderModalSingleType
-import com.ivy.wallet.ui.theme.dynamicContrast
-import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.LoanModal
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.persistentListOf
@@ -266,9 +263,6 @@ private fun LoanItem(
     displayLoan: DisplayLoan,
     onClick: () -> Unit
 ) {
-    val loan = displayLoan.loan
-    val contrastColor = findContrastTextColor(loan.color.toComposeColor())
-
     IvyListCard(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -278,7 +272,6 @@ private fun LoanItem(
     ) {
         LoanHeader(
             displayLoan = displayLoan,
-            contrastColor = contrastColor,
         )
 
         Spacer(Modifier.height(12.dp))
@@ -294,15 +287,11 @@ private fun LoanItem(
 @Composable
 private fun LoanHeader(
     displayLoan: DisplayLoan,
-    contrastColor: Color,
 ) {
     val loan = displayLoan.loan
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(loan.color.toComposeColor())
-    ) {
+    // Same layout as the account cards: colour only on the avatar, theme roles for text.
+    Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(Modifier.height(16.dp))
 
         Row(
@@ -310,38 +299,39 @@ private fun LoanHeader(
         ) {
             Spacer(Modifier.width(20.dp))
 
-            ItemIconSDefaultIcon(
+            ItemAvatar(
                 iconName = loan.icon,
                 defaultIcon = R.drawable.ic_custom_loan_s,
-                tint = contrastColor
+                color = loan.color.toComposeColor()
             )
 
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(12.dp))
 
-            Text(
-                text = loan.name,
-                style = UI.typo.b1.style(
-                    color = contrastColor,
-                    fontWeight = FontWeight.ExtraBold
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = loan.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            )
-            Spacer(Modifier.width(8.dp))
-
-            Text(
-                text = loan.humanReadableType(),
-                style = UI.typo.c.style(
-                    color = loan.color.toComposeColor().dynamicContrast()
+                Text(
+                    text = loan.humanReadableType(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            )
+            }
+
+            Spacer(Modifier.width(20.dp))
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(8.dp))
 
         val leftToPay = displayLoan.loanTotalAmount - displayLoan.amountPaid
         BalanceRow(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally),
-            textColor = contrastColor,
+            textColor = MaterialTheme.colorScheme.onSurface,
             currency = displayLoan.currencyCode ?: getDefaultFIATCurrency().currencyCode,
             balance = leftToPay,
 
@@ -351,7 +341,7 @@ private fun LoanHeader(
             currencyUpfront = false
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
     }
 }
 
